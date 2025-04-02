@@ -1,0 +1,33 @@
+[2025-04-02 18:47:04] [INFO] [SYSTEM] ログシステムが正常に初期化されました
+[2025-04-02 18:47:04] [INFO] [SYSTEM] ログシステムを初期化します
+[2025-04-02 18:47:04] [INFO] [SYSTEM] シャットダウンフックを登録しました
+[2025-04-02 18:47:04] [INFO] [SYSTEM] C:\Users\astro\OneDrive\デスクトップ\Engineer-system\data
+[2025-04-02 18:47:04] [INFO] [SYSTEM] C:\Users\astro\OneDrive\デスクトップ\Engineer-system\data\engineers.csv
+[2025-04-02 18:47:04] [INFO] [SYSTEM] リソースマネージャーが正常に初期化されました
+[2025-04-02 18:47:04] [INFO] [SYSTEM] リソースマネージャーを初期化しました
+[2025-04-02 18:47:05] [INFO] [SYSTEM] メインフレームを初期化しました
+[2025-04-02 18:47:05] [INFO] [SYSTEM] エンジニア一覧パネルを初期化しました
+[2025-04-02 18:47:05] [INFO] [SYSTEM] 画面遷移コントローラーを初期化しました
+[2025-04-02 18:47:05] [INFO] [SYSTEM] メインコントローラーを初期化しました
+[2025-04-02 18:47:05] [INFO] [SYSTEM] アプリケーションを初期化しました
+[2025-04-02 18:47:05] [SEVERE] [SYSTEM] イベント処理に失敗しました
+java.lang.IllegalArgumentException: 未定義のイベント: LOAD_DATA
+	at controller.MainController.handleEvent(MainController.java:54)
+	at main.Main.initializeApplication(Main.java:145)
+	at java.desktop/java.awt.event.InvocationEvent.dispatch(InvocationEvent.java:318)
+	at java.desktop/java.awt.EventQueue.dispatchEventImpl(EventQueue.java:723)
+	at java.desktop/java.awt.EventQueue.dispatchEvent(EventQueue.java:702)
+	at java.desktop/java.awt.EventDispatchThread.pumpOneEventForFilters(EventDispatchThread.java:203)
+	at java.desktop/java.awt.EventDispatchThread.pumpEventsForFilter(EventDispatchThread.java:124)
+	at java.desktop/java.awt.EventDispatchThread.pumpEventsForHierarchy(EventDispatchThread.java:113)
+	at java.desktop/java.awt.EventDispatchThread.pumpEvents(EventDispatchThread.java:109)
+	at java.desktop/java.awt.EventDispatchThread.pumpEvents(EventDispatchThread.java:101)
+	at java.desktop/java.awt.EventDispatchThread.run(EventDispatchThread.java:90)
+[2025-04-02 18:47:05] [INFO] [SYSTEM] アプリケーションの初期化が完了しました
+[2025-04-02 18:47:05] [INFO] [SYSTEM] パネルを切り替えました: ListPanel
+[2025-04-02 18:47:05] [INFO] [SYSTEM] 画面を切り替えました: LIST
+[2025-04-02 18:47:11] [INFO] [SYSTEM] アプリケーション終了処理を開始します
+[2025-04-02 18:47:11] [INFO] [SYSTEM] ExecutorServiceを終了しています
+[2025-04-02 18:47:11] [INFO] [SYSTEM] 登録済みスレッドを終了しています
+[2025-04-02 18:47:12] [INFO] [SYSTEM] アプリケーション終了処理が完了しました
+[2025-04-02 18:47:12] [INFO] [SYSTEM] シャットダウンします
