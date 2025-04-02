@@ -124,12 +124,24 @@ public class MainController {
             }
 
             switch (event) {
-                case "REFRESH_VIEW" -> screenController.refreshView();
-                case "CHANGE_PANEL" -> screenController.showPanel((String) data);
-                case "SAVE_DATA" -> handleSaveData(data);
-                case "LOAD_DATA" -> handleLoadData();
-                case "SHUTDOWN" -> initiateShutdown();
-                default -> handleUnknownEvent(event, data);
+                case "REFRESH_VIEW":
+                    screenController.refreshView();
+                    break;
+                case "CHANGE_PANEL":
+                    screenController.showPanel((String) data);
+                    break;
+                case "SAVE_DATA":
+                    handleSaveData(data);
+                    break;
+                case "LOAD_DATA":
+                    handleLoadData();
+                    break;
+                case "SHUTDOWN":
+                    initiateShutdown();
+                    break;
+                default:
+                    handleUnknownEvent(event, data);
+                    break;
             }
 
             LogHandler.getInstance().log(

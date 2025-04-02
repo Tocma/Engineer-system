@@ -139,6 +139,7 @@ public class ScreenTransitionController {
             });
         } catch (Exception e) {
             // EDT外での例外発生時の処理
+
             isTransitioning.set(false);
             LogHandler.getInstance().logError(LogType.SYSTEM, "画面切り替え要求の処理に失敗しました", e);
         }

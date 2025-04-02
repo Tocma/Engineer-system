@@ -111,7 +111,7 @@ public class CSVAccess extends AccessThread {
             }
 
             try (BufferedReader reader = new BufferedReader(
-                    new InputStreamReader(new FileInputStream(csvFile), StandardCharsets.UTF_8))) {
+                    new InputStreamReader(new FileInputStream(csvFile), "UTF_8"))) {
                 String line;
                 while ((line = reader.readLine()) != null) {
                     lines.add(line);
@@ -152,7 +152,7 @@ public class CSVAccess extends AccessThread {
             }
 
             try (BufferedWriter writer = new BufferedWriter(
-                    new OutputStreamWriter(new FileOutputStream(csvFile), StandardCharsets.UTF_8))) {
+                    new OutputStreamWriter(new FileOutputStream(csvFile), "UTF_8"))) {
                 for (String line : lines) {
                     writer.write(line);
                     writer.newLine();

@@ -55,7 +55,7 @@ public class ResourceManager {
     /**
      * デフォルトのCSVディレクトリとファイル名を定義
      */
-    private static final String DEFAULT_DATA_DIR = "data";
+    private static final String DEFAULT_DATA_DIR = "src/data";
     private static final String DEFAULT_ENGINEER_CSV = "engineers.csv";
 
     /**
