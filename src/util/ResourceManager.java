@@ -6,7 +6,6 @@ import java.nio.file.*;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.logging.Level;
-
 import util.LogHandler.LogType;
 
 /**
@@ -47,8 +46,8 @@ import util.LogHandler.LogType;
  * </p>
  *
  * @author Nakano
- * @version 1.0.0
- * @since 2025-03-22
+ * @version 2.1.0
+ * @since 2025-04-03
  */
 public class ResourceManager {
 
@@ -91,11 +90,11 @@ public class ResourceManager {
     }
 
     /**
-     * リソースマネージャーを初期化する
+     * リソースマネージャーを初期化
      * 
      * <p>
      * アプリケーションの実行に必要なディレクトリ構造を確認・作成し、
-     * 初期ファイルが存在しない場合は作成します。
+     * 初期ファイルが存在しない場合は作成
      * </p>
      *
      * @throws IOException ディレクトリやファイルの作成に失敗した場合
@@ -132,7 +131,7 @@ public class ResourceManager {
     }
 
     /**
-     * ディレクトリパスを設定する
+     * ディレクトリパスを設定
      */
     private void setDirectoryPaths() {
         dataDirectoryPath = Paths.get(DEFAULT_DATA_DIR).toAbsolutePath();
@@ -140,7 +139,7 @@ public class ResourceManager {
     }
 
     /**
-     * 必要なディレクトリを確認し、存在しない場合は作成する
+     * 必要なディレクトリを確認し、存在しない場合は作成
      *
      * @throws IOException ディレクトリの作成に失敗した場合
      */
@@ -190,7 +189,7 @@ public class ResourceManager {
 
     /**
      * リソース管理にCloseableオブジェクトを追加
-     * シャットダウン時に自動的にクローズされるようになります
+     * シャットダウン時に自動的にクローズされる
      *
      * @param key      リソースを識別するキー
      * @param resource 管理対象のCloseableリソース
@@ -242,7 +241,7 @@ public class ResourceManager {
 
     /**
      * 全てのリソースを解放
-     * シャットダウン時に呼び出します
+     * シャットダウン時に呼び出す
      *
      * @return 全てのリソースの解放に成功した場合はtrue
      */

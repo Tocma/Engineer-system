@@ -51,7 +51,7 @@ import java.util.logging.*;
  * LogHandler.getInstance().log(LogType.SYSTEM, "システムを起動しました");
  * 
  * // パラメータ付きメッセージ（文字列補間）
- * LogHandler.getInstance().log(LogType.UI, String.format("ユーザー%s（%s）がログインしました", "E001", "山田太郎"));
+ * LogHandler.getInstance().log(LogType.UI, String.format("ユーザー%s（%s）がログインしました", "ID00001", "山田太郎"));
  * 
  * // レベルとTypeを指定したログ出力
  * LogHandler.getInstance().log(Level.WARNING, LogType.SYSTEM, "メモリ使用率が高くなっています");
@@ -66,14 +66,14 @@ import java.util.logging.*;
  * </p>
  * 
  * @author Your Name
- * @version 3.0
- * @since 2025-03-29
+ * @version 2.1.0
+ * @since 2025-04-03
  */
 public class LogHandler {
 
     /**
      * ログの種類を定義するEnum
-     * システム内のログをUIとSYSTEMに分類します
+     * システム内のログをUIとSYSTEMに分類
      */
     public enum LogType {
         /** UIに関連するログ（ユーザーインターフェース操作、画面遷移など） */
@@ -171,7 +171,7 @@ public class LogHandler {
 
     /**
      * ログディレクトリを設定
-     * 指定されたディレクトリが存在しない場合は作成します
+     * 指定されたディレクトリが存在しない場合は作成
      * 
      * @param logDir ログディレクトリのパス
      * @return 作成されたログディレクトリの絶対パス
@@ -188,7 +188,7 @@ public class LogHandler {
 
     /**
      * ロガーの設定
-     * 日付ベースのログファイル名とフォーマットを設定します
+     * 日付ベースのログファイル名とフォーマットを設定
      * 
      * @throws IOException 設定に失敗した場合
      */
@@ -283,7 +283,7 @@ public class LogHandler {
 
     /**
      * エラーログを記録
-     * エラーメッセージと例外情報を記録します
+     * エラーメッセージと例外情報を記録
      * 
      * @param type      ログタイプ (UI または SYSTEM)
      * @param message   エラーメッセージ
@@ -331,7 +331,7 @@ public class LogHandler {
 
     /**
      * ロガーのクリーンアップ
-     * アプリケーション終了時に呼び出して、リソースを適切に解放します
+     * アプリケーション終了時に呼び出して、リソースを適切に解放
      */
     public synchronized void cleanup() {
         if (fileHandler != null) {

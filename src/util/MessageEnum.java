@@ -30,20 +30,20 @@ package util;
  * String errorTitle = MessageEnum.DIALOG_ERROR_TITLE.getMessage();
  * 
  * // パラメータを含むメッセージのフォーマット
- * String addedMsg = MessageEnum.DIALOG_COMPLETION_ENGINEER_ADDED.format("ID001", "山田太郎");
- * // 結果: "エンジニア情報を追加しました: ID=ID001, 名前=山田太郎"
+ * String addedMsg = MessageEnum.DIALOG_COMPLETION_ENGINEER_ADDED.format("ID00001", "山田太郎");
+ * // 結果: "エンジニア情報を追加しました: ID=ID00001, 名前=山田太郎"
  * </pre>
  *
  * @author Nakano
- * @version 2.0.0
- * @since 2025-03-12
+ * @version 2.1.0
+ * @since 2025-04-03
  */
 public enum MessageEnum {
 
     // ----- バリデーションエラーメッセージ -----
     /**
      * 必須項目未入力時のバリデーションエラーメッセージ。
-     * ユーザーに対して必須項目の入力を促すメッセージです。
+     * ユーザーに対して必須項目の入力を促すメッセージ
      */
     VALIDATION_ERROR_REQUIRED("*は必須項目になります"),
 

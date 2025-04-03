@@ -2,7 +2,6 @@ package model;
 
 import util.LogHandler;
 import util.LogHandler.LogType;
-
 import java.util.logging.Level;
 
 /**
@@ -15,8 +14,8 @@ import java.util.logging.Level;
  * </p>
  *
  * @author Nakano
- * @version 2.0.0
- * @since 2025-03-27
+ * @version 2.1.0
+ * @since 2025-04-03
  */
 public abstract class AccessThread implements Runnable {
 

@@ -3,7 +3,6 @@ package view;
 import model.EngineerDTO;
 import util.LogHandler;
 import util.LogHandler.LogType;
-
 import javax.swing.*;
 import javax.swing.table.DefaultTableModel;
 import javax.swing.table.TableRowSorter;
@@ -14,7 +13,7 @@ import java.util.logging.Level;
 
 /**
  * エンジニア一覧を表示するパネルクラス
- * CSVファイルから読み込んだエンジニア情報をテーブル形式で表示します
+ * CSVファイルから読み込んだエンジニア情報をテーブル形式で表示
  *
  * <p>
  * このクラスは、エンジニア人材管理システムの中心的な画面として機能し、
@@ -44,8 +43,8 @@ import java.util.logging.Level;
  * </p>
  *
  * @author Nakano
- * @version 2.0.0
- * @since 2025-03-22
+ * @version 2.1.0
+ * @since 2025-04-03
  */
 public class ListPanel extends JPanel {
 
@@ -325,7 +324,7 @@ public class ListPanel extends JPanel {
 
     /**
      * エンジニアデータの追加
-     * 既存データに新しいエンジニアを追加します
+     * 既存データに新しいエンジニアを追加
      *
      * @param engineer 追加するエンジニア
      */

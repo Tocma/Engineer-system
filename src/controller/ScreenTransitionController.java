@@ -44,8 +44,8 @@ import java.util.logging.Level;
  * </p>
  *
  * @author Nakano
- * @version 2.0.0
- * @since 2025-03-22
+ * @version 2.1.0
+ * @since 2025-04-03
  */
 public class ScreenTransitionController {
 
@@ -66,7 +66,7 @@ public class ScreenTransitionController {
 
     /**
      * コンストラクタ
-     * 初期パネルを作成し、パネルキャッシュを初期化します
+     * 初期パネルを作成し、パネルキャッシュを初期化
      *
      * @param mainFrame メインフレーム
      */

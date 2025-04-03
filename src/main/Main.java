@@ -5,7 +5,6 @@ import util.LogHandler;
 import util.LogHandler.LogType;
 import util.ResourceManager;
 import view.MainFrame;
-
 import javax.swing.SwingUtilities;
 import java.io.IOException;
 import java.util.logging.Level;
@@ -46,8 +45,8 @@ import java.util.logging.Level;
  * </p>
  *
  * @author Nakano
- * @version 2.0.0
- * @since 2025-03-26
+ * @version 2.1.0
+ * @since 2025-04-03
  */
 public class Main {
 
@@ -65,7 +64,7 @@ public class Main {
 
     /**
      * アプリケーションのエントリーポイント
-     * システムの初期化とアプリケーションの起動を行います
+     * システムの初期化とアプリケーションの起動
      *
      * @param args コマンドライン引数（使用しません）
      */

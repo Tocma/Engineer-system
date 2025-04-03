@@ -2,7 +2,6 @@ package view;
 
 import util.LogHandler;
 import util.LogHandler.LogType;
-
 import javax.swing.*;
 import java.awt.*;
 import java.awt.event.WindowAdapter;
@@ -16,7 +15,7 @@ import java.util.logging.Level;
 
 /**
  * アプリケーションのメインウィンドウを管理するクラス
- * パネルの切り替えとスレッド管理を担当します
+ * パネルの切り替えとスレッド管理を担当
  *
  * <p>
  * このクラスは、エンジニア人材管理システムのメインウィンドウとして機能し、以下の責務を持ちます：
@@ -46,8 +45,8 @@ import java.util.logging.Level;
  * </p>
  *
  * @author Nakano
- * @version 2.0.0
- * @since 2025-03-22
+ * @version 2.1.0
+ * @since 2025-04-03
  */
 public class MainFrame extends AbstractFrame {
 
@@ -68,7 +67,7 @@ public class MainFrame extends AbstractFrame {
 
     /**
      * コンストラクタ
-     * メインフレームとスレッドプールを初期化します
+     * メインフレームとスレッドプールを初期化
      */
     public MainFrame() {
         super();
@@ -136,7 +135,7 @@ public class MainFrame extends AbstractFrame {
             // 新しいタスクを受け付けない
             executor.shutdown();
 
-            // 既存タスクが終了するのを待つ
+            // 既存タスクが終了するのを待機
             boolean terminated = executor.awaitTermination(THREAD_TERMINATION_TIMEOUT, TimeUnit.MILLISECONDS);
 
             if (!terminated) {
@@ -250,7 +249,7 @@ public class MainFrame extends AbstractFrame {
 
     /**
      * スレッドを管理対象に登録
-     * アプリケーション終了時に安全に終了されるよう管理します
+     * アプリケーション終了時に安全に終了されるよう管理
      *
      * @param thread 管理対象のスレッド
      */

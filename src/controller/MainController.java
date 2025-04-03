@@ -3,17 +3,14 @@ package controller;
 import model.EngineerDTO;
 import util.LogHandler;
 import util.LogHandler.LogType;
-import util.MessageEnum;
 import util.ResourceManager;
 import view.ListPanel;
 import view.MainFrame;
-
 import java.util.List;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.logging.Level;
-
 import javax.swing.JPanel;
 
 /**
@@ -45,8 +42,8 @@ import javax.swing.JPanel;
  * </p>
  *
  * @author Nakano
- * @version 2.0.0
- * @since 2025-03-22
+ * @version 2.1.0
+ * @since 2025-04-03
  */
 public class MainController {
 
@@ -89,7 +86,7 @@ public class MainController {
 
     /**
      * アプリケーションの初期化
-     * すべてのコンポーネントを初期化し、初期画面を表示します
+     * すべてのコンポーネントを初期化し、初期画面を表示
      */
     public void initialize() {
         try {
@@ -159,7 +156,7 @@ public class MainController {
 
     /**
      * 非同期タスクを開始
-     * タスクをバックグラウンドで実行し、完了時のコールバックを設定します
+     * タスクをバックグラウンドで実行し、完了時のコールバックを設定
      *
      * @param taskId タスク識別子
      * @param task   実行するRunnable
@@ -206,8 +203,9 @@ public class MainController {
                 // 非同期タスクとして保存処理を実行
                 startAsyncTask("SaveData", () -> {
                     try {
-                        engineerController.saveEngineers(engineers);
-                        hasUnsavedChanges = false;
+                        // エンジニアのデータを保存する処理
+                        // engineerController.saveEngineers(engineers);
+                        // hasUnsavedChanges = false;
 
                         // UI更新はSwingのEDTで実行
                         javax.swing.SwingUtilities.invokeLater(() -> {
@@ -294,7 +292,7 @@ public class MainController {
         LogHandler.getInstance().log(Level.INFO, LogType.SYSTEM, "アプリケーションのシャットダウンを開始します");
 
         // 未保存データがあれば保存処理
-        handleUnsavedChanges();
+        // handleUnsavedChanges();
 
         // 実行中のタスクをすべて終了
         terminateRunningTasks();
@@ -305,18 +303,19 @@ public class MainController {
 
     /**
      * 未保存データの処理
+     * private void handleUnsavedChanges() {
+     * if (hasUnsavedChanges) {
+     * try {
+     * // 最終的なデータ保存処理
+     * engineerController.saveCurrentState();
+     * LogHandler.getInstance().log(Level.INFO, LogType.SYSTEM,
+     * "終了前の未保存データを保存しました");
+     * } catch (Exception e) {
+     * LogHandler.getInstance().logError(LogType.SYSTEM, "終了前のデータ保存に失敗しました", e);
+     * }
+     * }
+     * }
      */
-    private void handleUnsavedChanges() {
-        if (hasUnsavedChanges) {
-            try {
-                // 最終的なデータ保存処理
-                engineerController.saveCurrentState();
-                LogHandler.getInstance().log(Level.INFO, LogType.SYSTEM, "終了前の未保存データを保存しました");
-            } catch (Exception e) {
-                LogHandler.getInstance().logError(LogType.SYSTEM, "終了前のデータ保存に失敗しました", e);
-            }
-        }
-    }
 
     /**
      * 実行中のタスクを終了
