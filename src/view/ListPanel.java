@@ -7,40 +7,14 @@ import javax.swing.*;
 import javax.swing.table.DefaultTableModel;
 import javax.swing.table.TableRowSorter;
 import java.awt.*;
+import java.text.DecimalFormat;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.logging.Level;
 
 /**
  * エンジニア一覧を表示するパネルクラス
- * CSVファイルから読み込んだエンジニア情報をテーブル形式で表示
- *
- * <p>
- * このクラスは、エンジニア人材管理システムの中心的な画面として機能し、
- * 全エンジニアの一覧をテーブル形式で表示します。主な機能は以下の通りです：
- * <ul>
- * <li>エンジニア情報の一覧表示</li>
- * <li>ページネーション機能（大量データの効率的な表示）</li>
- * <li>基本的なテーブルのソート機能</li>
- * </ul>
- * </p>
- *
- * <p>
- * 現在の実装では、基本的な一覧表示とページネーション機能のみを提供しています。
- * 将来的な拡張として以下の機能が予定されています：
- * <ul>
- * <li>検索機能</li>
- * <li>CSVエクスポート機能</li>
- * <li>詳細表示機能</li>
- * <li>新規追加機能</li>
- * </ul>
- * </p>
- *
- * <p>
- * このパネルはMVCアーキテクチャのView部分を担当し、
- * ユーザーインターフェースの提供と基本的なユーザー操作の受け付けを行います。
- * データの操作や保存はControllerを介してModelに委譲されます。
- * </p>
+ * ページング、ソート、検索、追加、取込、削除機能
  *
  * @author Nakano
  * @version 2.1.0
@@ -59,6 +33,9 @@ public class ListPanel extends JPanel {
     /** テーブルモデル */
     private final DefaultTableModel tableModel;
 
+    /** 検索フィールド */
+    private final JTextField searchField;
+
     /** ページネーション関連コンポーネント */
     private final JLabel pageLabel;
     private final JButton prevButton;
@@ -73,6 +50,14 @@ public class ListPanel extends JPanel {
     /** 全エンジニアデータ */
     private List<EngineerDTO> allData;
 
+    /** 検索用フィールド */
+    private JTextField idField;
+    private JTextField nameField;
+    private JComboBox<String> yearBox;
+    private JComboBox<String> monthBox;
+    private JComboBox<String> dayBox;
+    private JComboBox<String> careerBox;
+
     /**
      * コンストラクタ
      * パネルの初期化とUIコンポーネントの配置を行います
@@ -86,6 +71,9 @@ public class ListPanel extends JPanel {
         // テーブルモデルとテーブルの作成
         this.tableModel = createTableModel();
         this.table = createTable();
+
+        // 検索フィールド
+        this.searchField = new JTextField(20);
 
         // ページネーションコンポーネント
         this.pageLabel = new JLabel("ページ: 0 / 0");
@@ -150,10 +138,10 @@ public class ListPanel extends JPanel {
         newTable.getColumnModel().getColumn(1).setPreferredWidth(150); // 氏名
         newTable.getColumnModel().getColumn(2).setPreferredWidth(120); // 生年月日
         newTable.getColumnModel().getColumn(3).setPreferredWidth(100); // エンジニア歴
-        newTable.getColumnModel().getColumn(4).setPreferredWidth(300); // 扱える言語
+        newTable.getColumnModel().getColumn(4).setPreferredWidth(500); // 扱える言語
 
-        // 選択モード設定
-        newTable.setSelectionMode(ListSelectionModel.SINGLE_SELECTION);
+        // 選択モード設定 - 複数選択モードに変更
+        newTable.setSelectionMode(ListSelectionModel.MULTIPLE_INTERVAL_SELECTION);
 
         // 行の高さ
         newTable.setRowHeight(25);
@@ -162,20 +150,147 @@ public class ListPanel extends JPanel {
     }
 
     /**
+     * 年のコンボボックス用データを生成
+     * 
+     * @return 年のリスト
+     */
+    private String[] getYears() {
+        String[] years = new String[87];
+        years[0] = "";
+        DecimalFormat df = new DecimalFormat("0");
+        int startYear = 1940; // 1940年から2025年
+        for (int i = 1; i < years.length; i++) {
+            years[i] = df.format(startYear + (i - 1));
+        }
+        return years;
+    }
+
+    /**
+     * 月のコンボボックス用データを生成
+     * 
+     * @return 月のリスト
+     */
+    private String[] getMonths() {
+        String[] months = new String[13]; // 空白 + 1～12の月を追加
+        months[0] = ""; // 最初の選択肢は空白
+        DecimalFormat df = new DecimalFormat("0"); // 小数点なしで整数部分のみを表示
+        for (int i = 1; i <= 12; i++) {
+            months[i] = df.format(i); // 1, 2, ..., 12
+        }
+        return months;
+    }
+
+    /**
+     * 日のコンボボックス用データを生成
+     * 
+     * @return 日のリスト
+     */
+    private String[] getDays() {
+        String[] days = new String[32]; // 空白 + 1～31の日付を追加
+        days[0] = ""; // 最初の選択肢は空白
+        // DecimalFormatを使って整数形式で設定
+        DecimalFormat df = new DecimalFormat("0");
+        for (int i = 1; i <= 31; i++) {
+            days[i] = df.format(i); // 1, 2, ..., 31 を設定
+        }
+        return days;
+    }
+
+    /**
+     * エンジニア歴のコンボボックス用データを生成
+     * 
+     * @return エンジニア歴のリスト
+     */
+    private String[] getCareerYears() {
+        // 0から20までの整数値（計21要素）
+        String[] careers = new String[22]; // 21要素 + 空の選択肢用の1要素
+        // 最初の要素は空（選択なし）
+        careers[0] = "";
+        // DecimalFormatを使用して一貫した表示形式を保証
+        DecimalFormat df = new DecimalFormat("0");
+        // 0から20まで整数値を設定
+        for (int i = 0; i <= 20; i++) {
+            careers[i + 1] = df.format(i);
+        }
+        return careers;
+    }
+
+    /**
      * 上部パネルを作成
      *
      * @return 上部パネル
      */
     private JPanel createTopPanel() {
-        JPanel topPanel = new JPanel(new BorderLayout());
+        JPanel topPanel = new JPanel(new GridLayout(2, 1)); // 2行1列のレイアウト
 
-        // タイトルラベル
-        JLabel titleLabel = new JLabel("エンジニア一覧", JLabel.CENTER);
-        titleLabel.setBorder(BorderFactory.createEmptyBorder(10, 0, 10, 0));
+        // ボタン群パネル（新規追加、取込、テンプレ、出力、削除ボタン）
+        JPanel buttonPanel = new JPanel(new FlowLayout(FlowLayout.LEFT));
 
-        topPanel.add(titleLabel, BorderLayout.CENTER);
+        // 各ボタンをボタンパネルに追加
+        JButton addButton = new JButton("新規追加");
+        addButton.addActionListener(e -> addNewEngineer());
+        buttonPanel.add(addButton);
 
-        // 将来的に検索フィールドや操作ボタンを追加する場所
+        JButton importButton = new JButton("取込");
+        importButton.addActionListener(e -> importData());
+        buttonPanel.add(importButton);
+
+        JButton templateButton = new JButton("テンプレ");
+        templateButton.addActionListener(e -> loadTemplate());
+        buttonPanel.add(templateButton);
+
+        JButton exportButton = new JButton("出力");
+        exportButton.addActionListener(e -> exportData());
+        buttonPanel.add(exportButton);
+
+        JButton deleteButton = new JButton("削除");
+        deleteButton.addActionListener(e -> deleteSelectedRow());
+        buttonPanel.add(deleteButton);
+
+        topPanel.add(buttonPanel); // ボタン群を追加
+
+        // 検索パネル
+        JPanel searchPanel = new JPanel(new FlowLayout(FlowLayout.LEFT));
+
+        // 社員ID（テキストボックス）ラベル
+        searchPanel.add(new JLabel("社員ID:"));
+        idField = new JTextField(10);
+        searchPanel.add(idField);
+
+        // 氏名（テキストボックス）
+        searchPanel.add(new JLabel("氏名:"));
+        nameField = new JTextField(10);
+        searchPanel.add(nameField);
+
+        // 生年月日（プルダウン 年・月・日）
+        searchPanel.add(new JLabel("生年月日:"));
+        yearBox = new JComboBox<>(getYears());
+        monthBox = new JComboBox<>(getMonths());
+        dayBox = new JComboBox<>(getDays());
+        searchPanel.add(yearBox);
+        searchPanel.add(new JLabel("年"));
+        searchPanel.add(monthBox);
+        searchPanel.add(new JLabel("月"));
+        searchPanel.add(dayBox);
+        searchPanel.add(new JLabel("日"));
+
+        // エンジニア歴（プルダウン）
+        searchPanel.add(new JLabel("エンジニア歴:"));
+        careerBox = new JComboBox<>(getCareerYears());
+        searchPanel.add(careerBox);
+
+        // 検索ボタン
+        JButton searchButton = new JButton("検索");
+        searchButton.addActionListener(e -> search(
+                idField.getText(),
+                nameField.getText(),
+                yearBox.getSelectedItem().toString(),
+                monthBox.getSelectedItem().toString(),
+                dayBox.getSelectedItem().toString(),
+                careerBox.getSelectedItem().toString()));
+        searchPanel.add(searchButton);
+
+        topPanel.add(searchPanel); // 検索パネルを追加
 
         return topPanel;
     }
@@ -208,6 +323,113 @@ public class ListPanel extends JPanel {
     }
 
     /**
+     * 検索条件に基づいてデータをフィルタリング
+     * 
+     * @param id     社員ID
+     * @param name   氏名
+     * @param year   生年月日（年）
+     * @param month  生年月日（月）
+     * @param day    生年月日（日）
+     * @param career エンジニア歴
+     */
+    private void search(String id, String name, String year, String month, String day, String career) {
+        List<EngineerDTO> filteredData = new ArrayList<>();
+
+        for (EngineerDTO engineer : allData) {
+            boolean matches = true;
+
+            // IDと名前での一致をmatchesSearchメソッドを使ってチェック
+            if (!id.isEmpty() && !matchesSearch(engineer, id)) {
+                matches = false;
+            }
+
+            if (!name.isEmpty() && !matchesSearch(engineer, name)) {
+                matches = false;
+            }
+
+            // 生年月日チェック
+            if (engineer.getBirthDate() != null) {
+                String birthDateStr = engineer.getBirthDate().toString();
+
+                if (!year.isEmpty() && !birthDateStr.startsWith(year)) {
+                    matches = false;
+                }
+
+                if (!month.isEmpty()) {
+                    // 月の部分を確認 (YYYY-MM-DD 形式の場合、5-7文字目)
+                    String monthPart = month.length() == 1 ? "0" + month : month;
+                    if (!birthDateStr.substring(5, 7).equals(monthPart)) {
+                        matches = false;
+                    }
+                }
+
+                if (!day.isEmpty()) {
+                    // 日の部分を確認 (YYYY-MM-DD 形式の場合、8-10文字目)
+                    String dayPart = day.length() == 1 ? "0" + day : day;
+                    if (!birthDateStr.substring(8, 10).equals(dayPart)) {
+                        matches = false;
+                    }
+                }
+            } else if (!year.isEmpty() || !month.isEmpty() || !day.isEmpty()) {
+                // 生年月日がnullで、かつ検索条件が指定されている場合
+                matches = false;
+            }
+
+            // エンジニア歴チェック
+            if (!career.isEmpty()) {
+                double careerValue = engineer.getCareer();
+                try {
+                    double searchCareer = Double.parseDouble(career);
+                    if (careerValue != searchCareer) {
+                        matches = false;
+                    }
+                } catch (NumberFormatException e) {
+                    // 数値変換エラーは無視
+                }
+            }
+
+            // 条件を満たす場合にリストに追加
+            if (matches) {
+                filteredData.add(engineer);
+            }
+        }
+
+        // 現在のページを1にリセット
+        currentPage = 1;
+
+        // テーブルを更新
+        updateTableForData(filteredData);
+        updatePageLabel(filteredData.size());
+
+        LogHandler.getInstance().log(Level.INFO, LogType.UI,
+                String.format("検索実行: %d件のデータがヒット", filteredData.size()));
+    }
+
+    /**
+     * 検索文字列との一致を確認
+     * 
+     * @param engineer   エンジニア情報
+     * @param searchText 検索文字列
+     * @return 一致する場合はtrue
+     */
+    private boolean matchesSearch(EngineerDTO engineer, String searchText) {
+        if (searchText == null || searchText.isEmpty()) {
+            return true;
+        }
+
+        String searchLower = searchText.toLowerCase();
+
+        // IDと名前での検索
+        boolean idMatch = engineer.getId() != null &&
+                engineer.getId().toLowerCase().contains(searchLower);
+
+        boolean nameMatch = engineer.getName() != null &&
+                engineer.getName().toLowerCase().contains(searchLower);
+
+        return idMatch || nameMatch;
+    }
+
+    /**
      * ページを切り替え
      *
      * @param delta ページ変化量（前：-1、次：+1）
@@ -226,7 +448,7 @@ public class ListPanel extends JPanel {
         updatePageLabel();
         updatePaginationButtons();
 
-        LogHandler.getInstance().log(Level.INFO, LogType.SYSTEM,
+        LogHandler.getInstance().log(Level.INFO, LogType.UI,
                 String.format("ページを切り替えました: %d / %d", currentPage, totalPages));
     }
 
@@ -245,6 +467,16 @@ public class ListPanel extends JPanel {
     private void updatePageLabel() {
         int totalPages = calculateTotalPages();
         pageLabel.setText(String.format("ページ: %d / %d", currentPage, totalPages));
+    }
+
+    /**
+     * 指定したデータ数のページラベルを更新
+     * 
+     * @param dataSize データ数
+     */
+    private void updatePageLabel(int dataSize) {
+        int totalPages = (int) Math.ceil((double) dataSize / pageSize);
+        pageLabel.setText(String.format("ページ: %d / %d", currentPage, Math.max(1, totalPages)));
     }
 
     /**
@@ -272,6 +504,30 @@ public class ListPanel extends JPanel {
             EngineerDTO engineer = allData.get(i);
             addEngineerToTable(engineer);
         }
+    }
+
+    /**
+     * 指定されたデータでテーブルを更新
+     * 
+     * @param data 表示するデータリスト
+     */
+    private void updateTableForData(List<EngineerDTO> data) {
+        // テーブルデータのクリア
+        tableModel.setRowCount(0);
+
+        // 表示範囲の計算
+        int startIndex = (currentPage - 1) * pageSize;
+        int endIndex = Math.min(startIndex + pageSize, data.size());
+
+        // データの追加
+        for (int i = startIndex; i < endIndex; i++) {
+            EngineerDTO engineer = data.get(i);
+            addEngineerToTable(engineer);
+        }
+
+        // ページネーションボタンの更新
+        prevButton.setEnabled(currentPage > 1);
+        nextButton.setEnabled(currentPage < Math.ceil((double) data.size() / pageSize));
     }
 
     /**
@@ -324,7 +580,7 @@ public class ListPanel extends JPanel {
 
     /**
      * エンジニアデータの追加
-     * 既存データに新しいエンジニアを追加
+     * 既存データに新しいエンジニアを追加します
      *
      * @param engineer 追加するエンジニア
      */
@@ -379,6 +635,38 @@ public class ListPanel extends JPanel {
     }
 
     /**
+     * 現在選択されているエンジニアリストを取得
+     *
+     * @return 選択されているエンジニアリスト、未選択時は空リスト
+     */
+    public List<EngineerDTO> getSelectedEngineers() {
+        int[] selectedRows = table.getSelectedRows();
+        List<EngineerDTO> selectedEngineers = new ArrayList<>();
+
+        if (selectedRows.length == 0) {
+            return selectedEngineers;
+        }
+
+        // 現在のページの先頭インデックス
+        int startIndex = (currentPage - 1) * pageSize;
+
+        for (int selectedRow : selectedRows) {
+            // 選択行のモデル上のインデックスに変換
+            int modelRow = table.convertRowIndexToModel(selectedRow);
+
+            // データリスト上のインデックス
+            int dataIndex = startIndex + modelRow;
+
+            // インデックスが有効範囲内かチェック
+            if (dataIndex >= 0 && dataIndex < allData.size()) {
+                selectedEngineers.add(allData.get(dataIndex));
+            }
+        }
+
+        return selectedEngineers;
+    }
+
+    /**
      * テーブルのデータを更新
      */
     public void refreshTable() {
@@ -419,5 +707,53 @@ public class ListPanel extends JPanel {
      */
     public JTable getTable() {
         return table;
+    }
+
+    /**
+     * 新規追加ボタンのイベントハンドラ
+     */
+    private void addNewEngineer() {
+        LogHandler.getInstance().log(Level.INFO, LogType.UI, "新規追加ボタンが押されました");
+        // ここに新規追加処理を実装する（TODO）
+    }
+
+    /**
+     * 取込ボタンのイベントハンドラ
+     */
+    private void importData() {
+        LogHandler.getInstance().log(Level.INFO, LogType.UI, "取込ボタンが押されました");
+        // ここにデータ取込処理を実装する（TODO）
+    }
+
+    /**
+     * テンプレボタンのイベントハンドラ
+     */
+    private void loadTemplate() {
+        LogHandler.getInstance().log(Level.INFO, LogType.UI, "テンプレートボタンが押されました");
+        // ここにテンプレート読み込み処理を実装する（TODO）
+    }
+
+    /**
+     * 出力ボタンのイベントハンドラ
+     */
+    private void exportData() {
+        LogHandler.getInstance().log(Level.INFO, LogType.UI, "出力ボタンが押されました");
+        // ここにエクスポート処理を実装する（TODO）
+    }
+
+    /**
+     * 削除ボタンのイベントハンドラ
+     */
+    private void deleteSelectedRow() {
+        int[] selectedRows = table.getSelectedRows();
+        if (selectedRows.length > 0) {
+            // 選択されたエンジニアリストを取得
+            List<EngineerDTO> selectedEngineers = getSelectedEngineers();
+
+            // 実際の削除は Controller に委譲する予定
+            // 現在はメッセージのみログに記録
+            LogHandler.getInstance().log(Level.INFO, LogType.UI,
+                    String.format("%d件の行が削除対象に選択されました", selectedRows.length));
+        }
     }
 }
