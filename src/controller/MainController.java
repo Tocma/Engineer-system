@@ -5,6 +5,7 @@ import util.LogHandler;
 import util.LogHandler.LogType;
 import util.MessageEnum;
 import util.ResourceManager;
+import view.ListPanel;
 import view.MainFrame;
 
 import java.util.List;
@@ -12,6 +13,8 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.logging.Level;
+
+import javax.swing.JPanel;
 
 /**
  * アプリケーションのメインコントローラー
@@ -233,7 +236,11 @@ public class MainController {
 
                 // UI更新はSwingのEDTで実行
                 javax.swing.SwingUtilities.invokeLater(() -> {
-                    // エンジニアデータをビューに設定する処理を実装
+                    // ListPanelを取得してエンジニアデータを設定
+                    JPanel currentPanel = screenController.getCurrentPanel();
+                    if (currentPanel instanceof ListPanel) {
+                        ((ListPanel) currentPanel).setEngineerData(engineers);
+                    }
                     screenController.refreshView();
                 });
 
