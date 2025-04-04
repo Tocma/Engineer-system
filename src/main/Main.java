@@ -1,6 +1,7 @@
 package main;
 
 import controller.MainController;
+import test.TestCoreSystem;
 import util.LogHandler;
 import util.LogHandler.LogType;
 import util.ResourceManager;
@@ -44,9 +45,22 @@ import java.util.logging.Level;
  * </ol>
  * </p>
  *
+ * <p>
+ * 2025-04-03 追加: テストモードの実装
+ * コマンドライン引数を使用してテストモードで起動できるようになりました。
+ * 例：
+ * 
+ * <pre>
+ * java -cp bin main.Main --test=startup
+ * java -cp bin main.Main --test=shutdown
+ * java -cp bin main.Main --test=csv
+ * java -cp bin main.Main --test=all
+ * </pre>
+ * </p>
+ *
  * @author Nakano
- * @version 2.1.0
- * @since 2025-04-03
+ * @version 3.0.0
+ * @since 2025-04-04
  */
 public class Main {
 
@@ -66,9 +80,15 @@ public class Main {
      * アプリケーションのエントリーポイント
      * システムの初期化とアプリケーションの起動
      *
-     * @param args コマンドライン引数（使用しません）
+     * @param args コマンドライン引数
      */
     public static void main(String[] args) {
+        // テストモードの確認
+        if (isTestMode(args)) {
+            runTestMode(args);
+            return;
+        }
+
         try {
             // ログシステムの初期化（最優先）
             initializeLogger();
@@ -84,6 +104,44 @@ public class Main {
 
         } catch (Exception e) {
             handleFatalError(e);
+        }
+    }
+
+    /**
+     * コマンドライン引数からテストモードかどうかを判定
+     * 
+     * @param args コマンドライン引数
+     * @return テストモードの場合true
+     */
+    private static boolean isTestMode(String[] args) {
+        if (args == null || args.length == 0) {
+            return false;
+        }
+
+        for (String arg : args) {
+            if (arg.startsWith("--test=")) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    /**
+     * テストモードでアプリケーションを実行
+     * 
+     * @param args コマンドライン引数
+     */
+    private static void runTestMode(String[] args) {
+        System.out.println("テストモードで起動します...");
+
+        try {
+            // テストシステムを初期化して実行
+            TestCoreSystem.main(args);
+        } catch (Exception e) {
+            System.err.println("テスト実行中にエラーが発生しました: " + e.getMessage());
+            e.printStackTrace();
+            System.exit(1);
         }
     }
 

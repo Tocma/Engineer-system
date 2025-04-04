@@ -17,8 +17,8 @@ import java.util.logging.Level;
  * ページング、ソート、検索、追加、取込、削除機能
  *
  * @author Nakano
- * @version 2.1.0
- * @since 2025-04-03
+ * @version 3.0.0
+ * @since 2025-04-04
  */
 public class ListPanel extends JPanel {
 

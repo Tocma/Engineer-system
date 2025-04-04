@@ -65,9 +65,9 @@ import java.util.logging.*;
  * </pre>
  * </p>
  * 
- * @author Your Name
- * @version 2.1.0
- * @since 2025-04-03
+ * @author Nakano
+ * @version 3.0.0
+ * @since 2025-04-04
  */
 public class LogHandler {
 
