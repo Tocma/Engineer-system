@@ -282,7 +282,7 @@ public class EngineerCSVDAO implements EngineerDAO {
 
             // 数値の変換
             if (!line[5].isEmpty()) {
-                builder.setCareer(Double.parseDouble(line[5]));
+                builder.setCareer(Integer.parseInt(line[5]));
             }
 
             // リストの変換（カンマ区切り文字列をリストに）

@@ -610,7 +610,7 @@ public class AddPanel extends AbstractEngineerPanel {
         String careerText = (String) careerComboBox.getSelectedItem();
         if (careerText != null && !careerText.isEmpty()) {
             try {
-                double career = Double.parseDouble(careerText);
+                int career = Integer.parseInt(careerText);
                 builder.setCareer(career);
             } catch (NumberFormatException e) {
                 builder.setCareer(0);
@@ -932,8 +932,15 @@ public class AddPanel extends AbstractEngineerPanel {
      * コントローラーを通じて画面遷移を行う
      */
     private void goBack() {
+        // 入力フィールドをクリア
+        clearFields();
+
         if (mainController != null) {
             mainController.handleEvent("CHANGE_PANEL", "LIST");
+            LogHandler.getInstance().log(Level.INFO, LogType.UI, "一覧画面に戻ります");
+        } else {
+            LogHandler.getInstance().log(Level.WARNING, LogType.UI,
+                    "MainControllerが設定されていないため画面遷移できません");
         }
     }
 

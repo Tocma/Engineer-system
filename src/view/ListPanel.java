@@ -384,9 +384,10 @@ public class ListPanel extends JPanel {
 
             // エンジニア歴チェック
             if (!career.isEmpty()) {
-                double careerValue = engineer.getCareer();
+                // intに変更
+                int careerValue = engineer.getCareer();
                 try {
-                    double searchCareer = Double.parseDouble(career);
+                    int searchCareer = Integer.parseInt(career);
                     if (careerValue != searchCareer) {
                         matches = false;
                     }

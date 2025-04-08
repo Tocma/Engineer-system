@@ -149,7 +149,7 @@ public class EngineerBuilder {
      * @param career エンジニア歴（必須）
      * @return このビルダーインスタンス
      */
-    public EngineerBuilder setCareer(double career) {
+    public EngineerBuilder setCareer(int career) {
         engineer.setCareer(career);
         return this;
     }

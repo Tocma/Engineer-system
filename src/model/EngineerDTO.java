@@ -40,7 +40,7 @@ public class EngineerDTO {
     private String nameKana; // フリガナ
     private LocalDate birthDate; // 生年月日
     private LocalDate joinDate; // 入社年月
-    private double career; // エンジニア歴
+    private int career; // エンジニア歴をintに変更
     private List<String> programmingLanguages; // 扱える言語
 
     // 任意フィールド
@@ -162,7 +162,7 @@ public class EngineerDTO {
      * 
      * @return エンジニア歴（年数）
      */
-    public double getCareer() {
+    public int getCareer() {
         return career;
     }
 
@@ -171,7 +171,7 @@ public class EngineerDTO {
      * 
      * @param career エンジニア歴（年数）
      */
-    public void setCareer(double career) {
+    public void setCareer(int career) {
         this.career = career;
     }
 
