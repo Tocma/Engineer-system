@@ -1,45 +1,55 @@
 package model;
 
+import view.DialogManager;
 import util.LogHandler;
 import util.LogHandler.LogType;
 import java.io.*;
 import java.nio.charset.StandardCharsets;
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.List;
-import java.util.concurrent.locks.ReadWriteLock;
-import java.util.concurrent.locks.ReentrantReadWriteLock;
+import java.time.format.DateTimeParseException;
+import java.util.*;
 import java.util.logging.Level;
+import java.util.stream.Collectors;
 
 /**
- * CSVファイルによるエンジニア情報のデータアクセスを実装するクラス
- * EngineerDAOインターフェースを実装し、CSVファイルを使用したデータ永続化を提供
+ * CSVファイルを使用したエンジニア情報のデータアクセスを実装するクラス
+ * EngineerDAOインターフェースを実装し、CSVファイルを使用したデータ永続化を提供します
  *
  * <p>
- * このクラスは、CSVファイルを使用してエンジニア情報のCRUD操作を実現します：
+ * このクラスは、CSVファイルを使用してエンジニア情報のCRUD操作を実現します。
+ * 主要な責務として以下があります：
  * <ul>
- * <li>ファイル読み書きの処理</li>
- * <li>CSVデータとDTOオブジェクトの相互変換</li>
- * <li>同時アクセス制御</li>
+ * <li>エンジニア情報の取得 (findAll, findById)</li>
+ * <li>エンジニア情報の保存 (save)</li>
+ * <li>エンジニア情報の更新 (update)</li>
+ * <li>エンジニア情報の削除 (delete)</li>
+ * <li>CSVファイルとDTOオブジェクト間の相互変換</li>
+ * <li>CSVファイル読み込み時の重複ID処理</li>
+ * <li>バリデーションエラーの処理と結果管理</li>
  * </ul>
  * </p>
  *
+ * <p>
+ * CSVファイル読み込み時に重複IDが検出された場合は、ユーザーに上書き確認ダイアログを表示し、
+ * ユーザーの選択に応じて上書き処理または保持処理を行います。また、バリデーションエラーが
+ * 発生した場合は、エラー情報を収集して適切なフィードバックを提供します。
+ * </p>
+ *
+ * <p>
+ * この実装では、CSVFileAccessクラスを使用してCSVファイルの読み書き操作を行い、
+ * それを元にエンジニア情報のデータアクセス機能を提供します。非同期処理と同時アクセス制御も
+ * 備えており、複数のスレッドからの安全なアクセスをサポートします。
+ * </p>
+ *
  * @author Nakano
- * @version 2.1.0
- * @since 2025-04-03
+ * @version 4.0.0
+ * @since 2025-04-08
  */
 public class EngineerCSVDAO implements EngineerDAO {
 
     /** CSVファイルパス */
     private final String csvFilePath;
-
-    /** 同時アクセス制御用のロック */
-    private final ReadWriteLock lock;
 
     /** 日付フォーマット */
     private static final DateTimeFormatter DATE_FORMATTER = DateTimeFormatter.ISO_LOCAL_DATE;
@@ -51,6 +61,9 @@ public class EngineerCSVDAO implements EngineerDAO {
             "technicalSkill", "learningAttitude", "communicationSkill",
             "leadership", "note", "registeredDate"
     };
+
+    /** DialogManagerインスタンス */
+    private final DialogManager dialogManager;
 
     /**
      * コンストラクタ
@@ -67,7 +80,7 @@ public class EngineerCSVDAO implements EngineerDAO {
      */
     public EngineerCSVDAO(String csvFilePath) {
         this.csvFilePath = csvFilePath;
-        this.lock = new ReentrantReadWriteLock();
+        this.dialogManager = DialogManager.getInstance();
 
         // CSVファイルの存在確認、なければ作成
         checkAndCreateCsvFile();
@@ -75,21 +88,31 @@ public class EngineerCSVDAO implements EngineerDAO {
 
     /**
      * CSVファイルの存在確認と作成
+     * ファイルが存在しない場合は、ヘッダー行を含む新しいファイルを作成
      */
     private void checkAndCreateCsvFile() {
-        Path path = Paths.get(csvFilePath);
-        if (!Files.exists(path)) {
-            try {
-                // 親ディレクトリがなければ作成
-                Files.createDirectories(path.getParent());
+        File file = new File(csvFilePath);
 
-                // ヘッダー行を書き込む
-                try (BufferedWriter writer = Files.newBufferedWriter(path, StandardCharsets.UTF_8)) {
-                    writer.write(String.join(",", CSV_HEADERS));
-                    writer.newLine();
+        if (!file.exists()) {
+            File parentDir = file.getParentFile();
+
+            // 親ディレクトリが存在しない場合は作成
+            if (parentDir != null && !parentDir.exists()) {
+                boolean dirCreated = parentDir.mkdirs();
+                if (!dirCreated) {
+                    LogHandler.getInstance().log(Level.WARNING, LogType.SYSTEM,
+                            "CSVファイルの親ディレクトリを作成できませんでした: " + parentDir.getPath());
                 }
+            }
 
-                LogHandler.getInstance().log(Level.INFO, LogType.SYSTEM, csvFilePath);
+            // ヘッダー行のみを持つCSVファイルを作成
+            try (BufferedWriter writer = new BufferedWriter(
+                    new OutputStreamWriter(new FileOutputStream(file), StandardCharsets.UTF_8))) {
+                writer.write(String.join(",", CSV_HEADERS));
+                writer.newLine();
+
+                LogHandler.getInstance().log(Level.INFO, LogType.SYSTEM,
+                        "CSVファイルを新規作成しました: " + file.getPath());
             } catch (IOException e) {
                 LogHandler.getInstance().logError(LogType.SYSTEM, "CSVファイルの作成に失敗しました", e);
             }
@@ -98,23 +121,24 @@ public class EngineerCSVDAO implements EngineerDAO {
 
     @Override
     public List<EngineerDTO> findAll() {
-        List<EngineerDTO> engineers = new ArrayList<>();
-        List<String[]> csvData = readCSV();
+        try {
+            // CSVファイルの読み込み
+            CSVAccessResult result = readCSV();
 
-        // ヘッダー行をスキップ（最初の行）
-        for (int i = 1; i < csvData.size(); i++) {
-            String[] line = csvData.get(i);
-            try {
-                EngineerDTO engineer = convertToDTO(line);
-                if (engineer != null) {
-                    engineers.add(engineer);
-                }
-            } catch (Exception e) {
-                LogHandler.getInstance().logError(LogType.SYSTEM, "CSV行の変換に失敗しました: 行=" + i, e);
+            // 致命的エラーがあれば空リストを返す
+            if (result.isFatalError()) {
+                LogHandler.getInstance().log(Level.WARNING, LogType.SYSTEM,
+                        "エンジニアデータの読み込みに失敗しました: " + result.getErrorMessage());
+                return new ArrayList<>();
             }
-        }
 
-        return engineers;
+            // 正常に読み込まれたデータを返す
+            return result.getSuccessData();
+
+        } catch (Exception e) {
+            LogHandler.getInstance().logError(LogType.SYSTEM, "エンジニアリストの取得に失敗しました", e);
+            return new ArrayList<>();
+        }
     }
 
     @Override
@@ -123,22 +147,23 @@ public class EngineerCSVDAO implements EngineerDAO {
             return null;
         }
 
-        List<String[]> csvData = readCSV();
+        try {
+            // すべてのエンジニアデータを取得
+            List<EngineerDTO> engineers = findAll();
 
-        // ヘッダー行をスキップしてデータを検索
-        for (int i = 1; i < csvData.size(); i++) {
-            String[] line = csvData.get(i);
-            if (line.length > 0 && id.equals(line[0])) {
-                try {
-                    return convertToDTO(line);
-                } catch (Exception e) {
-                    LogHandler.getInstance().logError(LogType.SYSTEM, "CSV行の変換に失敗しました: ID=" + id, e);
-                    return null;
+            // 指定されたIDと一致するエンジニアを検索
+            for (EngineerDTO engineer : engineers) {
+                if (id.equals(engineer.getId())) {
+                    return engineer;
                 }
             }
-        }
 
-        return null;
+            return null;
+
+        } catch (Exception e) {
+            LogHandler.getInstance().logError(LogType.SYSTEM, "IDによるエンジニア検索に失敗しました: " + id, e);
+            return null;
+        }
     }
 
     @Override
@@ -147,13 +172,24 @@ public class EngineerCSVDAO implements EngineerDAO {
             throw new IllegalArgumentException("エンジニア情報がnullです");
         }
 
-        List<String[]> csvData = readCSV();
+        try {
+            // 現在のCSVデータを読み込み
+            CSVAccessResult currentData = readCSV();
+            List<EngineerDTO> engineers = new ArrayList<>(currentData.getSuccessData());
 
-        // 新しい行を追加
-        csvData.add(convertToCSV(engineer));
+            // 新しいエンジニアを追加
+            engineers.add(engineer);
 
-        // CSVファイルに書き込み
-        writeCSV(csvData);
+            // CSVに書き込み
+            writeCSV(engineers);
+
+            LogHandler.getInstance().log(Level.INFO, LogType.SYSTEM,
+                    String.format("エンジニア情報を保存しました: ID=%s, 名前=%s", engineer.getId(), engineer.getName()));
+
+        } catch (Exception e) {
+            LogHandler.getInstance().logError(LogType.SYSTEM, "エンジニア情報の保存に失敗しました", e);
+            throw new RuntimeException("エンジニア情報の保存に失敗しました", e);
+        }
     }
 
     @Override
@@ -162,26 +198,36 @@ public class EngineerCSVDAO implements EngineerDAO {
             throw new IllegalArgumentException("エンジニア情報がnullです");
         }
 
-        List<String[]> csvData = readCSV();
-        boolean updated = false;
+        try {
+            // 現在のCSVデータを読み込み
+            CSVAccessResult currentData = readCSV();
+            List<EngineerDTO> engineers = new ArrayList<>(currentData.getSuccessData());
+            boolean updated = false;
 
-        // IDに一致する行を探して更新
-        for (int i = 1; i < csvData.size(); i++) {
-            String[] line = csvData.get(i);
-            if (line.length > 0 && engineer.getId().equals(line[0])) {
-                csvData.set(i, convertToCSV(engineer));
-                updated = true;
-                break;
+            // 更新対象のエンジニアを探して更新
+            for (int i = 0; i < engineers.size(); i++) {
+                if (engineer.getId().equals(engineers.get(i).getId())) {
+                    engineers.set(i, engineer);
+                    updated = true;
+                    break;
+                }
             }
-        }
 
-        // 一致する行がなければ追加
-        if (!updated) {
-            csvData.add(convertToCSV(engineer));
-        }
+            // 更新対象が見つからない場合は追加
+            if (!updated) {
+                engineers.add(engineer);
+            }
 
-        // CSVファイルに書き込み
-        writeCSV(csvData);
+            // CSVに書き込み
+            writeCSV(engineers);
+
+            LogHandler.getInstance().log(Level.INFO, LogType.SYSTEM,
+                    String.format("エンジニア情報を更新しました: ID=%s, 名前=%s", engineer.getId(), engineer.getName()));
+
+        } catch (Exception e) {
+            LogHandler.getInstance().logError(LogType.SYSTEM, "エンジニア情報の更新に失敗しました", e);
+            throw new RuntimeException("エンジニア情報の更新に失敗しました", e);
+        }
     }
 
     @Override
@@ -190,180 +236,507 @@ public class EngineerCSVDAO implements EngineerDAO {
             throw new IllegalArgumentException("IDがnullまたは空です");
         }
 
-        List<String[]> csvData = readCSV();
+        try {
+            // 現在のCSVデータを読み込み
+            CSVAccessResult currentData = readCSV();
+            List<EngineerDTO> engineers = new ArrayList<>(currentData.getSuccessData());
 
-        // IDに一致する行を削除
-        csvData.removeIf(line -> line.length > 0 && id.equals(line[0]));
+            // 削除対象のエンジニアを探して削除
+            engineers.removeIf(engineer -> id.equals(engineer.getId()));
 
-        // CSVファイルに書き込み
-        writeCSV(csvData);
+            // CSVに書き込み
+            writeCSV(engineers);
+
+            LogHandler.getInstance().log(Level.INFO, LogType.SYSTEM, "エンジニア情報を削除しました: ID=" + id);
+
+        } catch (Exception e) {
+            LogHandler.getInstance().logError(LogType.SYSTEM, "エンジニア情報の削除に失敗しました: ID=" + id, e);
+            throw new RuntimeException("エンジニア情報の削除に失敗しました", e);
+        }
     }
 
     /**
-     * CSVファイルからデータを読み込む
+     * エラーリストをCSVファイルにエクスポート
+     * 読み込み時に発生したエラーリストを別CSVファイルに出力
      * 
-     * @return CSV行データのリスト
+     * @param errorList エクスポートするエラーデータリスト
+     * @param filePath  出力するCSVファイルパス
+     * @return エクスポート成功の場合はtrue
      */
-    private List<String[]> readCSV() {
-        List<String[]> data = new ArrayList<>();
-
-        lock.readLock().lock();
-        try {
-            Path path = Paths.get(csvFilePath);
-            if (!Files.exists(path)) {
-                return data;
-            }
-
-            List<String> lines = Files.readAllLines(path, StandardCharsets.UTF_8);
-            for (String line : lines) {
-                // カンマでスプリットする際に、空フィールドも保持
-                String[] values = line.split(",", -1);
-                data.add(values);
-            }
-        } catch (IOException e) {
-            LogHandler.getInstance().logError(LogType.SYSTEM, "CSVファイルの読み込みに失敗しました", e);
-        } finally {
-            lock.readLock().unlock();
+    public boolean exportErrorList(List<EngineerDTO> errorList, String filePath) {
+        if (errorList == null || errorList.isEmpty()) {
+            return false;
         }
 
-        return data;
+        try {
+            // ヘッダー行の追加
+            List<String> csvLines = new ArrayList<>();
+            csvLines.add(String.join(",", CSV_HEADERS));
+
+            // エラーリストをCSV形式に変換
+            for (EngineerDTO engineer : errorList) {
+                csvLines.add(convertToCSV(engineer));
+            }
+
+            // CSVファイルに書き込み
+            File file = new File(filePath);
+            CSVAccess csvAccess = new CSVAccess("write", csvLines, file);
+            csvAccess.execute();
+
+            // 結果を取得
+            Object result = csvAccess.getResult();
+            boolean success = result instanceof Boolean && (Boolean) result;
+
+            if (success) {
+                LogHandler.getInstance().log(Level.INFO, LogType.SYSTEM,
+                        "エラーリストをCSVファイルに出力しました: " + filePath);
+            } else {
+                LogHandler.getInstance().log(Level.WARNING, LogType.SYSTEM,
+                        "エラーリストのCSV出力に失敗しました: " + filePath);
+            }
+
+            return success;
+
+        } catch (Exception e) {
+            LogHandler.getInstance().logError(LogType.SYSTEM, "エラーリストのCSV出力中にエラーが発生しました", e);
+            return false;
+        }
     }
 
     /**
-     * CSVファイルにデータを書き込む
+     * CSVファイルにエンジニアデータをエクスポート
+     * エンジニアリストをCSVファイルに出力
      * 
-     * @param data CSV行データのリスト
+     * @param engineerList エクスポートするエンジニアデータリスト
+     * @param filePath     出力するCSVファイルパス
+     * @return エクスポート成功の場合はtrue
      */
-    private void writeCSV(List<String[]> data) {
-        lock.writeLock().lock();
+    public boolean exportCSV(List<EngineerDTO> engineerList, String filePath) {
+        if (engineerList == null || engineerList.isEmpty()) {
+            return false;
+        }
+
         try {
-            Path path = Paths.get(csvFilePath);
-            try (BufferedWriter writer = Files.newBufferedWriter(path, StandardCharsets.UTF_8)) {
-                for (String[] line : data) {
-                    writer.write(String.join(",", line));
-                    writer.newLine();
+            // ヘッダー行の追加
+            List<String> csvLines = new ArrayList<>();
+            csvLines.add(String.join(",", CSV_HEADERS));
+
+            // エンジニアリストをCSV形式に変換
+            for (EngineerDTO engineer : engineerList) {
+                csvLines.add(convertToCSV(engineer));
+            }
+
+            // CSVファイルに書き込み
+            File file = new File(filePath);
+            CSVAccess csvAccess = new CSVAccess("write", csvLines, file);
+            csvAccess.execute();
+
+            // 結果を取得
+            Object result = csvAccess.getResult();
+            boolean success = result instanceof Boolean && (Boolean) result;
+
+            if (success) {
+                LogHandler.getInstance().log(Level.INFO, LogType.SYSTEM,
+                        "エンジニアデータをCSVファイルに出力しました: " + filePath);
+            } else {
+                LogHandler.getInstance().log(Level.WARNING, LogType.SYSTEM,
+                        "エンジニアデータのCSV出力に失敗しました: " + filePath);
+            }
+
+            return success;
+
+        } catch (Exception e) {
+            LogHandler.getInstance().logError(LogType.SYSTEM, "エンジニアデータのCSV出力中にエラーが発生しました", e);
+            return false;
+        }
+    }
+
+    /**
+     * CSVファイルを読み込み
+     * CSVファイルからエンジニアデータを読み込み、重複ID処理を行う
+     * 
+     * @return CSV読み込み結果
+     */
+    public CSVAccessResult readCSV() {
+        try {
+            // CSVファイルを読み込み
+            File file = new File(csvFilePath);
+            CSVAccess csvAccess = new CSVAccess("read", null, file);
+            csvAccess.execute();
+
+            // CSVAccessの結果を取得
+            Object result = csvAccess.getResult();
+
+            if (result instanceof CSVAccessResult) {
+                CSVAccessResult accessResult = (CSVAccessResult) result;
+
+                // 重複IDの処理
+                if (accessResult.hasDuplicateIds() && !accessResult.isOverwriteConfirmed()) {
+                    handleDuplicateIds(accessResult);
                 }
+
+                return accessResult;
+            } else {
+                LogHandler.getInstance().log(Level.WARNING, LogType.SYSTEM,
+                        "CSV読み込み結果が不正な形式です: " + (result != null ? result.getClass().getName() : "null"));
+                return new CSVAccessResult(new ArrayList<>(), new ArrayList<>(), true, "CSV読み込み結果が不正な形式です");
             }
-        } catch (IOException e) {
-            LogHandler.getInstance().logError(LogType.SYSTEM, "CSVファイルの書き込みに失敗しました", e);
-        } finally {
-            lock.writeLock().unlock();
+
+        } catch (Exception e) {
+            LogHandler.getInstance().logError(LogType.SYSTEM, "CSV読み込み中にエラーが発生しました", e);
+            return new CSVAccessResult(new ArrayList<>(), new ArrayList<>(), true,
+                    "CSV読み込み中にエラーが発生しました: " + e.getMessage());
         }
     }
 
     /**
-     * CSV行データをEngineerDTOに変換
+     * CSVファイルに書き込み
+     * エンジニアデータをCSV形式に変換してファイルに書き込む
+     * 
+     * @param engineers 書き込むエンジニアデータリスト
+     * @return 書き込み成功の場合はtrue
+     */
+    private boolean writeCSV(List<EngineerDTO> engineers) {
+        try {
+            // ヘッダー行を含むCSV行リストを作成
+            List<String> lines = new ArrayList<>();
+            lines.add(String.join(",", CSV_HEADERS));
+
+            // エンジニアデータをCSV形式に変換
+            for (EngineerDTO engineer : engineers) {
+                String line = convertToCSV(engineer);
+                lines.add(line);
+            }
+
+            // CSVファイルに書き込み
+            File file = new File(csvFilePath);
+            CSVAccess csvAccess = new CSVAccess("write", lines, file);
+            csvAccess.execute();
+
+            // 結果を取得
+            Object result = csvAccess.getResult();
+
+            if (result instanceof Boolean) {
+                return (Boolean) result;
+            } else {
+                LogHandler.getInstance().log(Level.WARNING, LogType.SYSTEM,
+                        "CSV書き込み結果が不正な形式です: " + (result != null ? result.getClass().getName() : "null"));
+                return false;
+            }
+
+        } catch (Exception e) {
+            LogHandler.getInstance().logError(LogType.SYSTEM, "CSV書き込み中にエラーが発生しました", e);
+            return false;
+        }
+    }
+
+    /**
+     * 重複ID処理
+     * 重複IDが検出された場合の処理を行う
+     * 
+     * @param result CSVアクセス結果
+     */
+    private void handleDuplicateIds(CSVAccessResult result) {
+        if (!result.hasDuplicateIds()) {
+            return;
+        }
+
+        try {
+            // 重複ID確認ダイアログを表示
+            boolean overwrite = dialogManager.showDuplicateIdConfirmDialog(result.getDuplicateIds());
+
+            // 上書き確認結果を設定
+            result.setOverwriteConfirmed(overwrite);
+
+            if (overwrite) {
+                LogHandler.getInstance().log(Level.INFO, LogType.SYSTEM,
+                        "重複IDの上書きが確認されました: " + result.getDuplicateIds().size() + "件");
+            } else {
+                LogHandler.getInstance().log(Level.INFO, LogType.SYSTEM,
+                        "重複IDの保持が確認されました: " + result.getDuplicateIds().size() + "件");
+
+                // 重複IDを持つデータを成功データから削除（上書き拒否の場合）
+                List<EngineerDTO> filteredData = result.getSuccessData().stream()
+                        .filter(engineer -> !result.getDuplicateIds().contains(engineer.getId()))
+                        .collect(Collectors.toList());
+
+                // 成功データを更新
+                result.getSuccessData().clear();
+                result.getSuccessData().addAll(filteredData);
+            }
+
+        } catch (Exception e) {
+            LogHandler.getInstance().logError(LogType.SYSTEM, "重複ID処理中にエラーが発生しました", e);
+
+            // エラー時は上書きしない
+            result.setOverwriteConfirmed(false);
+
+            // 重複IDを持つデータを成功データから削除
+            List<EngineerDTO> filteredData = result.getSuccessData().stream()
+                    .filter(engineer -> !result.getDuplicateIds().contains(engineer.getId()))
+                    .collect(Collectors.toList());
+
+            // 成功データを更新
+            result.getSuccessData().clear();
+            result.getSuccessData().addAll(filteredData);
+        }
+    }
+
+    /**
+     * EngineerDTOをCSV行に変換
+     * エンジニア情報をCSV形式の文字列に変換
+     * 
+     * @param engineer 変換するエンジニア情報
+     * @return CSV形式の文字列
+     */
+    public String convertToCSV(EngineerDTO engineer) {
+        StringBuilder sb = new StringBuilder();
+
+        // id
+        sb.append(nullToEmpty(engineer.getId())).append(",");
+
+        // name
+        sb.append(nullToEmpty(engineer.getName())).append(",");
+
+        // nameKana
+        sb.append(nullToEmpty(engineer.getNameKana())).append(",");
+
+        // birthDate
+        if (engineer.getBirthDate() != null) {
+            sb.append(engineer.getBirthDate().format(DATE_FORMATTER));
+        }
+        sb.append(",");
+
+        // joinDate
+        if (engineer.getJoinDate() != null) {
+            sb.append(engineer.getJoinDate().format(DATE_FORMATTER));
+        }
+        sb.append(",");
+
+        // career
+        sb.append(engineer.getCareer()).append(",");
+
+        // programmingLanguages
+        if (engineer.getProgrammingLanguages() != null && !engineer.getProgrammingLanguages().isEmpty()) {
+            sb.append(String.join(";", engineer.getProgrammingLanguages()));
+        }
+        sb.append(",");
+
+        // careerHistory
+        sb.append(nullToEmpty(engineer.getCareerHistory())).append(",");
+
+        // trainingHistory
+        sb.append(nullToEmpty(engineer.getTrainingHistory())).append(",");
+
+        // technicalSkill
+        sb.append(engineer.getTechnicalSkill()).append(",");
+
+        // learningAttitude
+        sb.append(engineer.getLearningAttitude()).append(",");
+
+        // communicationSkill
+        sb.append(engineer.getCommunicationSkill()).append(",");
+
+        // leadership
+        sb.append(engineer.getLeadership()).append(",");
+
+        // note
+        sb.append(nullToEmpty(engineer.getNote())).append(",");
+
+        // registeredDate
+        if (engineer.getRegisteredDate() != null) {
+            sb.append(engineer.getRegisteredDate().format(DATE_FORMATTER));
+        } else {
+            sb.append(LocalDate.now().format(DATE_FORMATTER));
+        }
+
+        return sb.toString();
+    }
+
+    /**
+     * CSV行をEngineerDTOに変換
+     * CSV形式のデータをエンジニア情報オブジェクトに変換
      * 
      * @param line CSV行データ
      * @return 変換されたEngineerDTOオブジェクト
      */
-    private EngineerDTO convertToDTO(String[] line) {
+    public EngineerDTO convertToDTO(String[] line) {
         if (line == null || line.length < CSV_HEADERS.length) {
-            LogHandler.getInstance().log(Level.WARNING, LogType.SYSTEM, "CSV行のカラム数が不足しています");
             return null;
         }
 
-        EngineerBuilder builder = new EngineerBuilder();
-
         try {
-            // 必須フィールドの設定
-            builder.setId(line[0]);
-            builder.setName(line[1]);
-            builder.setNameKana(line[2]);
+            EngineerBuilder builder = new EngineerBuilder();
 
-            // 日付の変換
+            // ID
+            if (!line[0].isEmpty()) {
+                builder.setId(line[0]);
+            }
+
+            // 氏名
+            if (!line[1].isEmpty()) {
+                builder.setName(line[1]);
+            }
+
+            // フリガナ
+            if (!line[2].isEmpty()) {
+                builder.setNameKana(line[2]);
+            }
+
+            // 生年月日
             if (!line[3].isEmpty()) {
-                builder.setBirthDate(LocalDate.parse(line[3], DATE_FORMATTER));
+                try {
+                    LocalDate birthDate = LocalDate.parse(line[3], DATE_FORMATTER);
+                    builder.setBirthDate(birthDate);
+                } catch (DateTimeParseException e) {
+                    LogHandler.getInstance().log(Level.WARNING, LogType.SYSTEM,
+                            "生年月日の解析に失敗しました: " + line[3]);
+                }
             }
 
+            // 入社年月
             if (!line[4].isEmpty()) {
-                builder.setJoinDate(LocalDate.parse(line[4], DATE_FORMATTER));
+                try {
+                    LocalDate joinDate = LocalDate.parse(line[4], DATE_FORMATTER);
+                    builder.setJoinDate(joinDate);
+                } catch (DateTimeParseException e) {
+                    LogHandler.getInstance().log(Level.WARNING, LogType.SYSTEM,
+                            "入社年月の解析に失敗しました: " + line[4]);
+                }
             }
 
-            // 数値の変換
+            // エンジニア歴
             if (!line[5].isEmpty()) {
-                builder.setCareer(Integer.parseInt(line[5]));
+                try {
+                    int career = Integer.parseInt(line[5]);
+                    builder.setCareer(career);
+                } catch (NumberFormatException e) {
+                    LogHandler.getInstance().log(Level.WARNING, LogType.SYSTEM,
+                            "エンジニア歴の解析に失敗しました: " + line[5]);
+                }
             }
 
-            // リストの変換（カンマ区切り文字列をリストに）
+            // プログラミング言語
             if (!line[6].isEmpty()) {
                 List<String> languages = Arrays.asList(line[6].split(";"));
                 builder.setProgrammingLanguages(languages);
-            } else {
-                // 空の場合でも最低1つは必要なので、デフォルト値を設定
-                builder.setProgrammingLanguages(Arrays.asList("未設定"));
             }
 
-            // 任意フィールドの設定
-            if (!line[7].isEmpty())
+            // 経歴
+            if (!line[7].isEmpty()) {
                 builder.setCareerHistory(line[7]);
-            if (!line[8].isEmpty())
+            }
+
+            // 研修の受講歴
+            if (!line[8].isEmpty()) {
                 builder.setTrainingHistory(line[8]);
+            }
 
-            // 数値評価の変換
-            if (!line[9].isEmpty())
-                builder.setTechnicalSkill(Double.parseDouble(line[9]));
-            if (!line[10].isEmpty())
-                builder.setLearningAttitude(Double.parseDouble(line[10]));
-            if (!line[11].isEmpty())
-                builder.setCommunicationSkill(Double.parseDouble(line[11]));
-            if (!line[12].isEmpty())
-                builder.setLeadership(Double.parseDouble(line[12]));
+            // 技術力
+            if (!line[9].isEmpty()) {
+                try {
+                    double technicalSkill = Double.parseDouble(line[9]);
+                    builder.setTechnicalSkill(technicalSkill);
+                } catch (NumberFormatException e) {
+                    LogHandler.getInstance().log(Level.WARNING, LogType.SYSTEM,
+                            "技術力の解析に失敗しました: " + line[9]);
+                }
+            }
 
-            // その他のフィールド
-            if (!line[13].isEmpty())
+            // 受講態度
+            if (!line[10].isEmpty()) {
+                try {
+                    double learningAttitude = Double.parseDouble(line[10]);
+                    builder.setLearningAttitude(learningAttitude);
+                } catch (NumberFormatException e) {
+                    LogHandler.getInstance().log(Level.WARNING, LogType.SYSTEM,
+                            "受講態度の解析に失敗しました: " + line[10]);
+                }
+            }
+
+            // コミュニケーション能力
+            if (!line[11].isEmpty()) {
+                try {
+                    double communicationSkill = Double.parseDouble(line[11]);
+                    builder.setCommunicationSkill(communicationSkill);
+                } catch (NumberFormatException e) {
+                    LogHandler.getInstance().log(Level.WARNING, LogType.SYSTEM,
+                            "コミュニケーション能力の解析に失敗しました: " + line[11]);
+                }
+            }
+
+            // リーダーシップ
+            if (!line[12].isEmpty()) {
+                try {
+                    double leadership = Double.parseDouble(line[12]);
+                    builder.setLeadership(leadership);
+                } catch (NumberFormatException e) {
+                    LogHandler.getInstance().log(Level.WARNING, LogType.SYSTEM,
+                            "リーダーシップの解析に失敗しました: " + line[12]);
+                }
+            }
+
+            // 備考
+            if (!line[13].isEmpty()) {
                 builder.setNote(line[13]);
+            }
 
             // 登録日時
-            if (!line[14].isEmpty()) {
-                builder.setRegisteredDate(LocalDate.parse(line[14], DATE_FORMATTER));
+            if (line.length > 14 && !line[14].isEmpty()) {
+                try {
+                    LocalDate registeredDate = LocalDate.parse(line[14], DATE_FORMATTER);
+                    builder.setRegisteredDate(registeredDate);
+                } catch (DateTimeParseException e) {
+                    LogHandler.getInstance().log(Level.WARNING, LogType.SYSTEM,
+                            "登録日時の解析に失敗しました: " + line[14]);
+                }
             }
 
             return builder.build();
 
         } catch (Exception e) {
-            LogHandler.getInstance().logError(LogType.SYSTEM, "DTOへの変換中にエラーが発生しました: ID=" + line[0], e);
+            LogHandler.getInstance().logError(LogType.SYSTEM, "EngineerDTOへの変換に失敗しました", e);
             return null;
         }
     }
 
     /**
-     * EngineerDTOをCSV行データに変換
+     * nullを空文字列に変換
+     * CSV出力時にnullを安全に扱うためのユーティリティメソッド
      * 
-     * @param engineer 変換するEngineerDTOオブジェクト
-     * @return 変換されたCSV行データ
+     * @param value 変換する文字列
+     * @return nullの場合は空文字列、それ以外は元の値
      */
-    private String[] convertToCSV(EngineerDTO engineer) {
-        String[] line = new String[CSV_HEADERS.length];
+    private String nullToEmpty(String value) {
+        return value != null ? escapeComma(value) : "";
+    }
 
-        // 必須フィールド
-        line[0] = engineer.getId();
-        line[1] = engineer.getName();
-        line[2] = engineer.getNameKana();
-        line[3] = engineer.getBirthDate() != null ? engineer.getBirthDate().format(DATE_FORMATTER) : "";
-        line[4] = engineer.getJoinDate() != null ? engineer.getJoinDate().format(DATE_FORMATTER) : "";
-        line[5] = String.valueOf(engineer.getCareer());
-
-        // プログラミング言語リストをセミコロン区切りに変換
-        if (engineer.getProgrammingLanguages() != null && !engineer.getProgrammingLanguages().isEmpty()) {
-            line[6] = String.join(";", engineer.getProgrammingLanguages());
-        } else {
-            line[6] = "";
+    /**
+     * カンマをエスケープ
+     * CSV形式でカンマを含む文字列を適切に処理
+     * 
+     * @param value エスケープする文字列
+     * @return エスケープされた文字列
+     */
+    private String escapeComma(String value) {
+        if (value == null || value.isEmpty()) {
+            return "";
         }
 
-        // 任意フィールド
-        line[7] = engineer.getCareerHistory() != null ? engineer.getCareerHistory() : "";
-        line[8] = engineer.getTrainingHistory() != null ? engineer.getTrainingHistory() : "";
-        line[9] = String.valueOf(engineer.getTechnicalSkill());
-        line[10] = String.valueOf(engineer.getLearningAttitude());
-        line[11] = String.valueOf(engineer.getCommunicationSkill());
-        line[12] = String.valueOf(engineer.getLeadership());
-        line[13] = engineer.getNote() != null ? engineer.getNote() : "";
+        // カンマが含まれている場合は二重引用符で囲む
+        if (value.contains(",") || value.contains("\"") || value.contains("\n")) {
+            return "\"" + value.replace("\"", "\"\"") + "\"";
+        }
 
-        // 登録日時
-        line[14] = engineer.getRegisteredDate() != null ? engineer.getRegisteredDate().format(DATE_FORMATTER)
-                : LocalDate.now().format(DATE_FORMATTER);
+        return value;
+    }
 
-        return line;
+    /**
+     * CSVファイルパスを取得
+     * 
+     * @return CSVファイルパス
+     */
+    public String getCsvFilePath() {
+        return csvFilePath;
     }
 }

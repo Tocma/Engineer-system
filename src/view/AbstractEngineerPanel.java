@@ -1,12 +1,18 @@
 package view;
 
 import javax.swing.*;
+import javax.swing.border.Border;
+
 import java.awt.*;
+import java.time.LocalDate;
+import java.util.List;
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Map;
 import util.LogHandler;
 import util.LogHandler.LogType;
 import java.util.logging.Level;
+import java.util.regex.Pattern;
 
 /**
  * エンジニア情報関連パネル（詳細・追加画面）の基本機能を提供する抽象クラス
@@ -59,8 +65,8 @@ import java.util.logging.Level;
  * </pre>
  *
  * @author Nakano
- * @version 3.1.0
- * @since 2025-04-04
+ * @version 4.0.0
+ * @since 2025-04-08
  */
 public abstract class AbstractEngineerPanel extends JPanel {
 
@@ -91,6 +97,18 @@ public abstract class AbstractEngineerPanel extends JPanel {
     /** エラーメッセージの色 */
     protected static final Color ERROR_COLOR = new Color(204, 0, 0);
 
+    /** エラー状態のコンポーネントを管理するマップ */
+    protected final Map<String, Component> errorComponents;
+
+    /** デフォルトのボーダー保存用マップ */
+    protected final Map<JComponent, Border> originalBorders;
+
+    /** エラー表示用のボーダー */
+    protected static final Border ERROR_BORDER = BorderFactory.createLineBorder(ERROR_COLOR, 2);
+
+    /** DialogManager参照 */
+    protected final DialogManager dialogManager;
+
     /**
      * コンストラクタ
      * パネルの基本設定とコンポーネントマップの初期化
@@ -98,7 +116,10 @@ public abstract class AbstractEngineerPanel extends JPanel {
     public AbstractEngineerPanel() {
         super(new BorderLayout());
         this.components = new HashMap<>();
+        this.errorComponents = new HashMap<>();
+        this.originalBorders = new HashMap<>();
         this.initialized = false;
+        this.dialogManager = DialogManager.getInstance();
         LogHandler.getInstance().log(Level.INFO, LogType.SYSTEM, "AbstractEngineerPanelを初期化しました");
     }
 
@@ -333,12 +354,387 @@ public abstract class AbstractEngineerPanel extends JPanel {
     }
 
     /**
+     * コンポーネントにエラー表示を設定
+     * エラーが発生したコンポーネントに赤枠を表示し、エラーコンポーネントとして管理
+     *
+     * @param componentName エラーが発生したコンポーネント名
+     * @param errorMessage  エラーメッセージ（nullの場合はエラーメッセージを更新しない）
+     */
+    protected void markComponentError(String componentName, String errorMessage) {
+        Component component = getComponent(componentName);
+        if (component == null) {
+            return;
+        }
+
+        // JComponentかどうか確認
+        if (component instanceof JComponent) {
+            JComponent jComponent = (JComponent) component;
+
+            // 元のボーダーを保存（まだ保存されていない場合）
+            if (!originalBorders.containsKey(jComponent)) {
+                originalBorders.put(jComponent, jComponent.getBorder());
+            }
+
+            // エラーボーダーを設定
+            jComponent.setBorder(ERROR_BORDER);
+
+            // エラーコンポーネントとして登録
+            errorComponents.put(componentName, component);
+
+            // エラーメッセージが指定されている場合は表示
+            if (errorMessage != null) {
+                showErrorMessage(errorMessage);
+            }
+        }
+    }
+
+    /**
+     * コンポーネントのエラー表示をクリア
+     * 特定のコンポーネントのエラー表示を解除
+     *
+     * @param componentName エラー表示を解除するコンポーネント名
+     */
+    protected void clearComponentError(String componentName) {
+        Component component = errorComponents.remove(componentName);
+        if (component instanceof JComponent) {
+            JComponent jComponent = (JComponent) component;
+
+            // 元のボーダーに戻す
+            Border originalBorder = originalBorders.remove(jComponent);
+            if (originalBorder != null) {
+                jComponent.setBorder(originalBorder);
+            } else {
+                jComponent.setBorder(null);
+            }
+        }
+    }
+
+    /**
+     * すべてのコンポーネントのエラー表示をクリア
+     * エラー表示されているすべてのコンポーネントを元の状態に戻す
+     */
+    protected void clearAllComponentErrors() {
+        // エラーコンポーネントのコピーを作成（反復処理中の変更を回避）
+        List<String> componentNames = new ArrayList<>(errorComponents.keySet());
+
+        // 各コンポーネントのエラー表示をクリア
+        for (String componentName : componentNames) {
+            clearComponentError(componentName);
+        }
+
+        // エラーメッセージをクリア
+        clearErrorMessage();
+    }
+
+    /**
+     * コンポーネントがエラー状態かどうかを確認
+     *
+     * @param componentName 確認するコンポーネント名
+     * @return エラー状態の場合はtrue
+     */
+    protected boolean hasComponentError(String componentName) {
+        return errorComponents.containsKey(componentName);
+    }
+
+    /**
+     * エラー状態のコンポーネント名リストを取得
+     *
+     * @return エラー状態のコンポーネント名リスト
+     */
+    protected List<String> getErrorComponentNames() {
+        return new ArrayList<>(errorComponents.keySet());
+    }
+
+    /**
+     * バリデーションエラーをダイアログで表示
+     * エラー状態のコンポーネントを元にエラーダイアログを表示
+     *
+     * @param fieldNameMap コンポーネント名と表示名のマッピング
+     */
+    protected void showValidationErrorDialog(Map<String, String> fieldNameMap) {
+        List<String> errorFields = new ArrayList<>();
+
+        // エラーコンポーネントの表示名を収集
+        for (String componentName : errorComponents.keySet()) {
+            String displayName = fieldNameMap.getOrDefault(componentName, componentName);
+            errorFields.add(displayName);
+        }
+
+        // バリデーションエラーダイアログを表示
+        if (!errorFields.isEmpty()) {
+            dialogManager.showValidationErrorDialog(errorFields);
+        }
+    }
+
+    /**
      * 入力検証を実行
      * サブクラスでオーバーライドして具体的な検証ロジックを実装
      *
      * @return 検証成功の場合true、失敗の場合false
      */
     protected abstract boolean validateInput();
+
+    /**
+     * テキストフィールドの入力検証
+     * テキストフィールドの値が指定された条件を満たすか検証
+     *
+     * @param fieldName    フィールド名
+     * @param required     必須項目の場合はtrue
+     * @param maxLength    最大文字数（0以下の場合は制限なし）
+     * @param pattern      正規表現パターン（nullの場合はパターン検証なし）
+     * @param errorMessage エラー時のメッセージ
+     * @return 検証成功の場合true、失敗の場合false
+     */
+    protected boolean validateTextField(String fieldName, boolean required, int maxLength, String pattern,
+            String errorMessage) {
+        JTextField field = getTextField(fieldName);
+        if (field == null) {
+            return false;
+        }
+
+        String value = field.getText();
+
+        // 必須チェック
+        if (required && (value == null || value.trim().isEmpty())) {
+            markComponentError(fieldName, errorMessage);
+            return false;
+        }
+
+        // 最大文字数チェック
+        if (maxLength > 0 && value != null && value.length() > maxLength) {
+            markComponentError(fieldName, errorMessage);
+            return false;
+        }
+
+        // パターンチェック
+        if (pattern != null && value != null && !value.isEmpty()) {
+            Pattern regexPattern = Pattern.compile(pattern);
+            if (!regexPattern.matcher(value).matches()) {
+                markComponentError(fieldName, errorMessage);
+                return false;
+            }
+        }
+
+        // エラーがない場合はエラー表示をクリア
+        clearComponentError(fieldName);
+        return true;
+    }
+
+    /**
+     * テキストエリアの入力検証
+     * テキストエリアの値が指定された条件を満たすか検証
+     *
+     * @param fieldName    フィールド名
+     * @param required     必須項目の場合はtrue
+     * @param maxLength    最大文字数（0以下の場合は制限なし）
+     * @param errorMessage エラー時のメッセージ
+     * @return 検証成功の場合true、失敗の場合false
+     */
+    protected boolean validateTextArea(String fieldName, boolean required, int maxLength, String errorMessage) {
+        JTextArea field = getTextArea(fieldName);
+        if (field == null) {
+            return false;
+        }
+
+        String value = field.getText();
+
+        // 必須チェック
+        if (required && (value == null || value.trim().isEmpty())) {
+            markComponentError(fieldName, errorMessage);
+            return false;
+        }
+
+        // 最大文字数チェック
+        if (maxLength > 0 && value != null && value.length() > maxLength) {
+            markComponentError(fieldName, errorMessage);
+            return false;
+        }
+
+        // エラーがない場合はエラー表示をクリア
+        clearComponentError(fieldName);
+        return true;
+    }
+
+    /**
+     * コンボボックスの入力検証
+     * コンボボックスで項目が選択されているか検証
+     *
+     * @param fieldName    フィールド名
+     * @param required     必須項目の場合はtrue
+     * @param errorMessage エラー時のメッセージ
+     * @return 検証成功の場合true、失敗の場合false
+     */
+    protected boolean validateComboBox(String fieldName, boolean required, String errorMessage) {
+        JComboBox<?> field = getComboBox(fieldName);
+        if (field == null) {
+            return false;
+        }
+
+        // 必須チェック（選択されていない場合はnullまたは空文字）
+        if (required) {
+            Object selectedItem = field.getSelectedItem();
+            if (selectedItem == null || selectedItem.toString().trim().isEmpty()) {
+                markComponentError(fieldName, errorMessage);
+                return false;
+            }
+        }
+
+        // エラーがない場合はエラー表示をクリア
+        clearComponentError(fieldName);
+        return true;
+    }
+
+    /**
+     * チェックボックスグループの入力検証
+     * 少なくとも1つのチェックボックスが選択されているか検証
+     *
+     * @param checkboxes   検証対象のチェックボックスのリスト
+     * @param errorMessage エラー時のメッセージ
+     * @return 検証成功の場合true、失敗の場合false
+     */
+    protected boolean validateCheckBoxGroup(List<JCheckBox> checkboxes, String errorMessage) {
+        if (checkboxes == null || checkboxes.isEmpty()) {
+            return false;
+        }
+
+        // いずれかのチェックボックスが選択されているか確認
+        boolean anySelected = checkboxes.stream().anyMatch(JCheckBox::isSelected);
+
+        if (!anySelected) {
+            // エラーメッセージを表示
+            showErrorMessage(errorMessage);
+
+            // 各チェックボックスにエラー表示
+            checkboxes.forEach(checkbox -> {
+                if (checkbox instanceof JComponent) {
+                    JComponent jComponent = (JComponent) checkbox;
+
+                    // 元のボーダーを保存
+                    if (!originalBorders.containsKey(jComponent)) {
+                        originalBorders.put(jComponent, jComponent.getBorder());
+                    }
+
+                    // エラーボーダーを設定
+                    jComponent.setBorder(ERROR_BORDER);
+                }
+            });
+
+            return false;
+        }
+
+        // エラーがない場合はエラー表示をクリア
+        checkboxes.forEach(checkbox -> {
+            if (checkbox instanceof JComponent) {
+                JComponent jComponent = (JComponent) checkbox;
+
+                // 元のボーダーに戻す
+                Border originalBorder = originalBorders.remove(jComponent);
+                if (originalBorder != null) {
+                    jComponent.setBorder(originalBorder);
+                } else {
+                    jComponent.setBorder(null);
+                }
+            }
+        });
+
+        return true;
+    }
+
+    /**
+     * 日付選択コンポーネントの入力検証
+     * 年月日の選択コンボボックスが有効な日付を構成しているか検証
+     *
+     * @param yearFieldName  年コンボボックスのフィールド名
+     * @param monthFieldName 月コンボボックスのフィールド名
+     * @param dayFieldName   日コンボボックスのフィールド名（nullの場合は年月のみ検証）
+     * @param required       必須項目の場合はtrue
+     * @param errorMessage   エラー時のメッセージ
+     * @return 検証成功の場合true、失敗の場合false
+     */
+    protected boolean validateDateComponents(String yearFieldName, String monthFieldName, String dayFieldName,
+            boolean required, String errorMessage) {
+        JComboBox<?> yearCombo = getComboBox(yearFieldName);
+        JComboBox<?> monthCombo = getComboBox(monthFieldName);
+        JComboBox<?> dayCombo = dayFieldName != null ? getComboBox(dayFieldName) : null;
+
+        if (yearCombo == null || monthCombo == null || (dayFieldName != null && dayCombo == null)) {
+            return false;
+        }
+
+        Object yearObj = yearCombo.getSelectedItem();
+        Object monthObj = monthCombo.getSelectedItem();
+        Object dayObj = dayCombo != null ? dayCombo.getSelectedItem() : null;
+
+        String yearStr = yearObj != null ? yearObj.toString() : "";
+        String monthStr = monthObj != null ? monthObj.toString() : "";
+        String dayStr = dayObj != null ? dayObj.toString() : "";
+
+        // 必須チェック
+        if (required) {
+            if (yearStr.isEmpty() || monthStr.isEmpty() || (dayCombo != null && dayStr.isEmpty())) {
+                // エラー表示
+                if (yearStr.isEmpty())
+                    markComponentError(yearFieldName, null);
+                if (monthStr.isEmpty())
+                    markComponentError(monthFieldName, null);
+                if (dayCombo != null && dayStr.isEmpty())
+                    markComponentError(dayFieldName, null);
+
+                showErrorMessage(errorMessage);
+                return false;
+            }
+        } else if (yearStr.isEmpty() && monthStr.isEmpty() && (dayCombo == null || dayStr.isEmpty())) {
+            // 必須でなく、すべて未選択の場合は有効とする
+            clearComponentError(yearFieldName);
+            clearComponentError(monthFieldName);
+            if (dayFieldName != null)
+                clearComponentError(dayFieldName);
+            return true;
+        }
+
+        // 値が部分的に入力されている場合は、すべての値が必要
+        if ((!yearStr.isEmpty() || !monthStr.isEmpty() || (dayCombo != null && !dayStr.isEmpty()))
+                && (yearStr.isEmpty() || monthStr.isEmpty() || (dayCombo != null && dayStr.isEmpty()))) {
+
+            // エラー表示
+            if (yearStr.isEmpty())
+                markComponentError(yearFieldName, null);
+            if (monthStr.isEmpty())
+                markComponentError(monthFieldName, null);
+            if (dayCombo != null && dayStr.isEmpty())
+                markComponentError(dayFieldName, null);
+
+            showErrorMessage(errorMessage);
+            return false;
+        }
+
+        // 日付の妥当性チェック
+        try {
+            int year = Integer.parseInt(yearStr);
+            int month = Integer.parseInt(monthStr);
+            int day = dayCombo != null ? Integer.parseInt(dayStr) : 1;
+
+            // java.time.LocalDateで妥当性チェック
+            LocalDate.of(year, month, day);
+
+            // 有効な日付の場合、エラー表示をクリア
+            clearComponentError(yearFieldName);
+            clearComponentError(monthFieldName);
+            if (dayFieldName != null)
+                clearComponentError(dayFieldName);
+
+            return true;
+        } catch (Exception e) {
+            // 日付が不正な場合
+            markComponentError(yearFieldName, null);
+            markComponentError(monthFieldName, null);
+            if (dayFieldName != null)
+                markComponentError(dayFieldName, null);
+
+            showErrorMessage(errorMessage);
+            return false;
+        }
+    }
 
     /**
      * 全コンポーネントの有効・無効を切り替え
