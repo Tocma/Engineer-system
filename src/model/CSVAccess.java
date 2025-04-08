@@ -113,6 +113,16 @@ public class CSVAccess extends AccessThread {
      */
     public void execute() {
         start();
+
+        // スレッド完了を待機
+        try {
+            if (thread != null) {
+                thread.join(); // スレッドの完了を待機
+            }
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+            LogHandler.getInstance().logError(LogType.SYSTEM, "CSVアクセス処理の待機中に割り込みが発生しました", e);
+        }
     }
 
     /**
