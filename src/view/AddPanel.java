@@ -89,6 +89,9 @@ public class AddPanel extends AbstractEngineerPanel {
     /** 処理中フラグ */
     private boolean processing;
 
+    /** 完了処理の成功フラグ */
+    private boolean handleSaveCompleteSuccess = false;
+
     /** 年のコンボボックス（生年月日用） */
     private JComboBox<String> birthYearComboBox;
 
@@ -564,34 +567,166 @@ public class AddPanel extends AbstractEngineerPanel {
     }
 
     /**
-     * 保存完了処理
-     * 保存処理が完了した後の処理（成功ダイアログの表示、画面遷移など）
-     *
-     * @param engineer 保存されたエンジニア情報
+     * 完了処理の成功状態を取得します
+     * <p>
+     * このメソッドは、handleSaveCompleteメソッドが正常に完了したかどうかを
+     * 返します。MainControllerなど外部クラスからこの情報を取得することで、
+     * 必要に応じて代替処理を実行できます。
+     * </p>
+     * 
+     * @return 完了処理が成功した場合true、そうでなければfalse
+     */
+    public boolean isHandleSaveCompleteSuccess() {
+        return handleSaveCompleteSuccess;
+    }
+
+    /**
+     * 現在の処理中状態を取得します
+     * <p>
+     * このメソッドは、パネルが現在処理中状態（登録処理実行中など）かどうかを
+     * 返します。この情報は外部クラスが適切な処理を判断するために使用できます。
+     * </p>
+     * 
+     * @return 処理中の場合true、そうでなければfalse
+     */
+    public boolean isProcessing() {
+        return this.processing;
+    }
+
+    /**
+     * 保存完了処理を実行します
+     * <p>
+     * このメソッドは、エンジニア情報の保存処理が正常に完了した後に呼び出されます。
+     * 主な役割は以下の通りです：
+     * </p>
+     * 
+     * <ol>
+     * <li>処理中状態の解除（プログレスインジケーターの非表示化）</li>
+     * <li>登録完了ダイアログの表示と次のアクション選択の提供</li>
+     * <li>選択されたアクションに基づく画面遷移またはフォームクリア</li>
+     * </ol>
+     * 
+     * <p>
+     * ユーザーには次の3つのアクションが提供されます：
+     * </p>
+     * 
+     * <ul>
+     * <li><b>続けて登録</b>: フォームをクリアして新たな登録を続行</li>
+     * <li><b>一覧に戻る</b>: エンジニア一覧画面に遷移</li>
+     * <li><b>詳細を表示</b>: 登録したエンジニアの詳細画面に遷移</li>
+     * </ul>
+     * 
+     * <p>
+     * このメソッドは例外処理を強化し、処理中に問題が発生しても確実に処理中状態を解除し、
+     * ログに詳細を記録します。また、処理の各段階でのログ出力により、デバッグや問題追跡が
+     * 容易になっています。
+     * </p>
+     * 
+     * <p>
+     * 本メソッドは非同期処理の完了後にSwingのEDT（Event Dispatch Thread）上で
+     * 呼び出されることを前提としています。
+     * </p>
+     * 
+     * @param engineer 保存されたエンジニア情報（{@link EngineerDTO}オブジェクト）
      */
     public void handleSaveComplete(EngineerDTO engineer) {
-        // 処理中状態を解除
-        setProcessing(false);
+        LogHandler.getInstance().log(Level.INFO, LogType.SYSTEM,
+                "AddPanel.handleSaveComplete開始: ID=" + engineer.getId());
 
-        // 登録成功後のダイアログ表示と画面遷移処理
-        String action = dialogManager.showRegisterCompletionDialog(engineer);
+        try {
+            // 処理中状態を解除（プログレスインジケーターの非表示化とUI操作の有効化）
+            setProcessing(false);
+            LogHandler.getInstance().log(Level.INFO, LogType.SYSTEM,
+                    "処理中状態を解除しました");
 
-        // 選択されたアクションに応じた処理
-        switch (action) {
-            case "CONTINUE":
-                // フォームをクリアして現在のページに留まる
-                clearFields();
-                break;
+            // 登録成功後のダイアログ表示と画面遷移処理
+            LogHandler.getInstance().log(Level.INFO, LogType.SYSTEM,
+                    "登録完了ダイアログを表示します: ID=" + engineer.getId());
 
-            case "LIST":
-                // 一覧画面に戻る
-                mainController.handleEvent("CHANGE_PANEL", "LIST");
-                break;
+            // 登録完了ダイアログを表示し、次のアクションを取得
+            String action = dialogManager.showRegisterCompletionDialog(engineer);
+            LogHandler.getInstance().log(Level.INFO, LogType.SYSTEM,
+                    "選択されたアクション: " + action);
 
-            case "DETAIL":
-                // 登録したエンジニアの詳細画面に遷移
-                mainController.handleEvent("VIEW_DETAIL", engineer.getId());
-                break;
+            // 選択されたアクションに応じた処理
+            switch (action) {
+                case "CONTINUE":
+                    // フォームをクリアして現在のページに留まる
+                    LogHandler.getInstance().log(Level.INFO, LogType.SYSTEM,
+                            "「続けて登録」が選択されました - フォームをクリアします");
+                    clearFields();
+                    break;
+
+                case "LIST":
+                    // 一覧画面に戻る
+                    LogHandler.getInstance().log(Level.INFO, LogType.SYSTEM,
+                            "「一覧に戻る」が選択されました - 一覧画面に遷移します");
+                    if (mainController != null) {
+                        mainController.handleEvent("CHANGE_PANEL", "LIST");
+                    } else {
+                        LogHandler.getInstance().log(Level.WARNING, LogType.SYSTEM,
+                                "MainControllerが設定されていないため画面遷移できません");
+                        // フォールバック処理（コントローラーが利用できない場合）
+                        clearFields();
+                    }
+                    break;
+
+                case "DETAIL":
+                    // 登録したエンジニアの詳細画面に遷移
+                    LogHandler.getInstance().log(Level.INFO, LogType.SYSTEM,
+                            "「詳細を表示」が選択されました - 詳細画面に遷移します: ID=" + engineer.getId());
+                    if (mainController != null) {
+                        mainController.handleEvent("VIEW_DETAIL", engineer.getId());
+                    } else {
+                        LogHandler.getInstance().log(Level.WARNING, LogType.SYSTEM,
+                                "MainControllerが設定されていないため画面遷移できません");
+                        // フォールバック処理（コントローラーが利用できない場合）
+                        clearFields();
+                    }
+                    break;
+
+                default:
+                    // 未知のアクション（通常は発生しない）
+                    LogHandler.getInstance().log(Level.WARNING, LogType.SYSTEM,
+                            "未知のアクションが選択されました: " + action + " - デフォルト処理を実行します");
+                    clearFields();
+                    break;
+            }
+
+            // 処理成功フラグを設定
+            handleSaveCompleteSuccess = true;
+            LogHandler.getInstance().log(Level.INFO, LogType.SYSTEM,
+                    "AddPanel.handleSaveComplete完了: ID=" + engineer.getId());
+
+        } catch (Exception e) {
+            // 例外が発生した場合のエラーハンドリング
+            LogHandler.getInstance().logError(LogType.SYSTEM,
+                    "handleSaveComplete処理中にエラーが発生しました: " + engineer.getId(), e);
+
+            // UIスレッドでエラーダイアログを表示
+            try {
+                DialogManager.getInstance().showErrorDialog(
+                        "エラー",
+                        "登録完了処理中にエラーが発生しました: " + e.getMessage());
+            } catch (Exception dialogError) {
+                // ダイアログ表示自体が失敗した場合
+                LogHandler.getInstance().logError(LogType.SYSTEM,
+                        "エラーダイアログの表示にも失敗しました", dialogError);
+            }
+
+            // 処理中状態を強制的に解除（重要: UIがブロックされないようにする）
+            setProcessing(false);
+
+            // 成功フラグはfalseのまま
+            handleSaveCompleteSuccess = false;
+        } finally {
+            // 最終的な状態確認とクリーンアップ処理
+            if (processing) {
+                // 万が一まだ処理中状態が解除されていない場合の保険
+                LogHandler.getInstance().log(Level.WARNING, LogType.SYSTEM,
+                        "処理中状態が解除されていません - 強制的に解除します");
+                setProcessing(false);
+            }
         }
     }
 

@@ -10,6 +10,7 @@ import java.awt.*;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
+import java.util.logging.Level;
 import java.util.stream.Collectors;
 
 /**
@@ -370,63 +371,147 @@ public class DialogManager {
 
     /**
      * エンジニア登録完了時の選択ダイアログを表示します
-     * 続けて登録、一覧に戻る、詳細表示の3つの選択肢を提供
+     * <p>
+     * このメソッドは、エンジニア情報の登録が成功した後にユーザーに表示される
+     * ダイアログを生成・表示します。ユーザーは登録完了後の次のアクションとして
+     * 以下の3つの選択肢から選ぶことができます：
+     * </p>
+     * 
+     * <ul>
+     * <li><b>続けて登録</b>: 入力フォームをクリアして新たな登録を続行</li>
+     * <li><b>一覧に戻る</b>: エンジニア一覧画面に戻る</li>
+     * <li><b>詳細を表示</b>: 登録したエンジニアの詳細画面を表示</li>
+     * </ul>
+     * 
+     * <p>
+     * このメソッドは非同期のSwingのEDT（Event Dispatch Thread）上でダイアログを表示し、
+     * ユーザーの選択結果を同期的に待機して返却します。CompletableFutureを使用して
+     * 非同期処理と結果の取得を安全に行います。
+     * </p>
+     * 
+     * <p>
+     * エラーが発生した場合でも適切にハンドリングし、ログに記録した上でデフォルトの
+     * アクション（"CONTINUE"）を返却します。また、スレッドの割り込みが発生した場合は
+     * 割り込みステータスを適切に復元します。
+     * </p>
+     * 
+     * <p>
+     * このメソッドは、ダイアログ表示の信頼性を高めるため、各処理ステップでのロギングを
+     * 強化しています。ダイアログの表示状況やユーザーの選択結果をログに記録することで、
+     * 問題が発生した場合のトラブルシューティングを容易にしています。
+     * </p>
      *
-     * @param engineer 登録されたエンジニア情報
+     * @param engineer 登録されたエンジニア情報（{@link EngineerDTO}オブジェクト）
      * @return 選択されたアクション（"CONTINUE", "LIST", "DETAIL"のいずれか）
      */
     public String showRegisterCompletionDialog(EngineerDTO engineer) {
+        LogHandler.getInstance().log(Level.INFO, LogType.SYSTEM,
+                "登録完了ダイアログ表示処理を開始: ID=" + engineer.getId());
+
         try {
-            // 非同期処理でダイアログを表示し、結果を待機
+            // 非同期処理でダイアログを表示し、結果を待機するためのFuture
             CompletableFuture<String> future = new CompletableFuture<>();
 
             SwingUtilities.invokeLater(() -> {
-                // メッセージの構築
-                String message = String.format(
-                        "エンジニア情報を登録しました\nID: %s\n氏名: %s\n\n次のアクションを選択してください",
-                        engineer.getId(), engineer.getName());
+                try {
+                    LogHandler.getInstance().log(Level.INFO, LogType.SYSTEM,
+                            "EDTでダイアログの表示を準備中: ID=" + engineer.getId());
 
-                // 選択肢ボタンの定義
-                String[] options = {
-                        "続けて登録", "一覧に戻る", "詳細を表示"
-                };
+                    // メッセージの構築
+                    String message = String.format(
+                            "エンジニア情報を登録しました\nID: %s\n氏名: %s\n\n次のアクションを選択してください",
+                            engineer.getId(), engineer.getName());
 
-                int result = JOptionPane.showOptionDialog(
-                        getActiveFrame(),
-                        message,
-                        "登録完了",
-                        JOptionPane.DEFAULT_OPTION,
-                        JOptionPane.INFORMATION_MESSAGE,
-                        null,
-                        options,
-                        options[0]);
+                    // 選択肢ボタンの定義
+                    String[] options = {
+                            "続けて登録", "一覧に戻る", "詳細を表示"
+                    };
 
-                // 選択結果をアクション文字列に変換
-                String action;
-                switch (result) {
-                    case 0:
-                        action = "CONTINUE";
-                        break;
-                    case 1:
-                        action = "LIST";
-                        break;
-                    case 2:
-                        action = "DETAIL";
-                        break;
-                    default:
-                        action = "CONTINUE"; // デフォルト
-                        break;
+                    LogHandler.getInstance().log(Level.INFO, LogType.SYSTEM,
+                            "ダイアログを表示します: ID=" + engineer.getId());
+
+                    // ダイアログを表示し、選択結果を取得
+                    int result = JOptionPane.showOptionDialog(
+                            getActiveFrame(),
+                            message,
+                            "登録完了",
+                            JOptionPane.DEFAULT_OPTION,
+                            JOptionPane.INFORMATION_MESSAGE,
+                            null,
+                            options,
+                            options[0]);
+
+                    LogHandler.getInstance().log(Level.INFO, LogType.SYSTEM,
+                            "ダイアログの選択結果: " + result + ", ID=" + engineer.getId());
+
+                    // 選択結果をアクション文字列に変換
+                    String action;
+                    switch (result) {
+                        case 0:
+                            action = "CONTINUE";
+                            break;
+                        case 1:
+                            action = "LIST";
+                            break;
+                        case 2:
+                            action = "DETAIL";
+                            break;
+                        case JOptionPane.CLOSED_OPTION: // ダイアログが閉じられた場合
+                            LogHandler.getInstance().log(Level.INFO, LogType.SYSTEM,
+                                    "ダイアログが閉じられました - デフォルトアクションを使用: ID=" + engineer.getId());
+                            action = "CONTINUE"; // デフォルト
+                            break;
+                        default:
+                            LogHandler.getInstance().log(Level.WARNING, LogType.SYSTEM,
+                                    "予期しない選択結果: " + result + " - デフォルトアクションを使用: ID=" + engineer.getId());
+                            action = "CONTINUE"; // デフォルト
+                            break;
+                    }
+
+                    LogHandler.getInstance().log(Level.INFO, LogType.SYSTEM,
+                            "選択アクション: " + action + ", ID=" + engineer.getId());
+
+                    // 結果をCompletableFutureに設定
+                    future.complete(action);
+
+                } catch (Exception e) {
+                    // ダイアログ表示中のエラー
+                    LogHandler.getInstance().logError(LogType.SYSTEM,
+                            "ダイアログ表示中にエラーが発生しました: ID=" + engineer.getId(), e);
+
+                    // エラー時はデフォルトアクションを返す
+                    future.complete("CONTINUE");
                 }
-
-                future.complete(action);
             });
 
             // 結果が利用可能になるまで待機
-            return future.get();
+            LogHandler.getInstance().log(Level.INFO, LogType.SYSTEM,
+                    "ダイアログの結果を待機中: ID=" + engineer.getId());
 
-        } catch (InterruptedException | ExecutionException e) {
-            LogHandler.getInstance().logError(LogType.SYSTEM, "登録完了ダイアログの表示中にエラーが発生しました", e);
+            String result = future.get();
+
+            LogHandler.getInstance().log(Level.INFO, LogType.SYSTEM,
+                    "登録完了ダイアログ処理が完了: アクション=" + result + ", ID=" + engineer.getId());
+
+            return result;
+
+        } catch (InterruptedException e) {
+            // 割り込み発生時
+            LogHandler.getInstance().logError(LogType.SYSTEM,
+                    "登録完了ダイアログの待機中に割り込みが発生しました: ID=" + engineer.getId(), e);
             Thread.currentThread().interrupt(); // 割り込みステータスを復元
+            return "CONTINUE"; // エラー時はデフォルト動作
+
+        } catch (ExecutionException e) {
+            // 実行時エラー
+            LogHandler.getInstance().logError(LogType.SYSTEM,
+                    "登録完了ダイアログの実行中にエラーが発生しました: ID=" + engineer.getId(), e);
+            return "CONTINUE"; // エラー時はデフォルト動作
+
+        } catch (Exception e) {
+            // その他の予期しないエラー
+            LogHandler.getInstance().logError(LogType.SYSTEM,
+                    "登録完了ダイアログ処理中に予期しないエラーが発生しました: ID=" + engineer.getId(), e);
             return "CONTINUE"; // エラー時はデフォルト動作
         }
     }

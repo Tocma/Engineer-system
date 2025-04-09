@@ -80,6 +80,9 @@ public class MainController {
     /** メインフレーム */
     private final MainFrame mainFrame;
 
+    /** ダイアログマネージャー */
+    private final DialogManager dialogManager;
+
     /** 実行中非同期タスクの追跡マップ */
     private final ConcurrentMap<String, Thread> runningTasks;
 
@@ -97,6 +100,7 @@ public class MainController {
         this.screenController = new ScreenTransitionController(mainFrame);
         this.runningTasks = new ConcurrentHashMap<>();
         this.isShuttingDown = new AtomicBoolean(false);
+        this.dialogManager = DialogManager.getInstance();
 
         // 画面遷移コントローラーにメインコントローラーへの参照を設定
         this.screenController.setMainController(this);
@@ -220,20 +224,69 @@ public class MainController {
     }
 
     /**
-     * データ保存処理
-     * エンジニア情報の保存を行います
+     * データ保存処理を実行します
+     * <p>
+     * このメソッドはエンジニア情報の保存処理を非同期的に実行します。単一エンジニアの追加と
+     * 複数エンジニアの一括更新に対応しています。保存処理の成功後は、UIを適切に更新し、
+     * 必要に応じてダイアログ表示や画面遷移を行います。
+     * </p>
      * 
-     * @param data 保存するデータ
+     * <p>
+     * 主な処理の流れ：
+     * <ol>
+     * <li>データ型の判定（単一エンジニアまたはエンジニアリスト）</li>
+     * <li>コンテキスト情報（元画面の参照）の取得と保持</li>
+     * <li>非同期タスクとしての保存処理実行</li>
+     * <li>成功時のUI更新（リスト更新、ダイアログ表示など）</li>
+     * <li>エラー時の例外処理と状態復元</li>
+     * </ol>
+     * </p>
+     * 
+     * <p>
+     * このメソッドは特に次の点に注意して実装されています：
+     * <ul>
+     * <li>スレッド間の安全な連携（バックグラウンド処理とEDTの連携）</li>
+     * <li>コンテキスト情報の確実な保持と伝達</li>
+     * <li>例外発生時の適切な処理とロギング</li>
+     * <li>処理状態の確実なリセット（処理中フラグの管理）</li>
+     * </ul>
+     * </p>
+     * 
+     * @param data 保存するデータ（{@link EngineerDTO}または{@link List}&lt;{@link EngineerDTO}&gt;）
      */
-    // MainControllerの処理フローを修正
     private void handleSaveData(Object data) {
+        // シャットダウン中は処理しない
+        if (isShuttingDown.get()) {
+            LogHandler.getInstance().log(Level.WARNING, LogType.SYSTEM,
+                    "シャットダウン中のため保存処理をスキップします");
+            return;
+        }
+
+        // エンジニア情報の追加処理（単一オブジェクト）
         if (data instanceof EngineerDTO) {
             try {
                 EngineerDTO engineer = (EngineerDTO) data;
+                LogHandler.getInstance().log(Level.INFO, LogType.SYSTEM,
+                        "エンジニア情報の保存を開始します: ID=" + engineer.getId());
 
-                // 保存元のパネル情報を明示的に取得（コンテキスト情報）
+                // パネル情報を取得（直接参照として）
                 JPanel sourcePanel = screenController.getCurrentPanel();
                 String sourcePanelType = screenController.getCurrentPanelType();
+                AddPanel addPanel = null;
+
+                // 明示的にAddPanelへのキャストを試みる
+                if (sourcePanel instanceof AddPanel) {
+                    addPanel = (AddPanel) sourcePanel;
+                    LogHandler.getInstance().log(Level.INFO, LogType.SYSTEM,
+                            "保存処理の元パネルを記録: AddPanel");
+                } else {
+                    LogHandler.getInstance().log(Level.WARNING, LogType.SYSTEM,
+                            "保存処理の元パネルがAddPanelではありません: " +
+                                    (sourcePanel != null ? sourcePanel.getClass().getName() : "null"));
+                }
+
+                // final変数として保持（ラムダ式内で使用するため）
+                final AddPanel finalAddPanel = addPanel;
 
                 // 非同期タスクとして保存処理を実行
                 startAsyncTask("SaveEngineer", () -> {
@@ -242,30 +295,102 @@ public class MainController {
                         boolean success = engineerController.addEngineer(engineer);
 
                         if (success) {
+                            LogHandler.getInstance().log(Level.INFO, LogType.SYSTEM,
+                                    "エンジニア情報の保存に成功しました: ID=" + engineer.getId());
+
                             // UI更新はSwingのEDTで実行
                             javax.swing.SwingUtilities.invokeLater(() -> {
-                                // ListPanelを取得してデータを追加
-                                JPanel currentPanel = screenController.getCurrentPanel();
-                                if (currentPanel instanceof ListPanel) {
-                                    ((ListPanel) currentPanel).addEngineerData(engineer);
-                                }
+                                try {
+                                    // ListPanelを取得してデータを追加
+                                    JPanel currentPanel = screenController.getCurrentPanel();
+                                    if (currentPanel instanceof ListPanel) {
+                                        ((ListPanel) currentPanel).addEngineerData(engineer);
+                                        LogHandler.getInstance().log(Level.INFO, LogType.SYSTEM,
+                                                "ListPanelにエンジニアデータを追加しました: " + engineer.getId());
+                                    }
 
-                                // 保存元のパネルがAddPanelの場合は完了処理を直接呼び出す
-                                if (sourcePanel instanceof AddPanel && "ADD".equals(sourcePanelType)) {
-                                    ((AddPanel) sourcePanel).handleSaveComplete(engineer);
-                                }
+                                    // 保存元のパネルがAddPanelの場合は完了処理を直接呼び出す
+                                    if (finalAddPanel != null) {
+                                        LogHandler.getInstance().log(Level.INFO, LogType.SYSTEM,
+                                                "AddPanelの完了処理を呼び出します（直接参照）: " + engineer.getId());
+                                        finalAddPanel.handleSaveComplete(engineer);
+                                    } else if (sourcePanel instanceof AddPanel && "ADD".equals(sourcePanelType)) {
+                                        LogHandler.getInstance().log(Level.INFO, LogType.SYSTEM,
+                                                "AddPanelの完了処理を呼び出します（間接参照）: " + engineer.getId());
+                                        ((AddPanel) sourcePanel).handleSaveComplete(engineer);
+                                    } else {
+                                        LogHandler.getInstance().log(Level.WARNING, LogType.SYSTEM,
+                                                "AddPanelが見つからないため完了処理をスキップします: " +
+                                                        "sourcePanel="
+                                                        + (sourcePanel != null ? sourcePanel.getClass().getName()
+                                                                : "null")
+                                                        +
+                                                        ", sourcePanelType=" + sourcePanelType);
 
-                                // 画面更新
-                                screenController.refreshView();
+                                        // 代替手段としてダイアログを直接表示
+                                        LogHandler.getInstance().log(Level.INFO, LogType.SYSTEM,
+                                                "代替手段としてダイアログを直接表示します");
+                                        DialogManager.getInstance().showCompletionDialog(
+                                                "登録完了",
+                                                "エンジニア情報を登録しました: ID=" + engineer.getId() + ", 名前="
+                                                        + engineer.getName());
+                                    }
+
+                                    // 画面更新
+                                    screenController.refreshView();
+                                } catch (Exception e) {
+                                    LogHandler.getInstance().logError(LogType.SYSTEM,
+                                            "保存完了後の処理中にエラーが発生しました: " + engineer.getId(), e);
+
+                                    // エラー時もAddPanelの処理中状態は解除する
+                                    try {
+                                        if (finalAddPanel != null) {
+                                            finalAddPanel.setProcessing(false);
+                                        }
+                                    } catch (Exception ex) {
+                                        LogHandler.getInstance().logError(LogType.SYSTEM,
+                                                "エラー処理中にも例外が発生しました", ex);
+                                    }
+                                }
+                            });
+                        } else {
+                            // 保存失敗時の処理
+                            LogHandler.getInstance().log(Level.WARNING, LogType.SYSTEM,
+                                    "エンジニア情報の保存に失敗しました: ID=" + engineer.getId());
+
+                            javax.swing.SwingUtilities.invokeLater(() -> {
+                                if (finalAddPanel != null) {
+                                    finalAddPanel.setProcessing(false);
+                                    DialogManager.getInstance().showErrorDialog(
+                                            "保存エラー", "エンジニア情報の保存に失敗しました");
+                                }
                             });
                         }
                     } catch (Exception e) {
-                        LogHandler.getInstance().logError(LogType.SYSTEM, "エンジニア情報の保存に失敗しました", e);
+                        LogHandler.getInstance().logError(LogType.SYSTEM,
+                                "エンジニア情報の保存処理中にエラーが発生しました: " + engineer.getId(), e);
 
                         // エラー時に処理中状態を解除
                         javax.swing.SwingUtilities.invokeLater(() -> {
-                            if (sourcePanel instanceof AddPanel) {
-                                ((AddPanel) sourcePanel).setProcessing(false);
+                            if (finalAddPanel != null) {
+                                finalAddPanel.setProcessing(false);
+                                DialogManager.getInstance().showErrorDialog(
+                                        "保存エラー", "エンジニア情報の保存中にエラーが発生しました: " + e.getMessage());
+                            }
+                        });
+                    } finally {
+                        // 最終的に処理中状態を解除する追加の保険
+                        javax.swing.SwingUtilities.invokeLater(() -> {
+                            try {
+                                if (finalAddPanel != null) {
+                                    // 処理状態の強制リセット（念のため）
+                                    finalAddPanel.setProcessing(false);
+                                    LogHandler.getInstance().log(Level.INFO, LogType.SYSTEM,
+                                            "AddPanelの処理状態をリセットしました");
+                                }
+                            } catch (Exception e) {
+                                LogHandler.getInstance().logError(LogType.SYSTEM,
+                                        "処理状態リセット中にエラーが発生しました", e);
                             }
                         });
                     }
@@ -273,9 +398,76 @@ public class MainController {
 
             } catch (ClassCastException e) {
                 LogHandler.getInstance().logError(LogType.SYSTEM, "保存データの型が不正です", e);
+            } catch (Exception e) {
+                LogHandler.getInstance().logError(LogType.SYSTEM, "エンジニア情報の保存前処理中にエラーが発生しました", e);
             }
         }
-        // 他の処理は省略...
+        // エンジニア情報の一括保存処理（リスト）
+        else if (data instanceof List<?>) {
+            try {
+                @SuppressWarnings("unchecked")
+                List<EngineerDTO> engineers = (List<EngineerDTO>) data;
+                LogHandler.getInstance().log(Level.INFO, LogType.SYSTEM,
+                        "エンジニア情報の一括保存を開始します: " + engineers.size() + "件");
+
+                // 非同期タスクとして保存処理を実行
+                startAsyncTask("SaveEngineerList", () -> {
+                    try {
+                        // 各エンジニア情報を更新
+                        boolean success = true;
+                        for (EngineerDTO engineer : engineers) {
+                            success &= engineerController.updateEngineer(engineer);
+                        }
+
+                        if (success) {
+                            LogHandler.getInstance().log(Level.INFO, LogType.SYSTEM,
+                                    "エンジニア情報の一括保存に成功しました: " + engineers.size() + "件");
+
+                            // UI更新はSwingのEDTで実行
+                            javax.swing.SwingUtilities.invokeLater(() -> {
+                                try {
+                                    // 画面更新
+                                    screenController.refreshView();
+
+                                    // 保存完了ダイアログを表示
+                                    DialogManager.getInstance().showCompletionDialog(
+                                            "保存完了", engineers.size() + "件のエンジニア情報を保存しました");
+                                } catch (Exception e) {
+                                    LogHandler.getInstance().logError(LogType.SYSTEM,
+                                            "一括保存後の処理中にエラーが発生しました", e);
+                                }
+                            });
+                        } else {
+                            // 保存失敗時の処理
+                            LogHandler.getInstance().log(Level.WARNING, LogType.SYSTEM,
+                                    "エンジニア情報の一括保存に失敗しました");
+
+                            javax.swing.SwingUtilities.invokeLater(() -> {
+                                DialogManager.getInstance().showErrorDialog(
+                                        "保存エラー", "エンジニア情報の一括保存に失敗しました");
+                            });
+                        }
+                    } catch (Exception e) {
+                        LogHandler.getInstance().logError(LogType.SYSTEM, "エンジニア情報の一括保存処理中にエラーが発生しました", e);
+
+                        javax.swing.SwingUtilities.invokeLater(() -> {
+                            DialogManager.getInstance().showErrorDialog(
+                                    "保存エラー", "エンジニア情報の一括保存中にエラーが発生しました: " + e.getMessage());
+                        });
+                    }
+                });
+
+            } catch (ClassCastException e) {
+                LogHandler.getInstance().logError(LogType.SYSTEM, "保存データの型が不正です", e);
+            } catch (Exception e) {
+                LogHandler.getInstance().logError(LogType.SYSTEM, "エンジニア情報の一括保存前処理中にエラーが発生しました", e);
+            }
+        }
+        // その他のデータ型（非対応）
+        else {
+            LogHandler.getInstance().log(Level.WARNING, LogType.SYSTEM,
+                    "未対応のデータ型が保存要求されました: " + (data != null ? data.getClass().getName() : "null"));
+        }
     }
 
     /**
