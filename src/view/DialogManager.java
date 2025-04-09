@@ -2,6 +2,7 @@ package view;
 
 import javax.swing.*;
 
+import model.EngineerDTO;
 import util.LogHandler;
 import util.LogHandler.LogType;
 
@@ -364,6 +365,69 @@ public class DialogManager {
             LogHandler.getInstance().logError(LogType.SYSTEM, "入力ダイアログの表示中にエラーが発生しました", e);
             Thread.currentThread().interrupt(); // 割り込みステータスを復元
             return null;
+        }
+    }
+
+    /**
+     * エンジニア登録完了時の選択ダイアログを表示します
+     * 続けて登録、一覧に戻る、詳細表示の3つの選択肢を提供
+     *
+     * @param engineer 登録されたエンジニア情報
+     * @return 選択されたアクション（"CONTINUE", "LIST", "DETAIL"のいずれか）
+     */
+    public String showRegisterCompletionDialog(EngineerDTO engineer) {
+        try {
+            // 非同期処理でダイアログを表示し、結果を待機
+            CompletableFuture<String> future = new CompletableFuture<>();
+
+            SwingUtilities.invokeLater(() -> {
+                // メッセージの構築
+                String message = String.format(
+                        "エンジニア情報を登録しました\nID: %s\n氏名: %s\n\n次のアクションを選択してください",
+                        engineer.getId(), engineer.getName());
+
+                // 選択肢ボタンの定義
+                String[] options = {
+                        "続けて登録", "一覧に戻る", "詳細を表示"
+                };
+
+                int result = JOptionPane.showOptionDialog(
+                        getActiveFrame(),
+                        message,
+                        "登録完了",
+                        JOptionPane.DEFAULT_OPTION,
+                        JOptionPane.INFORMATION_MESSAGE,
+                        null,
+                        options,
+                        options[0]);
+
+                // 選択結果をアクション文字列に変換
+                String action;
+                switch (result) {
+                    case 0:
+                        action = "CONTINUE";
+                        break;
+                    case 1:
+                        action = "LIST";
+                        break;
+                    case 2:
+                        action = "DETAIL";
+                        break;
+                    default:
+                        action = "CONTINUE"; // デフォルト
+                        break;
+                }
+
+                future.complete(action);
+            });
+
+            // 結果が利用可能になるまで待機
+            return future.get();
+
+        } catch (InterruptedException | ExecutionException e) {
+            LogHandler.getInstance().logError(LogType.SYSTEM, "登録完了ダイアログの表示中にエラーが発生しました", e);
+            Thread.currentThread().interrupt(); // 割り込みステータスを復元
+            return "CONTINUE"; // エラー時はデフォルト動作
         }
     }
 

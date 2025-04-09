@@ -161,6 +161,9 @@ public class MainController {
                 case "LOAD_DATA":
                     handleLoadData();
                     break;
+                case "VIEW_DETAIL":
+                    handleViewDetail((String) data);
+                    break;
                 case "SHUTDOWN":
                     initiateShutdown();
                     break;
@@ -319,6 +322,36 @@ public class MainController {
                 LogHandler.getInstance().logError(LogType.SYSTEM, "データ読み込みに失敗しました", e);
             }
         });
+    }
+
+    /**
+     * 詳細表示処理
+     * エンジニアIDを指定して詳細画面に遷移します
+     * 
+     * @param engineerId 表示するエンジニアID
+     */
+    private void handleViewDetail(String engineerId) {
+        try {
+            // エンジニア情報を取得
+            EngineerDTO engineer = engineerController.getEngineerById(engineerId);
+
+            if (engineer != null) {
+                // 詳細画面に遷移する前に表示データを設定
+                // DetailPanel（現在は実装されていない）へのデータ設定が必要
+
+                // 詳細画面に遷移
+                screenController.showPanel("DETAIL");
+
+                LogHandler.getInstance().log(Level.INFO, LogType.SYSTEM,
+                        "エンジニア詳細を表示: ID=" + engineerId);
+            } else {
+                LogHandler.getInstance().log(Level.WARNING, LogType.SYSTEM,
+                        "指定されたIDのエンジニアが見つかりません: " + engineerId);
+            }
+        } catch (Exception e) {
+            LogHandler.getInstance().logError(LogType.SYSTEM,
+                    "エンジニア詳細表示中にエラーが発生しました: ID=" + engineerId, e);
+        }
     }
 
     /**

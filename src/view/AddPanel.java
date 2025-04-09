@@ -556,13 +556,26 @@ public class AddPanel extends AbstractEngineerPanel {
                 // 保存イベント発行
                 mainController.handleEvent("SAVE_DATA", engineer);
 
-                // 登録成功メッセージの表示
-                // String message = MessageEnum.DIALOG_COMPLETION_ENGINEER_ADDED.format(
-                // engineer.getId(), engineer.getName());
-                // dialogManager.showCompletionDialog(message);
+                // 登録成功後のダイアログ表示と画面遷移処理
+                String action = dialogManager.showRegisterCompletionDialog(engineer);
 
-                // フォームのクリア
-                clearFields();
+                // 選択されたアクションに応じた処理
+                switch (action) {
+                    case "CONTINUE":
+                        // フォームをクリアして現在のページに留まる
+                        clearFields();
+                        break;
+
+                    case "LIST":
+                        // 一覧画面に戻る
+                        mainController.handleEvent("CHANGE_PANEL", "LIST");
+                        break;
+
+                    case "DETAIL":
+                        // 登録したエンジニアの詳細画面に遷移
+                        mainController.handleEvent("VIEW_DETAIL", engineer.getId());
+                        break;
+                }
             } else {
                 // コントローラー未設定エラー
                 showErrorMessage("システムエラー: コントローラーが設定されていません");
