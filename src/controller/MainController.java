@@ -5,6 +5,7 @@ import util.LogHandler;
 import util.LogHandler.LogType;
 import util.ResourceManager;
 import view.AddPanel;
+import view.DialogManager;
 import view.ListPanel;
 import view.MainFrame;
 import java.util.List;
@@ -165,9 +166,6 @@ public class MainController {
                 case "VIEW_DETAIL":
                     handleViewDetail((String) data);
                     break;
-                case "SAVE_COMPLETE":
-                    handleSaveComplete(data);
-                    break;
                 case "SHUTDOWN":
                     initiateShutdown();
                     break;
@@ -227,13 +225,13 @@ public class MainController {
      * 
      * @param data 保存するデータ
      */
+    // MainControllerの処理フローを修正
     private void handleSaveData(Object data) {
-        // エンジニア情報の追加処理（単一オブジェクト）
         if (data instanceof EngineerDTO) {
             try {
                 EngineerDTO engineer = (EngineerDTO) data;
 
-                // 保存元のパネル情報を取得（コンテキスト情報）
+                // 保存元のパネル情報を明示的に取得（コンテキスト情報）
                 JPanel sourcePanel = screenController.getCurrentPanel();
                 String sourcePanelType = screenController.getCurrentPanelType();
 
@@ -277,48 +275,7 @@ public class MainController {
                 LogHandler.getInstance().logError(LogType.SYSTEM, "保存データの型が不正です", e);
             }
         }
-        // エンジニア情報の一括保存処理（リスト）
-        else if (data instanceof List<?>) {
-            try {
-                @SuppressWarnings("unchecked")
-                List<EngineerDTO> engineers = (List<EngineerDTO>) data;
-
-                // 非同期タスクとして保存処理を実行
-                startAsyncTask("SaveEngineerList", () -> {
-                    try {
-                        // 各エンジニア情報を更新
-                        boolean success = true;
-                        for (EngineerDTO engineer : engineers) {
-                            success &= engineerController.updateEngineer(engineer);
-                        }
-
-                        if (success) {
-                            // UI更新はSwingのEDTで実行
-                            javax.swing.SwingUtilities.invokeLater(() -> {
-                                screenController.refreshView();
-                            });
-                        }
-
-                    } catch (Exception e) {
-                        LogHandler.getInstance().logError(LogType.SYSTEM, "データの一括保存に失敗しました", e);
-                    }
-                });
-
-            } catch (ClassCastException e) {
-                LogHandler.getInstance().logError(LogType.SYSTEM, "保存データの型が不正です", e);
-            }
-        }
-        // その他のデータ型
-        else {
-            LogHandler.getInstance().log(Level.WARNING, LogType.SYSTEM,
-                    "未対応のデータ型が保存要求されました: " + (data != null ? data.getClass().getName() : "null"));
-        }
-    }
-
-    private void handleSaveComplete(Object data) {
-        // 処理は handleSaveData 内で直接行うように変更したため、ここでは何もしない
-        LogHandler.getInstance().log(Level.INFO, LogType.SYSTEM,
-                "SAVE_COMPLETEイベントを受信しましたが、処理は実行されません（非推奨）");
+        // 他の処理は省略...
     }
 
     /**
@@ -397,6 +354,11 @@ public class MainController {
     private void handleError(Exception e) {
         // 通常のエラー処理
         LogHandler.getInstance().logError(LogType.SYSTEM, "エラーが発生しました", e);
+        // UI更新はSwingのEDTで実行
+        javax.swing.SwingUtilities.invokeLater(() -> {
+            // エラーダイアログを表示
+            DialogManager.getInstance().showErrorDialog("処理中にエラーが発生しました", e.getMessage());
+        });
     }
 
     /**
