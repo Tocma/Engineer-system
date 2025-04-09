@@ -500,31 +500,25 @@ public class AddPanel extends AbstractEngineerPanel {
         // 処理中表示ラベル
         progressLabel = new JLabel("登録中...");
         progressLabel.setVisible(false);
-        buttonPanel.add(progressLabel);
+        addButtonPanelComponent(progressLabel);
 
         // 戻るボタン
         backButton = new JButton("戻る");
-        backButton.addActionListener(new ActionListener() {
-            @Override
-            public void actionPerformed(ActionEvent e) {
-                if (!processing) {
-                    goBack();
-                }
+        backButton.addActionListener(e -> {
+            if (!processing) {
+                goBack();
             }
         });
-        buttonPanel.add(backButton);
+        addButton(backButton);
 
         // 登録ボタン
         addButton = new JButton("登録");
-        addButton.addActionListener(new ActionListener() {
-            @Override
-            public void actionPerformed(ActionEvent e) {
-                if (!processing) {
-                    addEngineer();
-                }
+        addButton.addActionListener(e -> {
+            if (!processing) {
+                addEngineer();
             }
         });
-        buttonPanel.add(addButton);
+        addButton(addButton);
 
         // パネルへの追加
         add(buttonPanel, BorderLayout.SOUTH);
@@ -556,26 +550,9 @@ public class AddPanel extends AbstractEngineerPanel {
                 // 保存イベント発行
                 mainController.handleEvent("SAVE_DATA", engineer);
 
-                // 登録成功後のダイアログ表示と画面遷移処理
-                String action = dialogManager.showRegisterCompletionDialog(engineer);
+                // 一時的に処理中表示を表示
+                setProcessing(true);
 
-                // 選択されたアクションに応じた処理
-                switch (action) {
-                    case "CONTINUE":
-                        // フォームをクリアして現在のページに留まる
-                        clearFields();
-                        break;
-
-                    case "LIST":
-                        // 一覧画面に戻る
-                        mainController.handleEvent("CHANGE_PANEL", "LIST");
-                        break;
-
-                    case "DETAIL":
-                        // 登録したエンジニアの詳細画面に遷移
-                        mainController.handleEvent("VIEW_DETAIL", engineer.getId());
-                        break;
-                }
             } else {
                 // コントローラー未設定エラー
                 showErrorMessage("システムエラー: コントローラーが設定されていません");
@@ -587,6 +564,32 @@ public class AddPanel extends AbstractEngineerPanel {
         } finally {
             // 処理中状態の解除
             setProcessing(false);
+        }
+    }
+
+    public void handleSaveComplete(EngineerDTO engineer) {
+        // 処理中状態を解除
+        setProcessing(false);
+
+        // 登録成功後のダイアログ表示と画面遷移処理
+        String action = dialogManager.showRegisterCompletionDialog(engineer);
+
+        // 選択されたアクションに応じた処理
+        switch (action) {
+            case "CONTINUE":
+                // フォームをクリアして現在のページに留まる
+                clearFields();
+                break;
+
+            case "LIST":
+                // 一覧画面に戻る
+                mainController.handleEvent("CHANGE_PANEL", "LIST");
+                break;
+
+            case "DETAIL":
+                // 登録したエンジニアの詳細画面に遷移
+                mainController.handleEvent("VIEW_DETAIL", engineer.getId());
+                break;
         }
     }
 

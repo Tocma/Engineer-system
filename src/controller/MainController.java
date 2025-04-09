@@ -4,6 +4,7 @@ import model.EngineerDTO;
 import util.LogHandler;
 import util.LogHandler.LogType;
 import util.ResourceManager;
+import view.AddPanel;
 import view.ListPanel;
 import view.MainFrame;
 import java.util.List;
@@ -164,6 +165,9 @@ public class MainController {
                 case "VIEW_DETAIL":
                     handleViewDetail((String) data);
                     break;
+                case "SAVE_COMPLETE":
+                    handleSaveComplete(data);
+                    break;
                 case "SHUTDOWN":
                     initiateShutdown();
                     break;
@@ -246,6 +250,8 @@ public class MainController {
 
                                 // 画面更新
                                 screenController.refreshView();
+                                // 保存完了のイベントを発生させる
+                                handleEvent("SAVE_COMPLETE", engineer);
 
                             });
                         }
@@ -295,6 +301,19 @@ public class MainController {
         else {
             LogHandler.getInstance().log(Level.WARNING, LogType.SYSTEM,
                     "未対応のデータ型が保存要求されました: " + (data != null ? data.getClass().getName() : "null"));
+        }
+    }
+
+    private void handleSaveComplete(Object data) {
+        if (data instanceof EngineerDTO) {
+            EngineerDTO engineer = (EngineerDTO) data;
+
+            // 現在のパネルがAddPanelの場合、ダイアログを表示
+            JPanel currentPanel = screenController.getCurrentPanel();
+            if (currentPanel instanceof AddPanel) {
+                AddPanel addPanel = (AddPanel) currentPanel;
+                addPanel.handleSaveComplete(engineer);
+            }
         }
     }
 

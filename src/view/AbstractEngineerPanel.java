@@ -109,6 +109,12 @@ public abstract class AbstractEngineerPanel extends JPanel {
     /** DialogManager参照 */
     protected final DialogManager dialogManager;
 
+    /** ボタンを配置するパネル */
+    protected JPanel buttonPanel;
+
+    /** 下部パネル（エラーメッセージとボタンを格納） */
+    protected JPanel bottomPanel;
+
     /**
      * コンストラクタ
      * パネルの基本設定とコンポーネントマップの初期化
@@ -177,18 +183,94 @@ public abstract class AbstractEngineerPanel extends JPanel {
      * 下部にエラーメッセージを表示するエリアを確保
      */
     private void setupErrorMessageLabel() {
-        // エラーメッセージラベルの作成
+        /// エラーメッセージラベルの作成
         errorMessageLabel = new JLabel("");
         errorMessageLabel.setForeground(ERROR_COLOR);
         errorMessageLabel.setVisible(false);
 
-        // 下部パネルの作成
-        JPanel bottomPanel = new JPanel(new FlowLayout(FlowLayout.LEFT));
-        bottomPanel.add(errorMessageLabel);
+        // 下部パネルの作成 - BorderLayoutに変更
+        bottomPanel = new JPanel(new BorderLayout());
         bottomPanel.setBackground(Color.WHITE);
+
+        // エラーメッセージ用パネル
+        JPanel errorPanel = new JPanel(new FlowLayout(FlowLayout.LEFT));
+        errorPanel.setBackground(Color.WHITE);
+        errorPanel.add(errorMessageLabel);
+
+        // エラーメッセージを左側に配置
+        bottomPanel.add(errorPanel, BorderLayout.WEST);
+
+        // ボタンパネルを初期化（右寄せ）
+        buttonPanel = new JPanel(new FlowLayout(FlowLayout.RIGHT));
+        buttonPanel.setBackground(Color.WHITE);
+
+        // ボタンパネルを右側に配置
+        bottomPanel.add(buttonPanel, BorderLayout.EAST);
 
         // メインパネルの下部に配置
         add(bottomPanel, BorderLayout.SOUTH);
+    }
+
+    /**
+     * ボタンパネルにボタンを追加
+     * 派生クラスから呼び出して操作ボタンを追加する
+     *
+     * @param button 追加するボタン
+     * @return 追加したボタン（メソッドチェーン用）
+     */
+    protected JButton addButton(JButton button) {
+        if (buttonPanel != null) {
+            buttonPanel.add(button);
+            return button;
+        }
+        return null;
+    }
+
+    /**
+     * ボタンパネルにコンポーネントを追加
+     * ボタン以外のコンポーネント（ラベル、プログレスバーなど）を追加
+     *
+     * @param component 追加するコンポーネント
+     * @return 追加したコンポーネント（メソッドチェーン用）
+     */
+    protected Component addButtonPanelComponent(Component component) {
+        if (buttonPanel != null) {
+            buttonPanel.add(component);
+            return component;
+        }
+        return null;
+    }
+
+    /**
+     * ボタンパネルの内容をクリア
+     * すべてのボタンとコンポーネントを削除
+     */
+    protected void clearButtonPanel() {
+        if (buttonPanel != null) {
+            buttonPanel.removeAll();
+            buttonPanel.revalidate();
+            buttonPanel.repaint();
+        }
+    }
+
+    /**
+     * ボタンパネルを取得
+     * 直接アクセスが必要な場合に使用
+     *
+     * @return ボタンパネル
+     */
+    protected JPanel getButtonPanel() {
+        return buttonPanel;
+    }
+
+    /**
+     * 下部パネルを取得
+     * 直接アクセスが必要な場合に使用
+     *
+     * @return 下部パネル（エラーメッセージとボタンを含む）
+     */
+    protected JPanel getBottomPanel() {
+        return bottomPanel;
     }
 
     /**
