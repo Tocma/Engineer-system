@@ -143,7 +143,7 @@ public class AddPanel extends AbstractEngineerPanel {
     private JTextArea noteArea;
 
     /** ダイアログマネージャー */
-    // private DialogManager dialogManager;
+    private DialogManager dialogManager;
 
     /**
      * コンストラクタ
@@ -153,7 +153,7 @@ public class AddPanel extends AbstractEngineerPanel {
         super();
         this.processing = false;
         this.languageCheckBoxes = new ArrayList<>();
-        // this.dialogManager = DialogManager.getInstance();
+        this.dialogManager = DialogManager.getInstance();
         LogHandler.getInstance().log(Level.INFO, LogType.UI, "AddPanelを作成しました");
     }
 
