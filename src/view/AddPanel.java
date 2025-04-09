@@ -11,8 +11,6 @@ import util.MessageEnum;
 import javax.swing.*;
 import javax.swing.text.JTextComponent;
 import java.awt.*;
-import java.awt.event.ActionEvent;
-import java.awt.event.ActionListener;
 import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.List;
@@ -491,12 +489,14 @@ public class AddPanel extends AbstractEngineerPanel {
     /**
      * ボタン領域の作成
      * 「登録」ボタンと「戻る」ボタンを配置
+     * 
+     * <p>
+     * このメソッドは親クラスの{@code buttonPanel}フィールドに操作ボタンを追加します。
+     * ローカル変数として新しいパネルを作成せず、親クラスのパネルを直接使用することで、
+     * ボタンが正しく表示されるようにします。
+     * </p>
      */
     private void createButtonArea() {
-        // ボタンパネル
-        JPanel buttonPanel = new JPanel(new FlowLayout(FlowLayout.RIGHT));
-        buttonPanel.setBackground(Color.WHITE);
-
         // 処理中表示ラベル
         progressLabel = new JLabel("登録中...");
         progressLabel.setVisible(false);
@@ -519,9 +519,6 @@ public class AddPanel extends AbstractEngineerPanel {
             }
         });
         addButton(addButton);
-
-        // パネルへの追加
-        add(buttonPanel, BorderLayout.SOUTH);
     }
 
     /**
@@ -567,6 +564,12 @@ public class AddPanel extends AbstractEngineerPanel {
         }
     }
 
+    /**
+     * 保存完了処理
+     * 保存処理が完了した後の処理（成功ダイアログの表示、画面遷移など）
+     *
+     * @param engineer 保存されたエンジニア情報
+     */
     public void handleSaveComplete(EngineerDTO engineer) {
         // 処理中状態を解除
         setProcessing(false);
