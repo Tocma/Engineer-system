@@ -384,10 +384,25 @@ public class DialogManager {
      * </ul>
      * 
      * <p>
-     * このメソッドは非同期のSwingのEDT（Event Dispatch Thread）上でダイアログを表示し、
-     * ユーザーの選択結果を同期的に待機して返却します。CompletableFutureを使用して
-     * 非同期処理と結果の取得を安全に行います。
+     * このメソッドは、呼び出し元のスレッドがイベントディスパッチスレッド(EDT)かどうかを
+     * 自動的に検出し、適切な方法でダイアログ表示を行います：
      * </p>
+     * 
+     * <ul>
+     * <li>EDT上から呼び出された場合：直接ダイアログを表示し、結果を同期的に返します</li>
+     * <li>非EDT上から呼び出された場合：CompletableFutureを使用して、EDTでダイアログを表示し、
+     * 結果が得られるまで安全に待機します</li>
+     * </ul>
+     * 
+     * <p>
+     * この実装による主な利点：
+     * </p>
+     * 
+     * <ul>
+     * <li>EDTでのデッドロック防止: EDT上での呼び出し時にCompletableFuture.get()によるEDTブロックを回避</li>
+     * <li>一貫した使用方法: 呼び出し元は、どのスレッドから呼び出してもAPIの使い方を変更する必要がない</li>
+     * <li>堅牢なエラーハンドリング: 例外発生時も確実に結果を返し、EDTブロックを防止</li>
+     * </ul>
      * 
      * <p>
      * エラーが発生した場合でも適切にハンドリングし、ログに記録した上でデフォルトの
@@ -396,9 +411,8 @@ public class DialogManager {
      * </p>
      * 
      * <p>
-     * このメソッドは、ダイアログ表示の信頼性を高めるため、各処理ステップでのロギングを
-     * 強化しています。ダイアログの表示状況やユーザーの選択結果をログに記録することで、
-     * 問題が発生した場合のトラブルシューティングを容易にしています。
+     * このメソッドは、処理の各ステップでロギングを行い、問題が発生した場合の
+     * トラブルシューティングを容易にしています。
      * </p>
      *
      * @param engineer 登録されたエンジニア情報（{@link EngineerDTO}オブジェクト）
@@ -407,6 +421,117 @@ public class DialogManager {
     public String showRegisterCompletionDialog(EngineerDTO engineer) {
         LogHandler.getInstance().log(Level.INFO, LogType.SYSTEM,
                 "登録完了ダイアログ表示処理を開始: ID=" + engineer.getId());
+
+        // イベントディスパッチスレッド（EDT）上で実行されているかを確認
+        if (SwingUtilities.isEventDispatchThread()) {
+            LogHandler.getInstance().log(Level.INFO, LogType.SYSTEM,
+                    "EDT上での直接ダイアログ表示を実行: ID=" + engineer.getId());
+            // EDT上で直接ダイアログを表示
+            return showCompletionDialogDirectly(engineer);
+        } else {
+            LogHandler.getInstance().log(Level.INFO, LogType.SYSTEM,
+                    "非EDT上での非同期ダイアログ表示を実行: ID=" + engineer.getId());
+            // 非EDT上からの呼び出し - CompletableFutureを使用
+            return showCompletionDialogAsync(engineer);
+        }
+    }
+
+    /**
+     * EDT上で直接登録完了ダイアログを表示します（内部メソッド）
+     * <p>
+     * このメソッドは、イベントディスパッチスレッド(EDT)上から呼び出される場合に使用され、
+     * ダイアログを直接表示して結果を返します。CompletableFutureのようなスレッド間通信
+     * メカニズムを使用せず、同期的に処理を行うため、EDTブロックのリスクを回避します。
+     * </p>
+     * 
+     * @param engineer 登録されたエンジニア情報
+     * @return 選択されたアクション
+     */
+    private String showCompletionDialogDirectly(EngineerDTO engineer) {
+        LogHandler.getInstance().log(Level.INFO, LogType.SYSTEM,
+                "直接ダイアログ表示を開始: ID=" + engineer.getId());
+
+        try {
+            // メッセージの構築
+            String message = String.format(
+                    "エンジニア情報を登録しました\nID: %s\n氏名: %s\n\n次のアクションを選択してください",
+                    engineer.getId(), engineer.getName());
+
+            // 選択肢ボタンの定義
+            String[] options = {
+                    "続けて登録", "一覧に戻る", "詳細を表示"
+            };
+
+            LogHandler.getInstance().log(Level.INFO, LogType.SYSTEM,
+                    "ダイアログを表示します: ID=" + engineer.getId());
+
+            // ダイアログを表示し、選択結果を取得
+            int result = JOptionPane.showOptionDialog(
+                    getActiveFrame(),
+                    message,
+                    "登録完了",
+                    JOptionPane.DEFAULT_OPTION,
+                    JOptionPane.INFORMATION_MESSAGE,
+                    null,
+                    options,
+                    options[0]);
+
+            LogHandler.getInstance().log(Level.INFO, LogType.SYSTEM,
+                    "ダイアログの選択結果: " + result + ", ID=" + engineer.getId());
+
+            // 選択結果をアクション文字列に変換
+            String action;
+            switch (result) {
+                case 0:
+                    action = "CONTINUE";
+                    break;
+                case 1:
+                    action = "LIST";
+                    break;
+                case 2:
+                    action = "DETAIL";
+                    break;
+                case JOptionPane.CLOSED_OPTION: // ダイアログが閉じられた場合
+                    LogHandler.getInstance().log(Level.INFO, LogType.SYSTEM,
+                            "ダイアログが閉じられました - デフォルトアクションを使用: ID=" + engineer.getId());
+                    action = "CONTINUE"; // デフォルト
+                    break;
+                default:
+                    LogHandler.getInstance().log(Level.WARNING, LogType.SYSTEM,
+                            "予期しない選択結果: " + result + " - デフォルトアクションを使用: ID=" + engineer.getId());
+                    action = "CONTINUE"; // デフォルト
+                    break;
+            }
+
+            LogHandler.getInstance().log(Level.INFO, LogType.SYSTEM,
+                    "直接ダイアログ処理完了 - 選択アクション: " + action + ", ID=" + engineer.getId());
+
+            return action;
+
+        } catch (Exception e) {
+            // ダイアログ表示中のエラー
+            LogHandler.getInstance().logError(LogType.SYSTEM,
+                    "直接ダイアログ表示中にエラーが発生しました: ID=" + engineer.getId(), e);
+
+            // エラー時はデフォルトアクションを返す
+            return "CONTINUE";
+        }
+    }
+
+    /**
+     * 非EDT上から登録完了ダイアログを非同期的に表示します（内部メソッド）
+     * <p>
+     * このメソッドは、イベントディスパッチスレッド(EDT)以外のスレッドから呼び出される場合に使用され、
+     * CompletableFutureを使用してEDT上でダイアログを表示し、その結果を安全に待機します。
+     * EDTをブロックすることなく、ダイアログの結果を非同期に取得することができます。
+     * </p>
+     * 
+     * @param engineer 登録されたエンジニア情報
+     * @return 選択されたアクション
+     */
+    private String showCompletionDialogAsync(EngineerDTO engineer) {
+        LogHandler.getInstance().log(Level.INFO, LogType.SYSTEM,
+                "非同期ダイアログ表示を開始: ID=" + engineer.getId());
 
         try {
             // 非同期処理でダイアログを表示し、結果を待機するためのFuture
@@ -491,27 +616,27 @@ public class DialogManager {
             String result = future.get();
 
             LogHandler.getInstance().log(Level.INFO, LogType.SYSTEM,
-                    "登録完了ダイアログ処理が完了: アクション=" + result + ", ID=" + engineer.getId());
+                    "非同期ダイアログ処理完了 - アクション=" + result + ", ID=" + engineer.getId());
 
             return result;
 
         } catch (InterruptedException e) {
             // 割り込み発生時
             LogHandler.getInstance().logError(LogType.SYSTEM,
-                    "登録完了ダイアログの待機中に割り込みが発生しました: ID=" + engineer.getId(), e);
+                    "非同期ダイアログの待機中に割り込みが発生しました: ID=" + engineer.getId(), e);
             Thread.currentThread().interrupt(); // 割り込みステータスを復元
             return "CONTINUE"; // エラー時はデフォルト動作
 
         } catch (ExecutionException e) {
             // 実行時エラー
             LogHandler.getInstance().logError(LogType.SYSTEM,
-                    "登録完了ダイアログの実行中にエラーが発生しました: ID=" + engineer.getId(), e);
+                    "非同期ダイアログの実行中にエラーが発生しました: ID=" + engineer.getId(), e);
             return "CONTINUE"; // エラー時はデフォルト動作
 
         } catch (Exception e) {
             // その他の予期しないエラー
             LogHandler.getInstance().logError(LogType.SYSTEM,
-                    "登録完了ダイアログ処理中に予期しないエラーが発生しました: ID=" + engineer.getId(), e);
+                    "非同期ダイアログ処理中に予期しないエラーが発生しました: ID=" + engineer.getId(), e);
             return "CONTINUE"; // エラー時はデフォルト動作
         }
     }
