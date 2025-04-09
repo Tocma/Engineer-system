@@ -547,18 +547,17 @@ public class AddPanel extends AbstractEngineerPanel {
                 // 保存イベント発行
                 mainController.handleEvent("SAVE_DATA", engineer);
 
-                // 一時的に処理中表示を表示
-                setProcessing(true);
-
+                // 注意: 処理中状態の解除は handleSaveComplete で行うため、ここでは行わない
             } else {
                 // コントローラー未設定エラー
                 showErrorMessage("システムエラー: コントローラーが設定されていません");
+                // 処理中状態の解除
+                setProcessing(false);
             }
 
         } catch (Exception e) {
             LogHandler.getInstance().logError(LogType.UI, "エンジニア追加処理中にエラーが発生しました", e);
             showErrorMessage("エンジニア情報の登録中にエラーが発生しました: " + e.getMessage());
-        } finally {
             // 処理中状態の解除
             setProcessing(false);
         }
@@ -969,7 +968,7 @@ public class AddPanel extends AbstractEngineerPanel {
      *
      * @param processing 処理中の場合true
      */
-    private void setProcessing(boolean processing) {
+    public void setProcessing(boolean processing) {
         this.processing = processing;
 
         // UIコンポーネントの有効/無効を切り替え

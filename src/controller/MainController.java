@@ -233,6 +233,10 @@ public class MainController {
             try {
                 EngineerDTO engineer = (EngineerDTO) data;
 
+                // 保存元のパネル情報を取得（コンテキスト情報）
+                JPanel sourcePanel = screenController.getCurrentPanel();
+                String sourcePanelType = screenController.getCurrentPanelType();
+
                 // 非同期タスクとして保存処理を実行
                 startAsyncTask("SaveEngineer", () -> {
                     try {
@@ -248,16 +252,24 @@ public class MainController {
                                     ((ListPanel) currentPanel).addEngineerData(engineer);
                                 }
 
+                                // 保存元のパネルがAddPanelの場合は完了処理を直接呼び出す
+                                if (sourcePanel instanceof AddPanel && "ADD".equals(sourcePanelType)) {
+                                    ((AddPanel) sourcePanel).handleSaveComplete(engineer);
+                                }
+
                                 // 画面更新
                                 screenController.refreshView();
-                                // 保存完了のイベントを発生させる
-                                handleEvent("SAVE_COMPLETE", engineer);
-
                             });
                         }
-
                     } catch (Exception e) {
                         LogHandler.getInstance().logError(LogType.SYSTEM, "エンジニア情報の保存に失敗しました", e);
+
+                        // エラー時に処理中状態を解除
+                        javax.swing.SwingUtilities.invokeLater(() -> {
+                            if (sourcePanel instanceof AddPanel) {
+                                ((AddPanel) sourcePanel).setProcessing(false);
+                            }
+                        });
                     }
                 });
 
@@ -284,7 +296,6 @@ public class MainController {
                             // UI更新はSwingのEDTで実行
                             javax.swing.SwingUtilities.invokeLater(() -> {
                                 screenController.refreshView();
-
                             });
                         }
 
@@ -305,16 +316,9 @@ public class MainController {
     }
 
     private void handleSaveComplete(Object data) {
-        if (data instanceof EngineerDTO) {
-            EngineerDTO engineer = (EngineerDTO) data;
-
-            // 現在のパネルがAddPanelの場合、ダイアログを表示
-            JPanel currentPanel = screenController.getCurrentPanel();
-            if (currentPanel instanceof AddPanel) {
-                AddPanel addPanel = (AddPanel) currentPanel;
-                addPanel.handleSaveComplete(engineer);
-            }
-        }
+        // 処理は handleSaveData 内で直接行うように変更したため、ここでは何もしない
+        LogHandler.getInstance().log(Level.INFO, LogType.SYSTEM,
+                "SAVE_COMPLETEイベントを受信しましたが、処理は実行されません（非推奨）");
     }
 
     /**
