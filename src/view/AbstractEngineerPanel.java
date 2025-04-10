@@ -1,16 +1,19 @@
 package view;
 
-import javax.swing.*;
-import javax.swing.border.Border;
-
-import java.awt.*;
-import java.time.LocalDate;
-import java.util.List;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.Map;
+import model.EngineerDTO;
 import util.LogHandler;
 import util.LogHandler.LogType;
+import util.MessageEnum;
+import util.ValidatorEnum;
+
+import javax.swing.*;
+import javax.swing.border.Border;
+import javax.swing.text.JTextComponent;
+import java.awt.*;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 import java.util.logging.Level;
 import java.util.regex.Pattern;
 
@@ -22,6 +25,16 @@ import java.util.regex.Pattern;
  * このクラスは、エンジニア情報の詳細表示・編集・追加に関連するパネル（DetailPanel、AddPanel）の
  * 共通基盤として機能します。Template Methodパターンを活用して、共通処理を定義しつつ、
  * サブクラス固有の振る舞いをフックメソッドで拡張できるようにしています。
+ * </p>
+ *
+ * <p>
+ * バージョン4.1.0で追加された主な機能：
+ * <ul>
+ * <li>フィールドごとのエラーメッセージ表示機能</li>
+ * <li>複数のバリデーションエラーの同時表示</li>
+ * <li>エラー状態の視覚的な表示の改善</li>
+ * <li>入力フォームの構造改善（エラーメッセージ表示領域の追加）</li>
+ * </ul>
  * </p>
  *
  * <p>
@@ -58,15 +71,22 @@ import java.util.regex.Pattern;
  * 
  *     @Override
  *     protected boolean validateInput() {
+ *         boolean isValid = true;
+ * 
  *         // 入力検証ロジック
+ *         if (isEmpty(nameField)) {
+ *             showFieldError("nameField", "氏名は必須です");
+ *             isValid = false;
+ *         }
+ * 
  *         return isValid;
  *     }
  * }
  * </pre>
  *
  * @author Nakano
- * @version 4.0.0
- * @since 2025-04-08
+ * @version 4.1.0
+ * @since 2025-04-11
  */
 public abstract class AbstractEngineerPanel extends JPanel {
 
@@ -76,8 +96,11 @@ public abstract class AbstractEngineerPanel extends JPanel {
     /** コンポーネントを格納するマップ（キー：コンポーネント名、値：コンポーネント） */
     protected Map<String, Component> components;
 
-    /** エラーメッセージを表示するラベル */
+    /** エラーメッセージを表示するラベル（全体的なエラー表示用） */
     protected JLabel errorMessageLabel;
+
+    /** フィールドごとのエラーメッセージラベルを格納するマップ */
+    protected Map<String, JLabel> fieldErrorLabels;
 
     /** パネルの初期化済みフラグ */
     protected boolean initialized;
@@ -87,6 +110,9 @@ public abstract class AbstractEngineerPanel extends JPanel {
 
     /** ラベルとフィールド間のマージン */
     protected static final int LABEL_FIELD_MARGIN = 5;
+
+    /** フィールドとエラーメッセージ間のマージン */
+    protected static final int FIELD_ERROR_MARGIN = 2;
 
     /** 必須項目を表すマーク */
     protected static final String REQUIRED_MARK = " *";
@@ -122,6 +148,7 @@ public abstract class AbstractEngineerPanel extends JPanel {
     public AbstractEngineerPanel() {
         super(new BorderLayout());
         this.components = new HashMap<>();
+        this.fieldErrorLabels = new HashMap<>();
         this.errorComponents = new HashMap<>();
         this.originalBorders = new HashMap<>();
         this.initialized = false;
@@ -209,6 +236,28 @@ public abstract class AbstractEngineerPanel extends JPanel {
 
         // メインパネルの下部に配置
         add(bottomPanel, BorderLayout.SOUTH);
+    }
+
+    /**
+     * フィールドのエラーメッセージラベルを作成
+     * 各入力フィールドに対応するエラーメッセージ表示用のラベルを生成
+     * 
+     * @param fieldName フィールド名（エラーラベルの識別子として使用）
+     * @return 作成したエラーメッセージラベル
+     */
+    protected JLabel createFieldErrorLabel(String fieldName) {
+        JLabel errorLabel = new JLabel(" ");
+        errorLabel.setForeground(ERROR_COLOR);
+        errorLabel.setVisible(false);
+        errorLabel.setFont(errorLabel.getFont().deriveFont(Font.PLAIN, 11f));
+
+        // マップに登録
+        fieldErrorLabels.put(fieldName, errorLabel);
+
+        // コンポーネントマップにも登録（一般的なコンポーネント検索用）
+        registerComponent(fieldName + "ErrorLabel", errorLabel);
+
+        return errorLabel;
     }
 
     /**
@@ -383,12 +432,72 @@ public abstract class AbstractEngineerPanel extends JPanel {
 
     /**
      * フォーム行パネルを作成
-     * ラベルとフィールドを水平に配置
+     * ラベル、フィールド、エラーメッセージを適切に配置
+     * 
+     * <p>
+     * このメソッドは、入力フォームの1行を構成するパネルを作成します。
+     * 左側にラベル、右側にフィールドとその下にエラーメッセージを配置します。
+     * フィールド名から自動的にエラーラベルを作成し、適切に関連付けます。
+     * </p>
+     *
+     * @param label     ラベルコンポーネント
+     * @param field     フィールドコンポーネント
+     * @param fieldName フィールドの識別名（エラーメッセージ関連付け用）
+     * @return 行パネル
+     */
+    protected JPanel createFormRow(JLabel label, Component field, String fieldName) {
+        JPanel rowPanel = new JPanel();
+        rowPanel.setLayout(new BorderLayout(LABEL_FIELD_MARGIN, 0));
+        rowPanel.setBackground(Color.WHITE);
+
+        // ラベルを固定幅で配置
+        JPanel labelPanel = new JPanel(new FlowLayout(FlowLayout.LEFT, 0, 0));
+        labelPanel.setBackground(Color.WHITE);
+        labelPanel.setPreferredSize(new Dimension(120, 25)); // 幅を少し増やす
+        labelPanel.add(label);
+
+        // フィールドとエラーメッセージを縦に配置するパネル
+        JPanel fieldContainer = new JPanel();
+        fieldContainer.setLayout(new BoxLayout(fieldContainer, BoxLayout.Y_AXIS));
+        fieldContainer.setBackground(Color.WHITE);
+
+        // フィールドパネル（フィールドを横幅いっぱいに表示）
+        JPanel fieldPanel = new JPanel(new BorderLayout());
+        fieldPanel.setBackground(Color.WHITE);
+        fieldPanel.add(field, BorderLayout.CENTER);
+
+        // フィールドコンテナにフィールドを追加
+        fieldContainer.add(fieldPanel);
+
+        // エラーメッセージラベルの作成と追加
+        JLabel errorLabel = createFieldErrorLabel(fieldName);
+        JPanel errorPanel = new JPanel(new FlowLayout(FlowLayout.LEFT, 0, 0));
+        errorPanel.setBackground(Color.WHITE);
+        errorPanel.add(errorLabel);
+
+        // フィールドとエラーメッセージの間にスペースを追加
+        fieldContainer.add(Box.createVerticalStrut(FIELD_ERROR_MARGIN));
+
+        // エラーメッセージパネルを追加
+        fieldContainer.add(errorPanel);
+
+        // 行パネルにラベルとフィールドコンテナを追加
+        rowPanel.add(labelPanel, BorderLayout.WEST);
+        rowPanel.add(fieldContainer, BorderLayout.CENTER);
+
+        return rowPanel;
+    }
+
+    /**
+     * フォーム行パネルを作成（旧メソッド - 後方互換性用）
+     * ラベルとフィールドのみを配置する単純な行を作成
      *
      * @param label ラベルコンポーネント
      * @param field フィールドコンポーネント
      * @return 行パネル
+     * @deprecated 代わりに {@link #createFormRow(JLabel, Component, String)} を使用してください
      */
+    @Deprecated
     protected JPanel createFormRow(JLabel label, Component field) {
         JPanel rowPanel = new JPanel();
         rowPanel.setLayout(new BorderLayout(LABEL_FIELD_MARGIN, 0));
@@ -418,6 +527,7 @@ public abstract class AbstractEngineerPanel extends JPanel {
 
     /**
      * エラーメッセージを表示
+     * 全体的なエラーメッセージを表示します
      *
      * @param message 表示するエラーメッセージ
      */
@@ -428,11 +538,65 @@ public abstract class AbstractEngineerPanel extends JPanel {
     }
 
     /**
+     * フィールド固有のエラーメッセージを表示
+     * 特定のフィールドに関連付けられたエラーメッセージを表示し、
+     * そのフィールドにエラー表示を設定します
+     * 
+     * <p>
+     * このメソッドは、入力フォームの特定のフィールドにエラーを表示します。
+     * 該当フィールドの下部にエラーメッセージを表示し、フィールド自体に
+     * エラー状態（赤枠など）を設定します。
+     * </p>
+     * 
+     * @param fieldName    フィールド名
+     * @param errorMessage エラーメッセージ
+     */
+    protected void showFieldError(String fieldName, String errorMessage) {
+        // フィールドのエラーラベルを取得
+        JLabel errorLabel = fieldErrorLabels.get(fieldName);
+
+        if (errorLabel != null) {
+            // エラーメッセージを設定して表示
+            errorLabel.setText(errorMessage);
+            errorLabel.setVisible(true);
+
+            // フィールドにエラー表示を設定（赤枠など）
+            markComponentError(fieldName, null);
+
+            LogHandler.getInstance().log(Level.WARNING, LogType.UI,
+                    "フィールドエラーを表示: " + fieldName + " - " + errorMessage);
+        } else {
+            // フィールド固有のエラーラベルがない場合は全体エラーに表示
+            showErrorMessage(errorMessage);
+            markComponentError(fieldName, null);
+
+            LogHandler.getInstance().log(Level.WARNING, LogType.UI,
+                    "フィールドエラーラベルが見つからないため全体エラーに表示: " + fieldName);
+        }
+    }
+
+    /**
      * エラーメッセージをクリア
+     * 全体エラーメッセージを非表示にします
      */
     protected void clearErrorMessage() {
         errorMessageLabel.setText("");
         errorMessageLabel.setVisible(false);
+    }
+
+    /**
+     * すべてのフィールドエラーメッセージをクリア
+     * 各フィールドに表示されているエラーメッセージをすべて非表示にします
+     */
+    protected void clearAllFieldErrors() {
+        // すべてのフィールドエラーラベルを非表示に
+        for (JLabel errorLabel : fieldErrorLabels.values()) {
+            errorLabel.setText(" ");
+            errorLabel.setVisible(false);
+        }
+
+        // 全体エラーメッセージもクリア
+        clearErrorMessage();
     }
 
     /**
@@ -472,7 +636,7 @@ public abstract class AbstractEngineerPanel extends JPanel {
 
     /**
      * コンポーネントのエラー表示をクリア
-     * 特定のコンポーネントのエラー表示を解除
+     * 特定のコンポーネントのエラー表示を解除し、関連するエラーメッセージも非表示にします
      *
      * @param componentName エラー表示を解除するコンポーネント名
      */
@@ -489,11 +653,19 @@ public abstract class AbstractEngineerPanel extends JPanel {
                 jComponent.setBorder(null);
             }
         }
+
+        // 対応するフィールドエラーがあれば非表示に
+        JLabel errorLabel = fieldErrorLabels.get(componentName);
+        if (errorLabel != null) {
+            errorLabel.setText(" ");
+            errorLabel.setVisible(false);
+        }
     }
 
     /**
      * すべてのコンポーネントのエラー表示をクリア
-     * エラー表示されているすべてのコンポーネントを元の状態に戻す
+     * エラー表示されているすべてのコンポーネントを元の状態に戻し、
+     * すべてのエラーメッセージを非表示にします
      */
     protected void clearAllComponentErrors() {
         // エラーコンポーネントのコピーを作成（反復処理中の変更を回避）
@@ -503,6 +675,9 @@ public abstract class AbstractEngineerPanel extends JPanel {
         for (String componentName : componentNames) {
             clearComponentError(componentName);
         }
+
+        // すべてのフィールドエラーをクリア
+        clearAllFieldErrors();
 
         // エラーメッセージをクリア
         clearErrorMessage();
@@ -551,6 +726,41 @@ public abstract class AbstractEngineerPanel extends JPanel {
     /**
      * 入力検証を実行
      * サブクラスでオーバーライドして具体的な検証ロジックを実装
+     * 
+     * <p>
+     * 新しいバリデーションパターン（バージョン4.1.0以降）:
+     * </p>
+     * 
+     * <pre>
+     * protected boolean validateInput() {
+     *     boolean isValid = true;
+     * 
+     *     // すべてのエラーをクリア
+     *     clearAllComponentErrors();
+     * 
+     *     // 氏名の検証
+     *     if (isEmpty(nameField)) {
+     *         showFieldError("nameField", "氏名は必須項目です");
+     *         isValid = false;
+     *     }
+     * 
+     *     // 社員IDの検証
+     *     if (isEmpty(idField)) {
+     *         showFieldError("idField", "社員IDは必須項目です");
+     *         isValid = false;
+     *     }
+     * 
+     *     // 最初のエラーフィールドにフォーカスを設定
+     *     if (!isValid && !errorComponents.isEmpty()) {
+     *         Component firstErrorComponent = errorComponents.values().iterator().next();
+     *         if (firstErrorComponent instanceof JComponent) {
+     *             ((JComponent) firstErrorComponent).requestFocus();
+     *         }
+     *     }
+     * 
+     *     return isValid;
+     * }
+     * </pre>
      *
      * @return 検証成功の場合true、失敗の場合false
      */
@@ -578,13 +788,13 @@ public abstract class AbstractEngineerPanel extends JPanel {
 
         // 必須チェック
         if (required && (value == null || value.trim().isEmpty())) {
-            markComponentError(fieldName, errorMessage);
+            showFieldError(fieldName, errorMessage);
             return false;
         }
 
         // 最大文字数チェック
         if (maxLength > 0 && value != null && value.length() > maxLength) {
-            markComponentError(fieldName, errorMessage);
+            showFieldError(fieldName, errorMessage);
             return false;
         }
 
@@ -592,7 +802,7 @@ public abstract class AbstractEngineerPanel extends JPanel {
         if (pattern != null && value != null && !value.isEmpty()) {
             Pattern regexPattern = Pattern.compile(pattern);
             if (!regexPattern.matcher(value).matches()) {
-                markComponentError(fieldName, errorMessage);
+                showFieldError(fieldName, errorMessage);
                 return false;
             }
         }
@@ -622,13 +832,13 @@ public abstract class AbstractEngineerPanel extends JPanel {
 
         // 必須チェック
         if (required && (value == null || value.trim().isEmpty())) {
-            markComponentError(fieldName, errorMessage);
+            showFieldError(fieldName, errorMessage);
             return false;
         }
 
         // 最大文字数チェック
         if (maxLength > 0 && value != null && value.length() > maxLength) {
-            markComponentError(fieldName, errorMessage);
+            showFieldError(fieldName, errorMessage);
             return false;
         }
 
@@ -656,7 +866,7 @@ public abstract class AbstractEngineerPanel extends JPanel {
         if (required) {
             Object selectedItem = field.getSelectedItem();
             if (selectedItem == null || selectedItem.toString().trim().isEmpty()) {
-                markComponentError(fieldName, errorMessage);
+                showFieldError(fieldName, errorMessage);
                 return false;
             }
         }
@@ -669,12 +879,17 @@ public abstract class AbstractEngineerPanel extends JPanel {
     /**
      * チェックボックスグループの入力検証
      * 少なくとも1つのチェックボックスが選択されているか検証
+     * 
+     * <p>
+     * バージョン4.1.0で改善: フィールド固有のエラー表示に対応
+     * </p>
      *
      * @param checkboxes   検証対象のチェックボックスのリスト
+     * @param groupName    チェックボックスグループの識別名
      * @param errorMessage エラー時のメッセージ
      * @return 検証成功の場合true、失敗の場合false
      */
-    protected boolean validateCheckBoxGroup(List<JCheckBox> checkboxes, String errorMessage) {
+    protected boolean validateCheckBoxGroup(List<JCheckBox> checkboxes, String groupName, String errorMessage) {
         if (checkboxes == null || checkboxes.isEmpty()) {
             return false;
         }
@@ -684,10 +899,10 @@ public abstract class AbstractEngineerPanel extends JPanel {
 
         if (!anySelected) {
             // エラーメッセージを表示
-            showErrorMessage(errorMessage);
+            showFieldError(groupName, errorMessage);
 
             // 各チェックボックスにエラー表示
-            checkboxes.forEach(checkbox -> {
+            for (JCheckBox checkbox : checkboxes) {
                 if (checkbox instanceof JComponent) {
                     JComponent jComponent = (JComponent) checkbox;
 
@@ -699,13 +914,16 @@ public abstract class AbstractEngineerPanel extends JPanel {
                     // エラーボーダーを設定
                     jComponent.setBorder(ERROR_BORDER);
                 }
-            });
+            }
 
             return false;
         }
 
         // エラーがない場合はエラー表示をクリア
-        checkboxes.forEach(checkbox -> {
+        clearComponentError(groupName);
+
+        // 各チェックボックスのエラー表示も解除
+        for (JCheckBox checkbox : checkboxes) {
             if (checkbox instanceof JComponent) {
                 JComponent jComponent = (JComponent) checkbox;
 
@@ -717,7 +935,7 @@ public abstract class AbstractEngineerPanel extends JPanel {
                     jComponent.setBorder(null);
                 }
             }
-        });
+        }
 
         return true;
     }
@@ -725,16 +943,21 @@ public abstract class AbstractEngineerPanel extends JPanel {
     /**
      * 日付選択コンポーネントの入力検証
      * 年月日の選択コンボボックスが有効な日付を構成しているか検証
+     * 
+     * <p>
+     * バージョン4.1.0で改善: フィールド固有のエラー表示に対応
+     * </p>
      *
      * @param yearFieldName  年コンボボックスのフィールド名
      * @param monthFieldName 月コンボボックスのフィールド名
      * @param dayFieldName   日コンボボックスのフィールド名（nullの場合は年月のみ検証）
+     * @param groupName      日付コンポーネントグループの識別名
      * @param required       必須項目の場合はtrue
      * @param errorMessage   エラー時のメッセージ
      * @return 検証成功の場合true、失敗の場合false
      */
     protected boolean validateDateComponents(String yearFieldName, String monthFieldName, String dayFieldName,
-            boolean required, String errorMessage) {
+            String groupName, boolean required, String errorMessage) {
         JComboBox<?> yearCombo = getComboBox(yearFieldName);
         JComboBox<?> monthCombo = getComboBox(monthFieldName);
         JComboBox<?> dayCombo = dayFieldName != null ? getComboBox(dayFieldName) : null;
@@ -755,6 +978,9 @@ public abstract class AbstractEngineerPanel extends JPanel {
         if (required) {
             if (yearStr.isEmpty() || monthStr.isEmpty() || (dayCombo != null && dayStr.isEmpty())) {
                 // エラー表示
+                showFieldError(groupName, errorMessage);
+
+                // 個別のコンポーネントにもエラー表示
                 if (yearStr.isEmpty())
                     markComponentError(yearFieldName, null);
                 if (monthStr.isEmpty())
@@ -762,7 +988,6 @@ public abstract class AbstractEngineerPanel extends JPanel {
                 if (dayCombo != null && dayStr.isEmpty())
                     markComponentError(dayFieldName, null);
 
-                showErrorMessage(errorMessage);
                 return false;
             }
         } else if (yearStr.isEmpty() && monthStr.isEmpty() && (dayCombo == null || dayStr.isEmpty())) {
@@ -771,6 +996,7 @@ public abstract class AbstractEngineerPanel extends JPanel {
             clearComponentError(monthFieldName);
             if (dayFieldName != null)
                 clearComponentError(dayFieldName);
+            clearComponentError(groupName);
             return true;
         }
 
@@ -779,6 +1005,9 @@ public abstract class AbstractEngineerPanel extends JPanel {
                 && (yearStr.isEmpty() || monthStr.isEmpty() || (dayCombo != null && dayStr.isEmpty()))) {
 
             // エラー表示
+            showFieldError(groupName, errorMessage);
+
+            // 個別のコンポーネントにもエラー表示
             if (yearStr.isEmpty())
                 markComponentError(yearFieldName, null);
             if (monthStr.isEmpty())
@@ -786,7 +1015,6 @@ public abstract class AbstractEngineerPanel extends JPanel {
             if (dayCombo != null && dayStr.isEmpty())
                 markComponentError(dayFieldName, null);
 
-            showErrorMessage(errorMessage);
             return false;
         }
 
@@ -797,23 +1025,25 @@ public abstract class AbstractEngineerPanel extends JPanel {
             int day = dayCombo != null ? Integer.parseInt(dayStr) : 1;
 
             // java.time.LocalDateで妥当性チェック
-            LocalDate.of(year, month, day);
+            java.time.LocalDate.of(year, month, day);
 
             // 有効な日付の場合、エラー表示をクリア
             clearComponentError(yearFieldName);
             clearComponentError(monthFieldName);
             if (dayFieldName != null)
                 clearComponentError(dayFieldName);
+            clearComponentError(groupName);
 
             return true;
         } catch (Exception e) {
             // 日付が不正な場合
+            showFieldError(groupName, errorMessage);
+
             markComponentError(yearFieldName, null);
             markComponentError(monthFieldName, null);
             if (dayFieldName != null)
                 markComponentError(dayFieldName, null);
 
-            showErrorMessage(errorMessage);
             return false;
         }
     }
@@ -826,8 +1056,34 @@ public abstract class AbstractEngineerPanel extends JPanel {
      */
     protected void setAllComponentsEnabled(boolean enabled) {
         for (Component component : components.values()) {
-            component.setEnabled(enabled);
+            // エラーラベルの有効/無効は切り替えない
+            if (!(component instanceof JLabel && fieldErrorLabels.containsValue(component))) {
+                component.setEnabled(enabled);
+            }
         }
+    }
+
+    /**
+     * テキストコンポーネントが空かどうかを確認
+     * ユーティリティメソッド：入力検証で使用
+     *
+     * @param component 確認するテキストコンポーネント
+     * @return 空の場合true
+     */
+    protected boolean isEmpty(JTextComponent component) {
+        return component == null || component.getText() == null || component.getText().trim().isEmpty();
+    }
+
+    /**
+     * コンボボックスが空の選択肢かどうかを確認
+     * ユーティリティメソッド：入力検証で使用
+     *
+     * @param comboBox 確認するコンボボックス
+     * @return 空の場合true
+     */
+    protected boolean isEmptyComboBox(JComboBox<?> comboBox) {
+        Object selected = comboBox.getSelectedItem();
+        return selected == null || selected.toString().isEmpty();
     }
 
     /**
@@ -849,12 +1105,37 @@ public abstract class AbstractEngineerPanel extends JPanel {
     }
 
     /**
-     * コンポーネントマップを取得
+     * フィールドのエラーラベルを取得
+     * テスト用や特殊なケース向け
      *
-     * @return コンポーネントを格納したマップ
-     * 
-     *         protected Map<String, Component> getComponents() {
-     *         return components;
-     *         }
+     * @param fieldName フィールド名
+     * @return エラーラベル、存在しない場合はnull
      */
+    protected JLabel getFieldErrorLabel(String fieldName) {
+        return fieldErrorLabels.get(fieldName);
+    }
+
+    /**
+     * フィールドエラーラベルの可視性を設定
+     * テスト用や特殊なレイアウト調整向け
+     *
+     * @param fieldName フィールド名
+     * @param visible   可視の場合true
+     */
+    protected void setFieldErrorLabelVisible(String fieldName, boolean visible) {
+        JLabel errorLabel = fieldErrorLabels.get(fieldName);
+        if (errorLabel != null) {
+            errorLabel.setVisible(visible);
+        }
+    }
+
+    /**
+     * すべてのフィールドエラーラベルを取得
+     * テスト用や特殊なケース向け
+     *
+     * @return フィールドエラーラベルのマップ
+     */
+    protected Map<String, JLabel> getFieldErrorLabels() {
+        return new HashMap<>(fieldErrorLabels);
+    }
 }

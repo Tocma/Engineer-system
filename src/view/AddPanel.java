@@ -13,17 +13,29 @@ import javax.swing.text.JTextComponent;
 import java.awt.*;
 import java.time.LocalDate;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.logging.Level;
 
 /**
  * エンジニア情報の新規登録画面を提供するパネルクラス
- * 各種入力フィールドとバリデーション機能を実装
+ * 各種入力フィールドとバリデーション機能を実装し、フィールド毎のエラー表示に対応
  *
  * <p>
  * このクラスは、エンジニア人材管理システムにおいて新規エンジニア情報を
  * 登録するためのユーザーインターフェースを提供します。AbstractEngineerPanelを
  * 継承し、エンジニア情報の入力フォームと登録処理を実装しています。
+ * </p>
+ *
+ * <p>
+ * バージョン4.1.0での主な改善点：
+ * <ul>
+ * <li>フィールド毎のエラー表示機能の実装 - エラーメッセージが各フィールドの下に表示</li>
+ * <li>複数のバリデーションエラーを同時に表示する機能</li>
+ * <li>エラー発生時のフォーカス制御の改善</li>
+ * <li>バリデーションメソッドの再構築と明確化</li>
+ * </ul>
  * </p>
  *
  * <p>
@@ -61,16 +73,16 @@ import java.util.logging.Level;
  * <li>ユーザーが入力フォームに必要情報を入力</li>
  * <li>登録ボタンをクリック</li>
  * <li>入力値の検証実行</li>
- * <li>検証エラーがあればエラーメッセージを表示</li>
+ * <li>検証エラーがあれば対応するフィールドにエラーメッセージを表示</li>
  * <li>検証成功時はEngineerDTOオブジェクトを構築</li>
  * <li>MainControllerを通じてデータ保存処理を実行</li>
  * <li>保存成功時は確認ダイアログを表示し、フォームをクリア</li>
- * </ul>
+ * </ol>
  * </p>
  *
  * @author Nakano
- * @version 3.1.0
- * @since 2025-04-04
+ * @version 4.1.0
+ * @since 2025-04-11
  */
 public class AddPanel extends AbstractEngineerPanel {
 
@@ -146,6 +158,9 @@ public class AddPanel extends AbstractEngineerPanel {
     /** ダイアログマネージャー */
     private DialogManager dialogManager;
 
+    /** フィールド名と表示名のマッピング */
+    private Map<String, String> fieldDisplayNames;
+
     /**
      * コンストラクタ
      * パネルの初期設定とコンポーネントの初期化
@@ -155,7 +170,30 @@ public class AddPanel extends AbstractEngineerPanel {
         this.processing = false;
         this.languageCheckBoxes = new ArrayList<>();
         this.dialogManager = DialogManager.getInstance();
+        this.fieldDisplayNames = new HashMap<>();
+        initializeFieldDisplayNames();
         LogHandler.getInstance().log(Level.INFO, LogType.UI, "AddPanelを作成しました");
+    }
+
+    /**
+     * フィールド名と表示名のマッピングを初期化
+     * バリデーションエラー表示時に使用
+     */
+    private void initializeFieldDisplayNames() {
+        fieldDisplayNames.put("nameField", "氏名");
+        fieldDisplayNames.put("idField", "社員ID");
+        fieldDisplayNames.put("nameKanaField", "フリガナ");
+        fieldDisplayNames.put("birthDate", "生年月日");
+        fieldDisplayNames.put("joinDate", "入社年月");
+        fieldDisplayNames.put("careerComboBox", "エンジニア歴");
+        fieldDisplayNames.put("languages", "扱える言語");
+        fieldDisplayNames.put("careerHistoryArea", "経歴");
+        fieldDisplayNames.put("trainingHistoryArea", "研修の受講歴");
+        fieldDisplayNames.put("technicalSkillComboBox", "技術力");
+        fieldDisplayNames.put("learningAttitudeComboBox", "受講態度");
+        fieldDisplayNames.put("communicationSkillComboBox", "コミュニケーション能力");
+        fieldDisplayNames.put("leadershipComboBox", "リーダーシップ");
+        fieldDisplayNames.put("noteArea", "備考");
     }
 
     /**
@@ -252,21 +290,21 @@ public class AddPanel extends AbstractEngineerPanel {
         JLabel nameLabel = createFieldLabel("氏名", true);
         nameField = new JTextField(20);
         registerComponent("nameField", nameField);
-        container.add(createFormRow(nameLabel, nameField));
+        container.add(createFormRow(nameLabel, nameField, "nameField"));
         container.add(createVerticalSpacer(10));
 
         // 社員IDフィールド（必須）
         JLabel idLabel = createFieldLabel("社員ID", true);
         idField = new JTextField(20);
         registerComponent("idField", idField);
-        container.add(createFormRow(idLabel, idField));
+        container.add(createFormRow(idLabel, idField, "idField"));
         container.add(createVerticalSpacer(10));
 
         // フリガナフィールド（必須）
         JLabel nameKanaLabel = createFieldLabel("フリガナ", true);
         nameKanaField = new JTextField(20);
         registerComponent("nameKanaField", nameKanaField);
-        container.add(createFormRow(nameKanaLabel, nameKanaField));
+        container.add(createFormRow(nameKanaLabel, nameKanaField, "nameKanaField"));
         container.add(createVerticalSpacer(10));
 
         // 生年月日（必須）- 年・月・日のコンボボックス
@@ -295,7 +333,9 @@ public class AddPanel extends AbstractEngineerPanel {
         birthDatePanel.add(birthDayComboBox);
         birthDatePanel.add(new JLabel("日"));
 
-        container.add(createFormRow(birthDateLabel, birthDatePanel));
+        // 生年月日のグループエラー表示用
+        createFieldErrorLabel("birthDate");
+        container.add(createFormRow(birthDateLabel, birthDatePanel, "birthDate"));
         container.add(createVerticalSpacer(10));
 
         // 入社年月 - 年・月のコンボボックス
@@ -317,7 +357,9 @@ public class AddPanel extends AbstractEngineerPanel {
         joinDatePanel.add(joinMonthComboBox);
         joinDatePanel.add(new JLabel("月"));
 
-        container.add(createFormRow(joinDateLabel, joinDatePanel));
+        // 入社年月のグループエラー表示用
+        createFieldErrorLabel("joinDate");
+        container.add(createFormRow(joinDateLabel, joinDatePanel, "joinDate"));
         container.add(createVerticalSpacer(10));
 
         // エンジニア歴（必須）
@@ -332,7 +374,7 @@ public class AddPanel extends AbstractEngineerPanel {
         careerPanel.add(careerComboBox);
         careerPanel.add(new JLabel("年"));
 
-        container.add(createFormRow(careerLabel, careerPanel));
+        container.add(createFormRow(careerLabel, careerPanel, "careerComboBox"));
         container.add(createVerticalSpacer(20));
     }
 
@@ -376,7 +418,18 @@ public class AddPanel extends AbstractEngineerPanel {
             languagePanel.add(checkBox);
         }
 
-        container.add(languagePanel);
+        // 言語選択のエラー表示用
+        createFieldErrorLabel("languages");
+
+        // パネルとエラーラベルの配置
+        JPanel languageContainer = new JPanel();
+        languageContainer.setLayout(new BoxLayout(languageContainer, BoxLayout.Y_AXIS));
+        languageContainer.setBackground(Color.WHITE);
+        languageContainer.add(languagePanel);
+        languageContainer.add(Box.createVerticalStrut(FIELD_ERROR_MARGIN));
+        languageContainer.add(getFieldErrorLabel("languages"));
+
+        container.add(languageContainer);
         container.add(createVerticalSpacer(20));
     }
 
@@ -399,7 +452,7 @@ public class AddPanel extends AbstractEngineerPanel {
         JScrollPane careerScrollPane = new JScrollPane(careerHistoryArea);
         registerComponent("careerHistoryArea", careerHistoryArea);
 
-        container.add(careerScrollPane);
+        container.add(createFormRow(new JLabel(""), careerScrollPane, "careerHistoryArea"));
         container.add(createVerticalSpacer(20));
     }
 
@@ -419,28 +472,28 @@ public class AddPanel extends AbstractEngineerPanel {
         JLabel technicalSkillLabel = createFieldLabel("技術力", false);
         technicalSkillComboBox = new JComboBox<>(getSkillRatingOptions());
         registerComponent("technicalSkillComboBox", technicalSkillComboBox);
-        container.add(createFormRow(technicalSkillLabel, technicalSkillComboBox));
+        container.add(createFormRow(technicalSkillLabel, technicalSkillComboBox, "technicalSkillComboBox"));
         container.add(createVerticalSpacer(10));
 
         // 受講態度
         JLabel learningAttitudeLabel = createFieldLabel("受講態度", false);
         learningAttitudeComboBox = new JComboBox<>(getSkillRatingOptions());
         registerComponent("learningAttitudeComboBox", learningAttitudeComboBox);
-        container.add(createFormRow(learningAttitudeLabel, learningAttitudeComboBox));
+        container.add(createFormRow(learningAttitudeLabel, learningAttitudeComboBox, "learningAttitudeComboBox"));
         container.add(createVerticalSpacer(10));
 
         // コミュニケーション能力
         JLabel communicationSkillLabel = createFieldLabel("コミュニケーション能力", false);
         communicationSkillComboBox = new JComboBox<>(getSkillRatingOptions());
         registerComponent("communicationSkillComboBox", communicationSkillComboBox);
-        container.add(createFormRow(communicationSkillLabel, communicationSkillComboBox));
+        container.add(createFormRow(communicationSkillLabel, communicationSkillComboBox, "communicationSkillComboBox"));
         container.add(createVerticalSpacer(10));
 
         // リーダーシップ
         JLabel leadershipLabel = createFieldLabel("リーダーシップ", false);
         leadershipComboBox = new JComboBox<>(getSkillRatingOptions());
         registerComponent("leadershipComboBox", leadershipComboBox);
-        container.add(createFormRow(leadershipLabel, leadershipComboBox));
+        container.add(createFormRow(leadershipLabel, leadershipComboBox, "leadershipComboBox"));
         container.add(createVerticalSpacer(20));
     }
 
@@ -463,7 +516,7 @@ public class AddPanel extends AbstractEngineerPanel {
         JScrollPane trainingScrollPane = new JScrollPane(trainingHistoryArea);
         registerComponent("trainingHistoryArea", trainingHistoryArea);
 
-        container.add(trainingScrollPane);
+        container.add(createFormRow(new JLabel(""), trainingScrollPane, "trainingHistoryArea"));
         container.add(createVerticalSpacer(20));
     }
 
@@ -486,7 +539,7 @@ public class AddPanel extends AbstractEngineerPanel {
         JScrollPane noteScrollPane = new JScrollPane(noteArea);
         registerComponent("noteArea", noteArea);
 
-        container.add(noteScrollPane);
+        container.add(createFormRow(new JLabel(""), noteScrollPane, "noteArea"));
     }
 
     /**
@@ -525,17 +578,38 @@ public class AddPanel extends AbstractEngineerPanel {
     }
 
     /**
+     * 入力検証の設定
+     * フォーカス移動時の入力検証など
+     */
+    private void setupValidation() {
+        // 各フィールドのフォーカス喪失時にバリデーションを実行することもできます
+        // 例：
+        /*
+         * nameField.addFocusListener(new FocusAdapter() {
+         * 
+         * @Override
+         * public void focusLost(FocusEvent e) {
+         * validateTextField("nameField", true, 20, null,
+         * MessageEnum.VALIDATION_ERROR_NAME.getMessage());
+         * }
+         * });
+         */
+
+        // この実装ではフォーカス時のバリデーションは行わず、登録ボタン押下時に一括検証を行います
+    }
+
+    /**
      * 登録ボタンのクリックイベント処理
      * データの検証、エンジニア情報の構築、保存処理を実行
      */
     private void addEngineer() {
         try {
             // エラーメッセージのクリア
-            clearErrorMessage();
+            clearAllComponentErrors();
 
             // 入力検証
             if (!validateInput()) {
-                // エラーメッセージは validateInput() 内で表示
+                // エラーメッセージは validateInput() 内で表示されます
                 return;
             }
 
@@ -567,175 +641,123 @@ public class AddPanel extends AbstractEngineerPanel {
     }
 
     /**
-     * 完了処理の成功状態を取得します
-     * <p>
-     * このメソッドは、handleSaveCompleteメソッドが正常に完了したかどうかを
-     * 返します。MainControllerなど外部クラスからこの情報を取得することで、
-     * 必要に応じて代替処理を実行できます。
-     * </p>
-     * 
-     * @return 完了処理が成功した場合true、そうでなければfalse
-     */
-    public boolean isHandleSaveCompleteSuccess() {
-        return handleSaveCompleteSuccess;
-    }
-
-    /**
-     * 現在の処理中状態を取得します
-     * <p>
-     * このメソッドは、パネルが現在処理中状態（登録処理実行中など）かどうかを
-     * 返します。この情報は外部クラスが適切な処理を判断するために使用できます。
-     * </p>
-     * 
-     * @return 処理中の場合true、そうでなければfalse
-     */
-    public boolean isProcessing() {
-        return this.processing;
-    }
-
-    /**
-     * 保存完了処理を実行します
-     * <p>
-     * このメソッドは、エンジニア情報の保存処理が正常に完了した後に呼び出されます。
-     * 主な役割は以下の通りです：
-     * </p>
-     * 
-     * <ol>
-     * <li>処理中状態の解除（プログレスインジケーターの非表示化）</li>
-     * <li>登録完了ダイアログの表示と次のアクション選択の提供</li>
-     * <li>選択されたアクションに基づく画面遷移またはフォームクリア</li>
-     * </ol>
+     * 入力検証を実行
+     * 各入力フィールドの値を検証し、エラーがあればフィールドごとにエラーメッセージを表示
      * 
      * <p>
-     * ユーザーには次の3つのアクションが提供されます：
-     * </p>
-     * 
+     * バージョン4.1.0での改善点:
      * <ul>
-     * <li><b>続けて登録</b>: フォームをクリアして新たな登録を続行</li>
-     * <li><b>一覧に戻る</b>: エンジニア一覧画面に遷移</li>
-     * <li><b>詳細を表示</b>: 登録したエンジニアの詳細画面に遷移</li>
+     * <li>複数のエラーを同時に検出して表示</li>
+     * <li>フィールドごとにエラーメッセージを表示</li>
+     * <li>最初のエラーフィールドへのフォーカス設定</li>
      * </ul>
-     * 
-     * <p>
-     * このメソッドは例外処理を強化し、処理中に問題が発生しても確実に処理中状態を解除し、
-     * ログに詳細を記録します。また、処理の各段階でのログ出力により、デバッグや問題追跡が
-     * 容易になっています。
      * </p>
-     * 
-     * <p>
-     * 本メソッドは非同期処理の完了後にSwingのEDT（Event Dispatch Thread）上で
-     * 呼び出されることを前提としています。
-     * </p>
-     * 
-     * @param engineer 保存されたエンジニア情報（{@link EngineerDTO}オブジェクト）
+     *
+     * @return 検証成功の場合true、失敗の場合false
      */
-    public void handleSaveComplete(EngineerDTO engineer) {
-        LogHandler.getInstance().log(Level.INFO, LogType.SYSTEM,
-                "AddPanel.handleSaveComplete開始: ID=" + engineer.getId());
+    @Override
+    protected boolean validateInput() {
+        // 検証結果フラグ
+        boolean isValid = true;
 
-        try {
-            // 処理中状態を解除（プログレスインジケーターの非表示化とUI操作の有効化）
-            setProcessing(false);
-            LogHandler.getInstance().log(Level.INFO, LogType.SYSTEM,
-                    "処理中状態を解除しました");
+        // コンポーネントエラーをクリア
+        clearAllComponentErrors();
 
-            // 登録成功後のダイアログ表示と画面遷移処理
-            LogHandler.getInstance().log(Level.INFO, LogType.SYSTEM,
-                    "登録完了ダイアログを表示します: ID=" + engineer.getId());
+        // 氏名の検証
+        if (isEmpty(nameField)) {
+            showFieldError("nameField", MessageEnum.VALIDATION_ERROR_NAME.getMessage());
+            isValid = false;
+        } else if (nameField.getText().length() > 20) {
+            showFieldError("nameField", MessageEnum.VALIDATION_ERROR_NAME.getMessage());
+            isValid = false;
+        }
 
-            // 登録完了ダイアログを表示し、次のアクションを取得
-            String action = dialogManager.showRegisterCompletionDialog(engineer);
-            LogHandler.getInstance().log(Level.INFO, LogType.SYSTEM,
-                    "選択されたアクション: " + action);
+        // 社員IDの検証
+        if (isEmpty(idField)) {
+            showFieldError("idField", MessageEnum.VALIDATION_ERROR_EMPLOYEE_ID.getMessage());
+            isValid = false;
+        } else if (!idField.getText().matches("ID\\d{5}")) {
+            showFieldError("idField", MessageEnum.VALIDATION_ERROR_EMPLOYEE_ID.getMessage());
+            isValid = false;
+        }
 
-            // 選択されたアクションに応じた処理
-            switch (action) {
-                case "CONTINUE":
-                    // フォームをクリアして現在のページに留まる
-                    LogHandler.getInstance().log(Level.INFO, LogType.SYSTEM,
-                            "「続けて登録」が選択されました - フォームをクリアします");
-                    clearFields();
-                    break;
+        // フリガナの検証
+        if (isEmpty(nameKanaField)) {
+            showFieldError("nameKanaField", MessageEnum.VALIDATION_ERROR_NAME_KANA.getMessage());
+            isValid = false;
+        } else if (nameKanaField.getText().length() > 20) {
+            showFieldError("nameKanaField", MessageEnum.VALIDATION_ERROR_NAME_KANA.getMessage());
+            isValid = false;
+        }
 
-                case "LIST":
-                    // 一覧画面に戻る
-                    LogHandler.getInstance().log(Level.INFO, LogType.SYSTEM,
-                            "「一覧に戻る」が選択されました - 一覧画面に遷移します");
-                    if (mainController != null) {
-                        // データ再読込を実行してから画面遷移
-                        mainController.handleEvent("LOAD_DATA", null);
-                        // 画面遷移
-                        mainController.handleEvent("CHANGE_PANEL", "LIST");
-                    } else {
-                        LogHandler.getInstance().log(Level.WARNING, LogType.SYSTEM,
-                                "MainControllerが設定されていないため画面遷移できません");
-                        // フォールバック処理（コントローラーが利用できない場合）
-                        clearFields();
-                    }
-                    break;
+        // 生年月日の検証
+        if (!validateDateComponents("birthYearComboBox", "birthMonthComboBox", "birthDayComboBox",
+                "birthDate", true, MessageEnum.VALIDATION_ERROR_BIRTH_DATE.getMessage())) {
+            isValid = false;
+        }
 
-                case "DETAIL":
-                    // 登録したエンジニアの詳細画面に遷移
-                    LogHandler.getInstance().log(Level.INFO, LogType.SYSTEM,
-                            "「詳細を表示」が選択されました - 詳細画面に遷移します: ID=" + engineer.getId());
-                    if (mainController != null) {
-                        mainController.handleEvent("VIEW_DETAIL", engineer.getId());
-                    } else {
-                        LogHandler.getInstance().log(Level.WARNING, LogType.SYSTEM,
-                                "MainControllerが設定されていないため画面遷移できません");
-                        // フォールバック処理（コントローラーが利用できない場合）
-                        clearFields();
-                    }
-                    break;
+        // エンジニア歴の検証
+        if (isEmptyComboBox(careerComboBox)) {
+            showFieldError("careerComboBox", MessageEnum.VALIDATION_ERROR_CAREER.getMessage());
+            isValid = false;
+        }
 
-                default:
-                    // 未知のアクション（通常は発生しない）
-                    LogHandler.getInstance().log(Level.WARNING, LogType.SYSTEM,
-                            "未知のアクションが選択されました: " + action + " - デフォルト処理を実行します");
-                    clearFields();
-                    break;
-            }
-
-            // 処理成功フラグを設定
-            handleSaveCompleteSuccess = true;
-            LogHandler.getInstance().log(Level.INFO, LogType.SYSTEM,
-                    "AddPanel.handleSaveComplete完了: ID=" + engineer.getId());
-
-        } catch (Exception e) {
-            // 例外が発生した場合のエラーハンドリング
-            LogHandler.getInstance().logError(LogType.SYSTEM,
-                    "handleSaveComplete処理中にエラーが発生しました: " + engineer.getId(), e);
-
-            // UIスレッドでエラーダイアログを表示
-            try {
-                DialogManager.getInstance().showErrorDialog(
-                        "エラー",
-                        "登録完了処理中にエラーが発生しました: " + e.getMessage());
-            } catch (Exception dialogError) {
-                // ダイアログ表示自体が失敗した場合
-                LogHandler.getInstance().logError(LogType.SYSTEM,
-                        "エラーダイアログの表示にも失敗しました", dialogError);
-            }
-
-            // 処理中状態を強制的に解除（重要: UIがブロックされないようにする）
-            setProcessing(false);
-
-            // 成功フラグはfalseのまま
-            handleSaveCompleteSuccess = false;
-        } finally {
-            // 最終的な状態確認とクリーンアップ処理
-            if (processing) {
-                // 万が一まだ処理中状態が解除されていない場合の保険
-                LogHandler.getInstance().log(Level.WARNING, LogType.SYSTEM,
-                        "処理中状態が解除されていません - 強制的に解除します");
-                setProcessing(false);
+        // 扱える言語の検証（1つ以上選択）
+        boolean hasLanguage = false;
+        for (JCheckBox checkBox : languageCheckBoxes) {
+            if (checkBox.isSelected()) {
+                hasLanguage = true;
+                break;
             }
         }
+        if (!hasLanguage) {
+            showFieldError("languages", MessageEnum.VALIDATION_ERROR_PROGRAMMING_LANGUAGES.getMessage());
+            isValid = false;
+        }
+
+        // 経歴の文字数検証（200文字以内）
+        if (careerHistoryArea.getText().length() > 200) {
+            showFieldError("careerHistoryArea", MessageEnum.VALIDATION_ERROR_CAREER_HISTORY.getMessage());
+            isValid = false;
+        }
+
+        // 研修の受講歴の文字数検証（200文字以内）
+        if (trainingHistoryArea.getText().length() > 200) {
+            showFieldError("trainingHistoryArea", MessageEnum.VALIDATION_ERROR_TRAINING_HISTORY.getMessage());
+            isValid = false;
+        }
+
+        // 備考の文字数検証（500文字以内）
+        if (noteArea.getText().length() > 500) {
+            showFieldError("noteArea", MessageEnum.VALIDATION_ERROR_NOTE.getMessage());
+            isValid = false;
+        }
+
+        // 検証に失敗した場合、最初のエラーフィールドにフォーカスを設定
+        if (!isValid && !errorComponents.isEmpty()) {
+            // エラーコンポーネントの最初の要素を取得
+            Component firstErrorComponent = errorComponents.values().iterator().next();
+
+            // フォーカス可能なコンポーネントかどうか確認
+            if (firstErrorComponent instanceof JComponent) {
+                JComponent jComponent = (JComponent) firstErrorComponent;
+
+                // フォーカスを設定
+                jComponent.requestFocusInWindow();
+            }
+        }
+
+        return isValid;
     }
 
     /**
      * エンジニア情報DTOを構築
      * 入力フィールドの値を取得してEngineerDTOオブジェクトを構築
+     * 
+     * <p>
+     * このメソッドは入力フォームの各フィールドから値を取得し、EngineerBuilderを使用して
+     * EngineerDTOオブジェクトを生成します。事前にバリデーションが行われていることを前提としています。
+     * </p>
      *
      * @return 構築したEngineerDTOオブジェクト
      */
@@ -923,130 +945,175 @@ public class AddPanel extends AbstractEngineerPanel {
     }
 
     /**
-     * 入力検証の実行
-     * 入力値の検証を行い、エラーメッセージを表示
-     *
-     * @return 検証成功の場合true、失敗の場合false
+     * 完了処理の成功状態を取得します
+     * <p>
+     * このメソッドは、handleSaveCompleteメソッドが正常に完了したかどうかを
+     * 返します。MainControllerなど外部クラスからこの情報を取得することで、
+     * 必要に応じて代替処理を実行できます。
+     * </p>
+     * 
+     * @return 完了処理が成功した場合true、そうでなければfalse
      */
-    @Override
-    protected boolean validateInput() {
-        // 氏名の検証
-        if (isEmpty(nameField)) {
-            showErrorMessage(MessageEnum.VALIDATION_ERROR_NAME.getMessage());
-            nameField.requestFocus();
-            return false;
-        }
+    public boolean isHandleSaveCompleteSuccess() {
+        return handleSaveCompleteSuccess;
+    }
 
-        // 氏名の文字数検証（20文字以内）
-        if (nameField.getText().length() > 20) {
-            showErrorMessage(MessageEnum.VALIDATION_ERROR_NAME.getMessage());
-            nameField.requestFocus();
-            return false;
-        }
+    /**
+     * 現在の処理中状態を取得します
+     * <p>
+     * このメソッドは、パネルが現在処理中状態（登録処理実行中など）かどうかを
+     * 返します。この情報は外部クラスが適切な処理を判断するために使用できます。
+     * </p>
+     * 
+     * @return 処理中の場合true、そうでなければfalse
+     */
+    public boolean isProcessing() {
+        return this.processing;
+    }
 
-        // 社員IDの検証
-        if (isEmpty(idField)) {
-            showErrorMessage(MessageEnum.VALIDATION_ERROR_EMPLOYEE_ID.getMessage());
-            idField.requestFocus();
-            return false;
-        }
+    /**
+     * 保存完了処理を実行します
+     * <p>
+     * このメソッドは、エンジニア情報の保存処理が正常に完了した後に呼び出されます。
+     * 主な役割は以下の通りです：
+     * </p>
+     * 
+     * <ol>
+     * <li>処理中状態の解除（プログレスインジケーターの非表示化）</li>
+     * <li>登録完了ダイアログの表示と次のアクション選択の提供</li>
+     * <li>選択されたアクションに基づく画面遷移またはフォームクリア</li>
+     * </ol>
+     * 
+     * <p>
+     * ユーザーには次の3つのアクションが提供されます：
+     * </p>
+     * 
+     * <ul>
+     * <li><b>続けて登録</b>: フォームをクリアして新たな登録を続行</li>
+     * <li><b>一覧に戻る</b>: エンジニア一覧画面に遷移</li>
+     * <li><b>詳細を表示</b>: 登録したエンジニアの詳細画面に遷移</li>
+     * </ul>
+     * 
+     * <p>
+     * このメソッドは例外処理を強化し、処理中に問題が発生しても確実に処理中状態を解除し、
+     * ログに詳細を記録します。また、処理の各段階でのログ出力により、デバッグや問題追跡が
+     * 容易になっています。
+     * </p>
+     * 
+     * <p>
+     * 本メソッドは非同期処理の完了後にSwingのEDT（Event Dispatch Thread）上で
+     * 呼び出されることを前提としています。
+     * </p>
+     * 
+     * @param engineer 保存されたエンジニア情報（{@link EngineerDTO}オブジェクト）
+     */
+    public void handleSaveComplete(EngineerDTO engineer) {
+        LogHandler.getInstance().log(Level.INFO, LogType.SYSTEM,
+                "AddPanel.handleSaveComplete開始: ID=" + engineer.getId());
 
-        // 社員IDの形式検証（5桁の数字）
-        if (!idField.getText().matches("ID\\d{5}")) {
-            showErrorMessage(MessageEnum.VALIDATION_ERROR_EMPLOYEE_ID.getMessage());
-            idField.requestFocus();
-            return false;
-        }
+        try {
+            // 処理中状態を解除（プログレスインジケーターの非表示化とUI操作の有効化）
+            setProcessing(false);
+            LogHandler.getInstance().log(Level.INFO, LogType.SYSTEM,
+                    "処理中状態を解除しました");
 
-        // フリガナの検証
-        if (isEmpty(nameKanaField)) {
-            showErrorMessage(MessageEnum.VALIDATION_ERROR_NAME_KANA.getMessage());
-            nameKanaField.requestFocus();
-            return false;
-        }
+            // 登録成功後のダイアログ表示と画面遷移処理
+            LogHandler.getInstance().log(Level.INFO, LogType.SYSTEM,
+                    "登録完了ダイアログを表示します: ID=" + engineer.getId());
 
-        // フリガナの文字数検証（20文字以内）
-        if (nameKanaField.getText().length() > 20) {
-            showErrorMessage(MessageEnum.VALIDATION_ERROR_NAME_KANA.getMessage());
-            nameKanaField.requestFocus();
-            return false;
-        }
+            // 登録完了ダイアログを表示し、次のアクションを取得
+            String action = dialogManager.showRegisterCompletionDialog(engineer);
+            LogHandler.getInstance().log(Level.INFO, LogType.SYSTEM,
+                    "選択されたアクション: " + action);
 
-        // 生年月日の検証
-        if (isEmptyComboBox(birthYearComboBox) ||
-                isEmptyComboBox(birthMonthComboBox) ||
-                isEmptyComboBox(birthDayComboBox)) {
-            showErrorMessage(MessageEnum.VALIDATION_ERROR_BIRTH_DATE.getMessage());
-            return false;
-        }
+            // 選択されたアクションに応じた処理
+            switch (action) {
+                case "CONTINUE":
+                    // フォームをクリアして現在のページに留まる
+                    LogHandler.getInstance().log(Level.INFO, LogType.SYSTEM,
+                            "「続けて登録」が選択されました - フォームをクリアします");
+                    clearFields();
+                    break;
 
-        // エンジニア歴の検証
-        if (isEmptyComboBox(careerComboBox)) {
-            showErrorMessage(MessageEnum.VALIDATION_ERROR_CAREER.getMessage());
-            return false;
-        }
+                case "LIST":
+                    // 一覧画面に戻る
+                    LogHandler.getInstance().log(Level.INFO, LogType.SYSTEM,
+                            "「一覧に戻る」が選択されました - 一覧画面に遷移します");
+                    if (mainController != null) {
+                        // データ再読込を実行してから画面遷移
+                        mainController.handleEvent("LOAD_DATA", null);
+                        // 画面遷移
+                        mainController.handleEvent("CHANGE_PANEL", "LIST");
+                    } else {
+                        LogHandler.getInstance().log(Level.WARNING, LogType.SYSTEM,
+                                "MainControllerが設定されていないため画面遷移できません");
+                        // フォールバック処理（コントローラーが利用できない場合）
+                        clearFields();
+                    }
+                    break;
 
-        // 扱える言語の検証（1つ以上選択）
-        boolean hasLanguage = false;
-        for (JCheckBox checkBox : languageCheckBoxes) {
-            if (checkBox.isSelected()) {
-                hasLanguage = true;
-                break;
+                case "DETAIL":
+                    // 登録したエンジニアの詳細画面に遷移
+                    LogHandler.getInstance().log(Level.INFO, LogType.SYSTEM,
+                            "「詳細を表示」が選択されました - 詳細画面に遷移します: ID=" + engineer.getId());
+                    if (mainController != null) {
+                        mainController.handleEvent("VIEW_DETAIL", engineer.getId());
+                    } else {
+                        LogHandler.getInstance().log(Level.WARNING, LogType.SYSTEM,
+                                "MainControllerが設定されていないため画面遷移できません");
+                        // フォールバック処理（コントローラーが利用できない場合）
+                        clearFields();
+                    }
+                    break;
+
+                default:
+                    // 未知のアクション（通常は発生しない）
+                    LogHandler.getInstance().log(Level.WARNING, LogType.SYSTEM,
+                            "未知のアクションが選択されました: " + action + " - デフォルト処理を実行します");
+                    clearFields();
+                    break;
+            }
+
+            // 処理成功フラグを設定
+            handleSaveCompleteSuccess = true;
+            LogHandler.getInstance().log(Level.INFO, LogType.SYSTEM,
+                    "AddPanel.handleSaveComplete完了: ID=" + engineer.getId());
+
+        } catch (Exception e) {
+            // 例外が発生した場合のエラーハンドリング
+            LogHandler.getInstance().logError(LogType.SYSTEM,
+                    "handleSaveComplete処理中にエラーが発生しました: " + engineer.getId(), e);
+
+            // UIスレッドでエラーダイアログを表示
+            try {
+                DialogManager.getInstance().showErrorDialog(
+                        "エラー",
+                        "登録完了処理中にエラーが発生しました: " + e.getMessage());
+            } catch (Exception dialogError) {
+                // ダイアログ表示自体が失敗した場合
+                LogHandler.getInstance().logError(LogType.SYSTEM,
+                        "エラーダイアログの表示にも失敗しました", dialogError);
+            }
+
+            // 処理中状態を強制的に解除（重要: UIがブロックされないようにする）
+            setProcessing(false);
+
+            // 成功フラグはfalseのまま
+            handleSaveCompleteSuccess = false;
+        } finally {
+            // 最終的な状態確認とクリーンアップ処理
+            if (processing) {
+                // 万が一まだ処理中状態が解除されていない場合の保険
+                LogHandler.getInstance().log(Level.WARNING, LogType.SYSTEM,
+                        "処理中状態が解除されていません - 強制的に解除します");
+                setProcessing(false);
             }
         }
-        if (!hasLanguage) {
-            showErrorMessage(MessageEnum.VALIDATION_ERROR_PROGRAMMING_LANGUAGES.getMessage());
-            return false;
-        }
-
-        // 経歴の文字数検証（200文字以内）
-        if (careerHistoryArea.getText().length() > 200) {
-            showErrorMessage(MessageEnum.VALIDATION_ERROR_CAREER_HISTORY.getMessage());
-            careerHistoryArea.requestFocus();
-            return false;
-        }
-
-        // 研修の受講歴の文字数検証（200文字以内）
-        if (trainingHistoryArea.getText().length() > 200) {
-            showErrorMessage(MessageEnum.VALIDATION_ERROR_TRAINING_HISTORY.getMessage());
-            trainingHistoryArea.requestFocus();
-            return false;
-        }
-
-        // 備考の文字数検証（500文字以内）
-        if (noteArea.getText().length() > 500) {
-            showErrorMessage(MessageEnum.VALIDATION_ERROR_NOTE.getMessage());
-            noteArea.requestFocus();
-            return false;
-        }
-
-        return true;
-    }
-
-    /**
-     * テキストコンポーネントが空かどうかを確認
-     *
-     * @param component 確認するテキストコンポーネント
-     * @return 空の場合true
-     */
-    private boolean isEmpty(JTextComponent component) {
-        return component == null || component.getText() == null || component.getText().trim().isEmpty();
-    }
-
-    /**
-     * コンボボックスが空の選択肢かどうかを確認
-     *
-     * @param comboBox 確認するコンボボックス
-     * @return 空の場合true
-     */
-    private boolean isEmptyComboBox(JComboBox<?> comboBox) {
-        Object selected = comboBox.getSelectedItem();
-        return selected == null || selected.toString().isEmpty();
     }
 
     /**
      * 入力フィールドをクリア
-     * すべての入力フィールドを初期状態にリセット
+     * すべての入力フィールドを初期状態にリセットし、エラー表示もクリアします
      */
     private void clearFields() {
         // テキストフィールドのクリア
@@ -1080,7 +1147,7 @@ public class AddPanel extends AbstractEngineerPanel {
         nameField.requestFocus();
 
         // エラーメッセージのクリア
-        clearErrorMessage();
+        clearAllComponentErrors();
     }
 
     /**
@@ -1102,7 +1169,7 @@ public class AddPanel extends AbstractEngineerPanel {
 
     /**
      * 処理中状態の設定
-     * 処理中はUIコンポーネントを無効化し、プログレスインジケーターを表示
+     * 処理中はUIコンポーネントを無効化し、プログレスインジケーターを表示します
      *
      * @param processing 処理中の場合true
      */
@@ -1118,14 +1185,6 @@ public class AddPanel extends AbstractEngineerPanel {
 
         // プログレスインジケーターの表示/非表示を切り替え
         progressLabel.setVisible(processing);
-    }
-
-    /**
-     * 入力検証の設定
-     * フォーカス移動時の入力検証など
-     */
-    private void setupValidation() {
-        // 将来的に実装する場合は追加
     }
 
     /**
