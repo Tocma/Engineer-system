@@ -662,6 +662,9 @@ public class AddPanel extends AbstractEngineerPanel {
                     LogHandler.getInstance().log(Level.INFO, LogType.SYSTEM,
                             "「一覧に戻る」が選択されました - 一覧画面に遷移します");
                     if (mainController != null) {
+                        // データ再読込を実行してから画面遷移
+                        mainController.handleEvent("LOAD_DATA", null);
+                        // 画面遷移
                         mainController.handleEvent("CHANGE_PANEL", "LIST");
                     } else {
                         LogHandler.getInstance().log(Level.WARNING, LogType.SYSTEM,
