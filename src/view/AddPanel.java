@@ -6,7 +6,7 @@ import controller.MainController;
 import util.LogHandler;
 import util.LogHandler.LogType;
 import util.MessageEnum;
-//import util.ValidationEnum;
+import util.ValidatorEnum;
 
 import javax.swing.*;
 import javax.swing.text.JTextComponent;
@@ -929,42 +929,42 @@ public class AddPanel extends AbstractEngineerPanel {
     protected boolean validateInput() {
         // 氏名の検証
         if (isEmpty(nameField)) {
-            showErrorMessage(util.MessageEnum.VALIDATION_ERROR_NAME.getMessage());
+            showErrorMessage(MessageEnum.VALIDATION_ERROR_NAME.getMessage());
             nameField.requestFocus();
             return false;
         }
 
         // 氏名の文字数検証（20文字以内）
         if (nameField.getText().length() > 20) {
-            showErrorMessage(util.MessageEnum.VALIDATION_ERROR_NAME.getMessage());
+            showErrorMessage(MessageEnum.VALIDATION_ERROR_NAME.getMessage());
             nameField.requestFocus();
             return false;
         }
 
         // 社員IDの検証
         if (isEmpty(idField)) {
-            showErrorMessage(util.MessageEnum.VALIDATION_ERROR_EMPLOYEE_ID.getMessage());
+            showErrorMessage(MessageEnum.VALIDATION_ERROR_EMPLOYEE_ID.getMessage());
             idField.requestFocus();
             return false;
         }
 
         // 社員IDの形式検証（5桁の数字）
         if (!idField.getText().matches("ID\\d{5}")) {
-            showErrorMessage(util.MessageEnum.VALIDATION_ERROR_EMPLOYEE_ID.getMessage());
+            showErrorMessage(MessageEnum.VALIDATION_ERROR_EMPLOYEE_ID.getMessage());
             idField.requestFocus();
             return false;
         }
 
         // フリガナの検証
         if (isEmpty(nameKanaField)) {
-            showErrorMessage(util.MessageEnum.VALIDATION_ERROR_NAME_KANA.getMessage());
+            showErrorMessage(MessageEnum.VALIDATION_ERROR_NAME_KANA.getMessage());
             nameKanaField.requestFocus();
             return false;
         }
 
         // フリガナの文字数検証（20文字以内）
         if (nameKanaField.getText().length() > 20) {
-            showErrorMessage(util.MessageEnum.VALIDATION_ERROR_NAME_KANA.getMessage());
+            showErrorMessage(MessageEnum.VALIDATION_ERROR_NAME_KANA.getMessage());
             nameKanaField.requestFocus();
             return false;
         }
@@ -973,13 +973,13 @@ public class AddPanel extends AbstractEngineerPanel {
         if (isEmptyComboBox(birthYearComboBox) ||
                 isEmptyComboBox(birthMonthComboBox) ||
                 isEmptyComboBox(birthDayComboBox)) {
-            showErrorMessage(util.MessageEnum.VALIDATION_ERROR_BIRTH_DATE.getMessage());
+            showErrorMessage(MessageEnum.VALIDATION_ERROR_BIRTH_DATE.getMessage());
             return false;
         }
 
         // エンジニア歴の検証
         if (isEmptyComboBox(careerComboBox)) {
-            showErrorMessage(util.MessageEnum.VALIDATION_ERROR_CAREER.getMessage());
+            showErrorMessage(MessageEnum.VALIDATION_ERROR_CAREER.getMessage());
             return false;
         }
 
@@ -992,27 +992,27 @@ public class AddPanel extends AbstractEngineerPanel {
             }
         }
         if (!hasLanguage) {
-            showErrorMessage(util.MessageEnum.VALIDATION_ERROR_PROGRAMMING_LANGUAGES.getMessage());
+            showErrorMessage(MessageEnum.VALIDATION_ERROR_PROGRAMMING_LANGUAGES.getMessage());
             return false;
         }
 
         // 経歴の文字数検証（200文字以内）
         if (careerHistoryArea.getText().length() > 200) {
-            showErrorMessage(util.MessageEnum.VALIDATION_ERROR_CAREER_HISTORY.getMessage());
+            showErrorMessage(MessageEnum.VALIDATION_ERROR_CAREER_HISTORY.getMessage());
             careerHistoryArea.requestFocus();
             return false;
         }
 
         // 研修の受講歴の文字数検証（200文字以内）
         if (trainingHistoryArea.getText().length() > 200) {
-            showErrorMessage(util.MessageEnum.VALIDATION_ERROR_TRAINING_HISTORY.getMessage());
+            showErrorMessage(MessageEnum.VALIDATION_ERROR_TRAINING_HISTORY.getMessage());
             trainingHistoryArea.requestFocus();
             return false;
         }
 
         // 備考の文字数検証（500文字以内）
         if (noteArea.getText().length() > 500) {
-            showErrorMessage(util.MessageEnum.VALIDATION_ERROR_NOTE.getMessage());
+            showErrorMessage(MessageEnum.VALIDATION_ERROR_NOTE.getMessage());
             noteArea.requestFocus();
             return false;
         }
