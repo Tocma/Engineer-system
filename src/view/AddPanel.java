@@ -6,6 +6,7 @@ import controller.MainController;
 import util.LogHandler;
 import util.LogHandler.LogType;
 import util.MessageEnum;
+import util.Validator;
 import util.ValidatorEnum;
 
 import javax.swing.*;
@@ -682,11 +683,9 @@ public class AddPanel extends AbstractEngineerPanel {
         }
 
         // フリガナの検証
-        if (isEmpty(nameKanaField)) {
-            showFieldError("nameKanaField", MessageEnum.VALIDATION_ERROR_NAME_KANA.getMessage());
-            isValid = false;
-        } else if (nameKanaField.getText().length() > 20) {
-            showFieldError("nameKanaField", MessageEnum.VALIDATION_ERROR_NAME_KANA.getMessage());
+        Validator kanaValidator = ValidatorEnum.NAME_KANA.getValidator();
+        if (!kanaValidator.validate(nameKanaField.getText())) {
+            showFieldError("nameKanaField", kanaValidator.getErrorMessage());
             isValid = false;
         }
 
