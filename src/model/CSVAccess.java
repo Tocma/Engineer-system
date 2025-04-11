@@ -192,7 +192,7 @@ public class CSVAccess extends AccessThread {
                 return new CSVAccessResult(successData, errorData, false, "CSVファイルが存在しません");
             }
 
-            // ファイルを読み込む
+            // ファイルを読み込む、try-with-resources文を使用
             try (BufferedReader reader = new BufferedReader(
                     new InputStreamReader(new FileInputStream(csvFile), StandardCharsets.UTF_8))) {
 
@@ -359,7 +359,7 @@ public class CSVAccess extends AccessThread {
                 }
             }
 
-            // ファイルへの書き込み
+            // ファイルへの書き込み、try-with-resources文を使用
             try (BufferedWriter writer = new BufferedWriter(
                     new OutputStreamWriter(new FileOutputStream(csvFile, appendMode), StandardCharsets.UTF_8))) {
 

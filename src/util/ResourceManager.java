@@ -169,7 +169,7 @@ public class ResourceManager {
     private void checkAndCreateCsvFile() throws IOException {
         try {
             if (!Files.exists(engineerCsvPath)) {
-                // CSVファイルが存在しない場合、新規作成
+                // CSVファイルが存在しない場合、新規作成、try-with-resourcesを使用
                 try (BufferedWriter writer = Files.newBufferedWriter(engineerCsvPath, StandardCharsets.UTF_8)) {
                     writer.write(DEFAULT_CSV_HEADER);
                     writer.newLine();
