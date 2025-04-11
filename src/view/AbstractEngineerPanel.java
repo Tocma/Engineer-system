@@ -117,9 +117,6 @@ public abstract class AbstractEngineerPanel extends JPanel {
     /** 必須項目を表すマーク */
     protected static final String REQUIRED_MARK = " *";
 
-    /** 必須項目のラベル色 */
-    protected static final Color REQUIRED_LABEL_COLOR = new Color(204, 0, 0);
-
     /** エラーメッセージの色 */
     protected static final Color ERROR_COLOR = new Color(204, 0, 0);
 
@@ -411,9 +408,6 @@ public abstract class AbstractEngineerPanel extends JPanel {
      */
     protected JLabel createFieldLabel(String labelText, boolean required) {
         JLabel label = new JLabel(labelText + (required ? REQUIRED_MARK : ""));
-        if (required) {
-            label.setForeground(REQUIRED_LABEL_COLOR);
-        }
         return label;
     }
 

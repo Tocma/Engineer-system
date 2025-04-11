@@ -336,7 +336,7 @@ public class AddPanel extends AbstractEngineerPanel {
         container.add(createVerticalSpacer(10));
 
         // 入社年月 - 年・月のコンボボックス
-        JLabel joinDateLabel = createFieldLabel("入社年月", false);
+        JLabel joinDateLabel = createFieldLabel("入社年月", true);
         JPanel joinDatePanel = new JPanel(new FlowLayout(FlowLayout.LEFT, 5, 0));
         joinDatePanel.setBackground(Color.WHITE);
 
@@ -385,7 +385,6 @@ public class AddPanel extends AbstractEngineerPanel {
         // セクションタイトル
         JLabel languageTitle = createSectionTitle("扱える言語");
         JLabel requiredMark = new JLabel(REQUIRED_MARK);
-        requiredMark.setForeground(REQUIRED_LABEL_COLOR);
 
         JPanel titlePanel = new JPanel(new FlowLayout(FlowLayout.LEFT, 0, 0));
         titlePanel.setBackground(Color.WHITE);
@@ -437,9 +436,12 @@ public class AddPanel extends AbstractEngineerPanel {
      * @param container 配置先のコンテナ
      */
     private void createCareerHistorySection(JPanel container) {
-        // セクションタイトル
+        // セクションタイトル - 左寄せ
         JLabel careerHistoryTitle = createSectionTitle("経歴");
-        container.add(careerHistoryTitle);
+        JPanel titlePanel = new JPanel(new FlowLayout(FlowLayout.LEFT, 0, 0));
+        titlePanel.setBackground(Color.WHITE);
+        titlePanel.add(careerHistoryTitle);
+        container.add(titlePanel);
         container.add(createVerticalSpacer(10));
 
         // 経歴テキストエリア
@@ -460,33 +462,63 @@ public class AddPanel extends AbstractEngineerPanel {
      * @param container 配置先のコンテナ
      */
     private void createSkillSection(JPanel container) {
+        // スキルコンボボックスの共通サイズを定義
+        Dimension skillComboBoxSize = new Dimension(80, 25);
 
         // 技術力
         JLabel technicalSkillLabel = createFieldLabel("技術力", false);
         technicalSkillComboBox = new JComboBox<>(getSkillRatingOptions());
+
+        // コンボボックスをパネルで囲み、サイズを固定
+        JPanel techSkillComboPanel = new JPanel(new FlowLayout(FlowLayout.LEFT, 0, 0));
+        techSkillComboPanel.setBackground(Color.WHITE);
+        techSkillComboPanel.setPreferredSize(skillComboBoxSize);
+        techSkillComboPanel.add(technicalSkillComboBox);
+
         registerComponent("technicalSkillComboBox", technicalSkillComboBox);
-        container.add(createFormRow(technicalSkillLabel, technicalSkillComboBox, "technicalSkillComboBox"));
+        container.add(createFormRow(technicalSkillLabel, techSkillComboPanel, "technicalSkillComboBox"));
         container.add(createVerticalSpacer(10));
 
         // 受講態度
         JLabel learningAttitudeLabel = createFieldLabel("受講態度", false);
         learningAttitudeComboBox = new JComboBox<>(getSkillRatingOptions());
+
+        // コンボボックスをパネルで囲み、サイズを固定
+        JPanel attitudeComboPanel = new JPanel(new FlowLayout(FlowLayout.LEFT, 0, 0));
+        attitudeComboPanel.setBackground(Color.WHITE);
+        attitudeComboPanel.setPreferredSize(skillComboBoxSize);
+        attitudeComboPanel.add(learningAttitudeComboBox);
+
         registerComponent("learningAttitudeComboBox", learningAttitudeComboBox);
-        container.add(createFormRow(learningAttitudeLabel, learningAttitudeComboBox, "learningAttitudeComboBox"));
+        container.add(createFormRow(learningAttitudeLabel, attitudeComboPanel, "learningAttitudeComboBox"));
         container.add(createVerticalSpacer(10));
 
         // コミュニケーション能力
         JLabel communicationSkillLabel = createFieldLabel("コミュニケーション能力", false);
         communicationSkillComboBox = new JComboBox<>(getSkillRatingOptions());
+
+        // コンボボックスをパネルで囲み、サイズを固定
+        JPanel commSkillComboPanel = new JPanel(new FlowLayout(FlowLayout.LEFT, 0, 0));
+        commSkillComboPanel.setBackground(Color.WHITE);
+        commSkillComboPanel.setPreferredSize(skillComboBoxSize);
+        commSkillComboPanel.add(communicationSkillComboBox);
+
         registerComponent("communicationSkillComboBox", communicationSkillComboBox);
-        container.add(createFormRow(communicationSkillLabel, communicationSkillComboBox, "communicationSkillComboBox"));
+        container.add(createFormRow(communicationSkillLabel, commSkillComboPanel, "communicationSkillComboBox"));
         container.add(createVerticalSpacer(10));
 
         // リーダーシップ
         JLabel leadershipLabel = createFieldLabel("リーダーシップ", false);
         leadershipComboBox = new JComboBox<>(getSkillRatingOptions());
+
+        // コンボボックスをパネルで囲み、サイズを固定
+        JPanel leadershipComboPanel = new JPanel(new FlowLayout(FlowLayout.LEFT, 0, 0));
+        leadershipComboPanel.setBackground(Color.WHITE);
+        leadershipComboPanel.setPreferredSize(skillComboBoxSize);
+        leadershipComboPanel.add(leadershipComboBox);
+
         registerComponent("leadershipComboBox", leadershipComboBox);
-        container.add(createFormRow(leadershipLabel, leadershipComboBox, "leadershipComboBox"));
+        container.add(createFormRow(leadershipLabel, leadershipComboPanel, "leadershipComboBox"));
         container.add(createVerticalSpacer(20));
     }
 
@@ -497,9 +529,12 @@ public class AddPanel extends AbstractEngineerPanel {
      * @param container 配置先のコンテナ
      */
     private void createTrainingSection(JPanel container) {
-        // セクションタイトル
+        // セクションタイトル - 左寄せ
         JLabel trainingTitle = createSectionTitle("研修の受講歴");
-        container.add(trainingTitle);
+        JPanel titlePanel = new JPanel(new FlowLayout(FlowLayout.LEFT, 0, 0));
+        titlePanel.setBackground(Color.WHITE);
+        titlePanel.add(trainingTitle);
+        container.add(titlePanel);
         container.add(createVerticalSpacer(10));
 
         // 研修の受講歴テキストエリア
@@ -520,9 +555,12 @@ public class AddPanel extends AbstractEngineerPanel {
      * @param container 配置先のコンテナ
      */
     private void createNoteSection(JPanel container) {
-        // セクションタイトル
+        // セクションタイトル - 左寄せ
         JLabel noteTitle = createSectionTitle("備考");
-        container.add(noteTitle);
+        JPanel titlePanel = new JPanel(new FlowLayout(FlowLayout.LEFT, 0, 0));
+        titlePanel.setBackground(Color.WHITE);
+        titlePanel.add(noteTitle);
+        container.add(titlePanel);
         container.add(createVerticalSpacer(10));
 
         // 備考テキストエリア
@@ -686,6 +724,12 @@ public class AddPanel extends AbstractEngineerPanel {
         // 生年月日の検証
         if (!validateDateComponents("birthYearComboBox", "birthMonthComboBox", "birthDayComboBox",
                 "birthDate", true, MessageEnum.VALIDATION_ERROR_BIRTH_DATE.getMessage())) {
+            isValid = false;
+        }
+
+        // 入社年月の検証
+        if (!validateDateComponents("joinYearComboBox", "joinMonthComboBox", null,
+                "joinDate", true, MessageEnum.VALIDATION_ERROR_JOIN_DATE.getMessage())) {
             isValid = false;
         }
 
