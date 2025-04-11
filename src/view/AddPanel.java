@@ -377,7 +377,7 @@ public class AddPanel extends AbstractEngineerPanel {
 
     /**
      * 言語スキルセクションの作成
-     * プログラミング言語の選択チェックボックスを配置
+     * プログラミング言語の選択機能をコンボボックス+チェックボックスで実装
      *
      * @param container 配置先のコンテナ
      */
@@ -394,39 +394,118 @@ public class AddPanel extends AbstractEngineerPanel {
         container.add(titlePanel);
         container.add(createVerticalSpacer(10));
 
-        // 言語チェックボックスのパネル（3列グリッド）
-        JPanel languagePanel = new JPanel(new GridLayout(0, 3, 10, 5));
-        languagePanel.setBackground(Color.WHITE);
+        // 言語選択コンボボックスとボタンのパネル
+        JPanel languageSelectPanel = new JPanel(new FlowLayout(FlowLayout.LEFT, 5, 0));
+        languageSelectPanel.setBackground(Color.WHITE);
 
-        // 言語オプション
-        String[] languages = {
+        // 利用可能な言語リスト
+        String[] availableLanguages = {
                 "Java", "Python", "C#", "C++", "JavaScript",
                 "TypeScript", "PHP", "Ruby", "Swift", "Kotlin",
-                "Go", "Rust", "Scala", "SQL", "HTML/CSS"
+                "Go", "Rust", "Scala", "SQL", "HTML/CSS",
+                "Dart", "Perl", "R", "COBOL", "Fortran",
+                "Lua", "Haskell", "Clojure", "Groovy", "Assembly"
         };
 
-        // チェックボックスの作成
-        for (String language : languages) {
-            JCheckBox checkBox = new JCheckBox(language);
-            checkBox.setBackground(Color.WHITE);
-            languageCheckBoxes.add(checkBox);
-            registerComponent("language_" + language, checkBox);
-            languagePanel.add(checkBox);
-        }
+        // 言語選択コンボボックス
+        JComboBox<String> languageComboBox = new JComboBox<>(availableLanguages);
+        languageComboBox.setPreferredSize(new Dimension(150, 25));
+        registerComponent("languageComboBox", languageComboBox);
+        languageSelectPanel.add(languageComboBox);
+
+        // 追加ボタン
+        JButton addLanguageButton = new JButton("追加");
+        addLanguageButton.setPreferredSize(new Dimension(80, 25));
+        registerComponent("addLanguageButton", addLanguageButton);
+        languageSelectPanel.add(addLanguageButton);
+
+        container.add(languageSelectPanel);
+        container.add(createVerticalSpacer(10));
+
+        // 選択済み言語パネル（チェックボックスグループ）
+        JPanel selectedLanguagesPanel = new JPanel();
+        selectedLanguagesPanel.setLayout(new BoxLayout(selectedLanguagesPanel, BoxLayout.Y_AXIS));
+        selectedLanguagesPanel.setBackground(Color.WHITE);
+        selectedLanguagesPanel.setBorder(BorderFactory.createTitledBorder("選択済み言語"));
+        registerComponent("selectedLanguagesPanel", selectedLanguagesPanel);
+
+        // スクロール可能なパネルに配置
+        JScrollPane scrollPane = new JScrollPane(selectedLanguagesPanel);
+        scrollPane.setPreferredSize(new Dimension(300, 150));
+        scrollPane.setBorder(BorderFactory.createEmptyBorder());
+        container.add(scrollPane);
 
         // 言語選択のエラー表示用
         createFieldErrorLabel("languages");
+        container.add(getFieldErrorLabel("languages"));
+        container.add(createVerticalSpacer(10));
 
-        // パネルとエラーラベルの配置
-        JPanel languageContainer = new JPanel();
-        languageContainer.setLayout(new BoxLayout(languageContainer, BoxLayout.Y_AXIS));
-        languageContainer.setBackground(Color.WHITE);
-        languageContainer.add(languagePanel);
-        languageContainer.add(Box.createVerticalStrut(FIELD_ERROR_MARGIN));
-        languageContainer.add(getFieldErrorLabel("languages"));
+        // 言語チェックボックスリストの初期化
+        languageCheckBoxes = new ArrayList<>();
 
-        container.add(languageContainer);
+        // 追加ボタンのイベント設定
+        addLanguageButton.addActionListener(e -> {
+            String selectedLanguage = (String) languageComboBox.getSelectedItem();
+            if (selectedLanguage != null && !isLanguageSelected(selectedLanguage)) {
+                addLanguageCheckbox(selectedLanguage, selectedLanguagesPanel);
+                selectedLanguagesPanel.revalidate();
+                selectedLanguagesPanel.repaint();
+
+                // エラー表示をクリア（もし表示されていれば）
+                clearComponentError("languages");
+            }
+        });
+
         container.add(createVerticalSpacer(20));
+    }
+
+    /**
+     * 言語が既に選択されているかチェック
+     *
+     * @param language チェックする言語
+     * @return 選択済みの場合true
+     */
+    private boolean isLanguageSelected(String language) {
+        for (JCheckBox checkBox : languageCheckBoxes) {
+            if (checkBox.getText().equals(language)) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    /**
+     * 言語チェックボックスを追加
+     *
+     * @param language 追加する言語
+     * @param panel    追加先のパネル
+     */
+    private void addLanguageCheckbox(String language, JPanel panel) {
+        // チェックボックスとボタンを含む行パネル
+        JPanel rowPanel = new JPanel(new BorderLayout(5, 0));
+        rowPanel.setBackground(Color.WHITE);
+
+        // チェックボックス（デフォルトで選択状態）
+        JCheckBox checkBox = new JCheckBox(language, true);
+        checkBox.setBackground(Color.WHITE);
+        registerComponent("language_" + language, checkBox);
+        languageCheckBoxes.add(checkBox);
+        rowPanel.add(checkBox, BorderLayout.CENTER);
+
+        // 削除ボタン
+        JButton removeButton = new JButton("×");
+        removeButton.setPreferredSize(new Dimension(25, 20));
+        removeButton.setMargin(new Insets(0, 0, 0, 0));
+        removeButton.addActionListener(e -> {
+            panel.remove(rowPanel);
+            languageCheckBoxes.remove(checkBox);
+            panel.revalidate();
+            panel.repaint();
+        });
+        rowPanel.add(removeButton, BorderLayout.EAST);
+
+        // パネルに追加
+        panel.add(rowPanel);
     }
 
     /**
