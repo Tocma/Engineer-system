@@ -446,44 +446,31 @@ public abstract class AbstractEngineerPanel extends JPanel {
      * @return 行パネル
      */
     protected JPanel createFormRow(JLabel label, Component field, String fieldName) {
+        // メインパネル（縦方向のレイアウト）
         JPanel rowPanel = new JPanel();
-        rowPanel.setLayout(new BorderLayout(LABEL_FIELD_MARGIN, 0));
+        rowPanel.setLayout(new BoxLayout(rowPanel, BoxLayout.Y_AXIS));
         rowPanel.setBackground(Color.WHITE);
 
-        // ラベルを固定幅で配置
-        JPanel labelPanel = new JPanel(new FlowLayout(FlowLayout.LEFT, 0, 0));
-        labelPanel.setBackground(Color.WHITE);
-        labelPanel.setPreferredSize(new Dimension(120, 25)); // 幅を少し増やす
-        labelPanel.add(label);
+        // トップパネル：ラベルとエラーメッセージを横に配置
+        JPanel topPanel = new JPanel(new BorderLayout(10, 0)); // ラベルとエラーメッセージ間の余白
+        topPanel.setBackground(Color.WHITE);
 
-        // フィールドとエラーメッセージを縦に配置するパネル
-        JPanel fieldContainer = new JPanel();
-        fieldContainer.setLayout(new BoxLayout(fieldContainer, BoxLayout.Y_AXIS));
-        fieldContainer.setBackground(Color.WHITE);
+        // ラベルは左寄せ
+        topPanel.add(label, BorderLayout.WEST);
 
-        // フィールドパネル（フィールドを横幅いっぱいに表示）
+        // エラーメッセージラベルを作成し、右寄せで配置
+        JLabel errorLabel = createFieldErrorLabel(fieldName);
+        topPanel.add(errorLabel, BorderLayout.EAST);
+
+        // フィールドパネル
         JPanel fieldPanel = new JPanel(new BorderLayout());
         fieldPanel.setBackground(Color.WHITE);
         fieldPanel.add(field, BorderLayout.CENTER);
 
-        // フィールドコンテナにフィールドを追加
-        fieldContainer.add(fieldPanel);
-
-        // エラーメッセージラベルの作成と追加
-        JLabel errorLabel = createFieldErrorLabel(fieldName);
-        JPanel errorPanel = new JPanel(new FlowLayout(FlowLayout.LEFT, 0, 0));
-        errorPanel.setBackground(Color.WHITE);
-        errorPanel.add(errorLabel);
-
-        // フィールドとエラーメッセージの間にスペースを追加
-        fieldContainer.add(Box.createVerticalStrut(FIELD_ERROR_MARGIN));
-
-        // エラーメッセージパネルを追加
-        fieldContainer.add(errorPanel);
-
-        // 行パネルにラベルとフィールドコンテナを追加
-        rowPanel.add(labelPanel, BorderLayout.WEST);
-        rowPanel.add(fieldContainer, BorderLayout.CENTER);
+        // 縦方向に配置：トップパネル、スペーサー、フィールドパネル
+        rowPanel.add(topPanel);
+        rowPanel.add(Box.createVerticalStrut(LABEL_FIELD_MARGIN));
+        rowPanel.add(fieldPanel);
 
         return rowPanel;
     }

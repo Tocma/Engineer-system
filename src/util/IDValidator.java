@@ -128,6 +128,12 @@ public class IDValidator implements Validator {
             return false;
         }
 
+        // ID00000の登録を禁止する
+        String standardizedId = standardizeId(value);
+        if ("ID00000".equals(standardizedId)) {
+            return false;
+        }
+
         // 重複チェック
         if (!checkUnique(value)) {
             return false;

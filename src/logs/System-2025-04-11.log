@@ -1,0 +1,473 @@
+[2025-04-11 12:19:31] [INFO] [SYSTEM] ログシステムが正常に初期化されました
+[2025-04-11 12:19:31] [INFO] [SYSTEM] ログシステムを初期化します
+[2025-04-11 12:19:31] [INFO] [SYSTEM] シャットダウンフックを登録しました
+[2025-04-11 12:19:31] [INFO] [SYSTEM] リソースマネージャーが正常に初期化されました
+[2025-04-11 12:19:31] [INFO] [SYSTEM] リソースマネージャーを初期化しました
+[2025-04-11 12:19:32] [INFO] [SYSTEM] メインフレームを初期化しました
+[2025-04-11 12:19:32] [INFO] [SYSTEM] エンジニア一覧パネルを初期化しました
+[2025-04-11 12:19:32] [INFO] [SYSTEM] 画面遷移コントローラーを初期化しました
+[2025-04-11 12:19:32] [INFO] [SYSTEM] メインコントローラーを初期化しました
+[2025-04-11 12:19:32] [INFO] [SYSTEM] エンジニアコントローラーを初期化しました
+[2025-04-11 12:19:32] [INFO] [SYSTEM] アプリケーションを初期化しました
+[2025-04-11 12:19:32] [INFO] [SYSTEM] スレッド 'AsyncTask-LoadData' を管理対象に登録しました
+[2025-04-11 12:19:32] [INFO] [SYSTEM] イベントを処理しました: LOAD_DATA
+[2025-04-11 12:19:32] [INFO] [SYSTEM] 非同期タスクを開始: LoadData
+[2025-04-11 12:19:32] [INFO] [SYSTEM] エンジニアデータの読み込みを開始します
+[2025-04-11 12:19:32] [INFO] [SYSTEM] アクセススレッドを開始しました
+[2025-04-11 12:19:32] [INFO] [SYSTEM] CSVファイル読み込み開始: src\data\engineers.csv
+[2025-04-11 12:19:32] [INFO] [SYSTEM] CSVファイル読み込み完了: src\data\engineers.csv, 4行
+[2025-04-11 12:19:32] [INFO] [SYSTEM] Loaded 4 engineers.
+[2025-04-11 12:19:32] [INFO] [SYSTEM] 非同期タスクが完了: LoadData
+[2025-04-11 12:19:32] [INFO] [SYSTEM] アプリケーションの初期化が完了しました
+[2025-04-11 12:19:32] [INFO] [SYSTEM] パネルを切り替えました: ListPanel
+[2025-04-11 12:19:32] [INFO] [SYSTEM] 画面を切り替えました: LIST
+[2025-04-11 12:19:32] [INFO] [SYSTEM] エンジニアデータを更新しました: 4件
+[2025-04-11 12:19:32] [INFO] [SYSTEM] ビューを更新しました
+[2025-04-11 12:19:32] [INFO] [SYSTEM] ビューを更新しました
+[2025-04-11 12:19:33] [INFO] [UI] 新規追加ボタンが押されました
+[2025-04-11 12:19:33] [INFO] [SYSTEM] イベントを処理しました: CHANGE_PANEL
+[2025-04-11 12:19:33] [INFO] [SYSTEM] AbstractEngineerPanelを初期化しました
+[2025-04-11 12:19:33] [INFO] [UI] AddPanelを作成しました
+[2025-04-11 12:19:33] [INFO] [UI] AddPanelを初期化しました
+[2025-04-11 12:19:33] [INFO] [UI] AddPanelの初期化が完了しました
+[2025-04-11 12:19:33] [INFO] [SYSTEM] パネルを切り替えました: AddPanel
+[2025-04-11 12:19:33] [INFO] [SYSTEM] 画面を切り替えました: ADD
+[2025-04-11 12:19:36] [INFO] [SYSTEM] アプリケーション終了処理を開始します
+[2025-04-11 12:19:36] [INFO] [SYSTEM] ExecutorServiceを終了しています
+[2025-04-11 12:19:36] [INFO] [SYSTEM] 登録済みスレッドを終了しています
+[2025-04-11 12:19:36] [INFO] [SYSTEM] アプリケーション終了処理が完了しました
+[2025-04-11 12:19:36] [INFO] [SYSTEM] シャットダウンします
+[2025-04-11 12:20:00] [INFO] [SYSTEM] ログシステムが正常に初期化されました
+[2025-04-11 12:20:00] [INFO] [SYSTEM] ログシステムを初期化します
+[2025-04-11 12:20:00] [INFO] [SYSTEM] シャットダウンフックを登録しました
+[2025-04-11 12:20:00] [INFO] [SYSTEM] リソースマネージャーが正常に初期化されました
+[2025-04-11 12:20:00] [INFO] [SYSTEM] リソースマネージャーを初期化しました
+[2025-04-11 12:20:01] [INFO] [SYSTEM] メインフレームを初期化しました
+[2025-04-11 12:20:01] [INFO] [SYSTEM] エンジニア一覧パネルを初期化しました
+[2025-04-11 12:20:01] [INFO] [SYSTEM] 画面遷移コントローラーを初期化しました
+[2025-04-11 12:20:01] [INFO] [SYSTEM] メインコントローラーを初期化しました
+[2025-04-11 12:20:01] [INFO] [SYSTEM] エンジニアコントローラーを初期化しました
+[2025-04-11 12:20:01] [INFO] [SYSTEM] アプリケーションを初期化しました
+[2025-04-11 12:20:01] [INFO] [SYSTEM] スレッド 'AsyncTask-LoadData' を管理対象に登録しました
+[2025-04-11 12:20:01] [INFO] [SYSTEM] イベントを処理しました: LOAD_DATA
+[2025-04-11 12:20:01] [INFO] [SYSTEM] 非同期タスクを開始: LoadData
+[2025-04-11 12:20:01] [INFO] [SYSTEM] エンジニアデータの読み込みを開始します
+[2025-04-11 12:20:01] [INFO] [SYSTEM] アクセススレッドを開始しました
+[2025-04-11 12:20:01] [INFO] [SYSTEM] CSVファイル読み込み開始: src\data\engineers.csv
+[2025-04-11 12:20:01] [INFO] [SYSTEM] CSVファイル読み込み完了: src\data\engineers.csv, 4行
+[2025-04-11 12:20:01] [INFO] [SYSTEM] Loaded 4 engineers.
+[2025-04-11 12:20:01] [INFO] [SYSTEM] 非同期タスクが完了: LoadData
+[2025-04-11 12:20:01] [INFO] [SYSTEM] アプリケーションの初期化が完了しました
+[2025-04-11 12:20:01] [INFO] [SYSTEM] パネルを切り替えました: ListPanel
+[2025-04-11 12:20:01] [INFO] [SYSTEM] 画面を切り替えました: LIST
+[2025-04-11 12:20:01] [INFO] [SYSTEM] エンジニアデータを更新しました: 4件
+[2025-04-11 12:20:01] [INFO] [SYSTEM] ビューを更新しました
+[2025-04-11 12:20:01] [INFO] [SYSTEM] ビューを更新しました
+[2025-04-11 12:20:02] [INFO] [UI] 新規追加ボタンが押されました
+[2025-04-11 12:20:02] [INFO] [SYSTEM] イベントを処理しました: CHANGE_PANEL
+[2025-04-11 12:20:02] [INFO] [SYSTEM] AbstractEngineerPanelを初期化しました
+[2025-04-11 12:20:02] [INFO] [UI] AddPanelを作成しました
+[2025-04-11 12:20:02] [INFO] [UI] AddPanelを初期化しました
+[2025-04-11 12:20:02] [INFO] [UI] AddPanelの初期化が完了しました
+[2025-04-11 12:20:02] [INFO] [SYSTEM] パネルを切り替えました: AddPanel
+[2025-04-11 12:20:02] [INFO] [SYSTEM] 画面を切り替えました: ADD
+[2025-04-11 12:20:03] [WARNING] [UI] フィールドエラーを表示: nameField - *は必須項目になります。または20文字以内で入力してください
+[2025-04-11 12:20:03] [WARNING] [UI] フィールドエラーを表示: idField - *は必須項目になります。すでに登録されているIDまたはID番号5桁の数字を入力してください
+[2025-04-11 12:20:03] [WARNING] [UI] フィールドエラーを表示: nameKanaField - *は必須項目になります。またはフリガナを20文字以内で入力してください
+[2025-04-11 12:20:03] [WARNING] [UI] フィールドエラーを表示: birthDate - *は必須項目になります。項目を選択してください
+[2025-04-11 12:20:03] [WARNING] [UI] フィールドエラーを表示: careerComboBox - *は必須項目になります。項目を選択してください
+[2025-04-11 12:20:03] [WARNING] [UI] フィールドエラーを表示: languages - *は必須項目になります。1つ以上項目を選択してください
+[2025-04-11 12:20:16] [WARNING] [UI] フィールドエラーを表示: idField - *は必須項目になります。すでに登録されているIDまたはID番号5桁の数字を入力してください
+[2025-04-11 12:20:16] [WARNING] [UI] フィールドエラーを表示: nameKanaField - *は必須項目になります。またはフリガナを20文字以内で入力してください
+[2025-04-11 12:20:16] [WARNING] [UI] フィールドエラーを表示: birthDate - *は必須項目になります。項目を選択してください
+[2025-04-11 12:20:17] [WARNING] [UI] フィールドエラーを表示: careerComboBox - *は必須項目になります。項目を選択してください
+[2025-04-11 12:20:17] [WARNING] [UI] フィールドエラーを表示: languages - *は必須項目になります。1つ以上項目を選択してください
+[2025-04-11 12:20:29] [WARNING] [UI] フィールドエラーを表示: idField - *は必須項目になります。すでに登録されているIDまたはID番号5桁の数字を入力してください
+[2025-04-11 12:20:29] [WARNING] [UI] フィールドエラーを表示: nameKanaField - *は必須項目になります。またはフリガナを20文字以内で入力してください
+[2025-04-11 12:20:29] [WARNING] [UI] フィールドエラーを表示: birthDate - *は必須項目になります。項目を選択してください
+[2025-04-11 12:20:29] [WARNING] [UI] フィールドエラーを表示: careerComboBox - *は必須項目になります。項目を選択してください
+[2025-04-11 12:20:29] [WARNING] [UI] フィールドエラーを表示: languages - *は必須項目になります。1つ以上項目を選択してください
+[2025-04-11 12:20:36] [WARNING] [UI] フィールドエラーを表示: idField - *は必須項目になります。すでに登録されているIDまたはID番号5桁の数字を入力してください
+[2025-04-11 12:20:36] [WARNING] [UI] フィールドエラーを表示: nameKanaField - *は必須項目になります。またはフリガナを20文字以内で入力してください
+[2025-04-11 12:20:36] [WARNING] [UI] フィールドエラーを表示: birthDate - *は必須項目になります。項目を選択してください
+[2025-04-11 12:20:36] [WARNING] [UI] フィールドエラーを表示: careerComboBox - *は必須項目になります。項目を選択してください
+[2025-04-11 12:20:36] [WARNING] [UI] フィールドエラーを表示: languages - *は必須項目になります。1つ以上項目を選択してください
+[2025-04-11 12:20:43] [WARNING] [UI] フィールドエラーを表示: idField - *は必須項目になります。すでに登録されているIDまたはID番号5桁の数字を入力してください
+[2025-04-11 12:20:43] [WARNING] [UI] フィールドエラーを表示: nameKanaField - *は必須項目になります。またはフリガナを20文字以内で入力してください
+[2025-04-11 12:20:43] [WARNING] [UI] フィールドエラーを表示: birthDate - *は必須項目になります。項目を選択してください
+[2025-04-11 12:20:43] [WARNING] [UI] フィールドエラーを表示: careerComboBox - *は必須項目になります。項目を選択してください
+[2025-04-11 12:20:43] [WARNING] [UI] フィールドエラーを表示: languages - *は必須項目になります。1つ以上項目を選択してください
+[2025-04-11 12:20:44] [WARNING] [UI] フィールドエラーを表示: idField - *は必須項目になります。すでに登録されているIDまたはID番号5桁の数字を入力してください
+[2025-04-11 12:20:44] [WARNING] [UI] フィールドエラーを表示: nameKanaField - *は必須項目になります。またはフリガナを20文字以内で入力してください
+[2025-04-11 12:20:44] [WARNING] [UI] フィールドエラーを表示: birthDate - *は必須項目になります。項目を選択してください
+[2025-04-11 12:20:44] [WARNING] [UI] フィールドエラーを表示: careerComboBox - *は必須項目になります。項目を選択してください
+[2025-04-11 12:20:44] [WARNING] [UI] フィールドエラーを表示: languages - *は必須項目になります。1つ以上項目を選択してください
+[2025-04-11 12:20:44] [WARNING] [UI] フィールドエラーを表示: idField - *は必須項目になります。すでに登録されているIDまたはID番号5桁の数字を入力してください
+[2025-04-11 12:20:44] [WARNING] [UI] フィールドエラーを表示: nameKanaField - *は必須項目になります。またはフリガナを20文字以内で入力してください
+[2025-04-11 12:20:44] [WARNING] [UI] フィールドエラーを表示: birthDate - *は必須項目になります。項目を選択してください
+[2025-04-11 12:20:44] [WARNING] [UI] フィールドエラーを表示: careerComboBox - *は必須項目になります。項目を選択してください
+[2025-04-11 12:20:44] [WARNING] [UI] フィールドエラーを表示: languages - *は必須項目になります。1つ以上項目を選択してください
+[2025-04-11 12:20:47] [WARNING] [UI] フィールドエラーを表示: idField - *は必須項目になります。すでに登録されているIDまたはID番号5桁の数字を入力してください
+[2025-04-11 12:20:47] [WARNING] [UI] フィールドエラーを表示: nameKanaField - *は必須項目になります。またはフリガナを20文字以内で入力してください
+[2025-04-11 12:20:47] [WARNING] [UI] フィールドエラーを表示: birthDate - *は必須項目になります。項目を選択してください
+[2025-04-11 12:20:47] [WARNING] [UI] フィールドエラーを表示: careerComboBox - *は必須項目になります。項目を選択してください
+[2025-04-11 12:20:47] [WARNING] [UI] フィールドエラーを表示: languages - *は必須項目になります。1つ以上項目を選択してください
+[2025-04-11 12:20:53] [WARNING] [UI] フィールドエラーを表示: nameKanaField - *は必須項目になります。またはフリガナを20文字以内で入力してください
+[2025-04-11 12:20:53] [WARNING] [UI] フィールドエラーを表示: birthDate - *は必須項目になります。項目を選択してください
+[2025-04-11 12:20:53] [WARNING] [UI] フィールドエラーを表示: careerComboBox - *は必須項目になります。項目を選択してください
+[2025-04-11 12:20:53] [WARNING] [UI] フィールドエラーを表示: languages - *は必須項目になります。1つ以上項目を選択してください
+[2025-04-11 12:21:02] [WARNING] [UI] フィールドエラーを表示: nameKanaField - *は必須項目になります。またはフリガナを20文字以内で入力してください
+[2025-04-11 12:21:02] [WARNING] [UI] フィールドエラーを表示: birthDate - *は必須項目になります。項目を選択してください
+[2025-04-11 12:21:02] [WARNING] [UI] フィールドエラーを表示: careerComboBox - *は必須項目になります。項目を選択してください
+[2025-04-11 12:21:02] [WARNING] [UI] フィールドエラーを表示: languages - *は必須項目になります。1つ以上項目を選択してください
+[2025-04-11 12:21:03] [WARNING] [UI] フィールドエラーを表示: nameKanaField - *は必須項目になります。またはフリガナを20文字以内で入力してください
+[2025-04-11 12:21:03] [WARNING] [UI] フィールドエラーを表示: birthDate - *は必須項目になります。項目を選択してください
+[2025-04-11 12:21:03] [WARNING] [UI] フィールドエラーを表示: careerComboBox - *は必須項目になります。項目を選択してください
+[2025-04-11 12:21:03] [WARNING] [UI] フィールドエラーを表示: languages - *は必須項目になります。1つ以上項目を選択してください
+[2025-04-11 12:21:09] [WARNING] [UI] フィールドエラーを表示: birthDate - *は必須項目になります。項目を選択してください
+[2025-04-11 12:21:09] [WARNING] [UI] フィールドエラーを表示: careerComboBox - *は必須項目になります。項目を選択してください
+[2025-04-11 12:21:09] [WARNING] [UI] フィールドエラーを表示: languages - *は必須項目になります。1つ以上項目を選択してください
+[2025-04-11 12:21:21] [WARNING] [UI] フィールドエラーを表示: birthDate - *は必須項目になります。項目を選択してください
+[2025-04-11 12:21:21] [WARNING] [UI] フィールドエラーを表示: careerComboBox - *は必須項目になります。項目を選択してください
+[2025-04-11 12:21:21] [WARNING] [UI] フィールドエラーを表示: languages - *は必須項目になります。1つ以上項目を選択してください
+[2025-04-11 12:21:23] [WARNING] [UI] フィールドエラーを表示: nameKanaField - *は必須項目になります。またはフリガナを20文字以内で入力してください
+[2025-04-11 12:21:23] [WARNING] [UI] フィールドエラーを表示: birthDate - *は必須項目になります。項目を選択してください
+[2025-04-11 12:21:23] [WARNING] [UI] フィールドエラーを表示: careerComboBox - *は必須項目になります。項目を選択してください
+[2025-04-11 12:21:23] [WARNING] [UI] フィールドエラーを表示: languages - *は必須項目になります。1つ以上項目を選択してください
+[2025-04-11 12:21:33] [WARNING] [UI] フィールドエラーを表示: birthDate - *は必須項目になります。項目を選択してください
+[2025-04-11 12:21:33] [WARNING] [UI] フィールドエラーを表示: careerComboBox - *は必須項目になります。項目を選択してください
+[2025-04-11 12:21:33] [WARNING] [UI] フィールドエラーを表示: languages - *は必須項目になります。1つ以上項目を選択してください
+[2025-04-11 12:21:37] [WARNING] [UI] フィールドエラーを表示: birthDate - *は必須項目になります。項目を選択してください
+[2025-04-11 12:21:37] [WARNING] [UI] フィールドエラーを表示: careerComboBox - *は必須項目になります。項目を選択してください
+[2025-04-11 12:21:37] [WARNING] [UI] フィールドエラーを表示: languages - *は必須項目になります。1つ以上項目を選択してください
+[2025-04-11 12:21:42] [WARNING] [UI] フィールドエラーを表示: careerComboBox - *は必須項目になります。項目を選択してください
+[2025-04-11 12:21:42] [WARNING] [UI] フィールドエラーを表示: languages - *は必須項目になります。1つ以上項目を選択してください
+[2025-04-11 12:21:48] [WARNING] [UI] フィールドエラーを表示: birthDate - *は必須項目になります。項目を選択してください
+[2025-04-11 12:21:48] [WARNING] [UI] フィールドエラーを表示: careerComboBox - *は必須項目になります。項目を選択してください
+[2025-04-11 12:21:48] [WARNING] [UI] フィールドエラーを表示: languages - *は必須項目になります。1つ以上項目を選択してください
+[2025-04-11 12:21:57] [WARNING] [UI] フィールドエラーを表示: careerComboBox - *は必須項目になります。項目を選択してください
+[2025-04-11 12:21:57] [WARNING] [UI] フィールドエラーを表示: languages - *は必須項目になります。1つ以上項目を選択してください
+[2025-04-11 12:22:01] [WARNING] [UI] フィールドエラーを表示: languages - *は必須項目になります。1つ以上項目を選択してください
+[2025-04-11 12:22:07] [SEVERE] [UI] エンジニア追加処理中にエラーが発生しました
+java.lang.IllegalStateException: 入社年月は必須です
+	at model.EngineerBuilder.validateRequiredFields(EngineerBuilder.java:81)
+	at model.EngineerBuilder.build(EngineerBuilder.java:57)
+	at view.AddPanel.buildEngineerDTO(AddPanel.java:827)
+	at view.AddPanel.addEngineer(AddPanel.java:621)
+	at view.AddPanel.lambda$1(AddPanel.java:575)
+	at java.desktop/javax.swing.AbstractButton.fireActionPerformed(AbstractButton.java:1972)
+	at java.desktop/javax.swing.AbstractButton$Handler.actionPerformed(AbstractButton.java:2314)
+	at java.desktop/javax.swing.DefaultButtonModel.fireActionPerformed(DefaultButtonModel.java:407)
+	at java.desktop/javax.swing.DefaultButtonModel.setPressed(DefaultButtonModel.java:262)
+	at java.desktop/javax.swing.plaf.basic.BasicButtonListener.mouseReleased(BasicButtonListener.java:279)
+	at java.desktop/java.awt.Component.processMouseEvent(Component.java:6576)
+	at java.desktop/javax.swing.JComponent.processMouseEvent(JComponent.java:3404)
+	at java.desktop/java.awt.Component.processEvent(Component.java:6341)
+	at java.desktop/java.awt.Container.processEvent(Container.java:2260)
+	at java.desktop/java.awt.Component.dispatchEventImpl(Component.java:4958)
+	at java.desktop/java.awt.Container.dispatchEventImpl(Container.java:2318)
+	at java.desktop/java.awt.Component.dispatchEvent(Component.java:4790)
+	at java.desktop/java.awt.LightweightDispatcher.retargetMouseEvent(Container.java:4916)
+	at java.desktop/java.awt.LightweightDispatcher.processMouseEvent(Container.java:4559)
+	at java.desktop/java.awt.LightweightDispatcher.dispatchEvent(Container.java:4500)
+	at java.desktop/java.awt.Container.dispatchEventImpl(Container.java:2304)
+	at java.desktop/java.awt.Window.dispatchEventImpl(Window.java:2671)
+	at java.desktop/java.awt.Component.dispatchEvent(Component.java:4790)
+	at java.desktop/java.awt.EventQueue.dispatchEventImpl(EventQueue.java:725)
+	at java.desktop/java.awt.EventQueue.dispatchEvent(EventQueue.java:702)
+	at java.desktop/java.awt.EventDispatchThread.pumpOneEventForFilters(EventDispatchThread.java:203)
+	at java.desktop/java.awt.EventDispatchThread.pumpEventsForFilter(EventDispatchThread.java:124)
+	at java.desktop/java.awt.EventDispatchThread.pumpEventsForHierarchy(EventDispatchThread.java:113)
+	at java.desktop/java.awt.EventDispatchThread.pumpEvents(EventDispatchThread.java:109)
+	at java.desktop/java.awt.EventDispatchThread.pumpEvents(EventDispatchThread.java:101)
+	at java.desktop/java.awt.EventDispatchThread.run(EventDispatchThread.java:90)
+[2025-04-11 12:22:07] [WARNING] [UI] エラーメッセージを表示: エンジニア情報の登録中にエラーが発生しました: 入社年月は必須です
+[2025-04-11 12:23:52] [WARNING] [UI] フィールドエラーを表示: birthDate - *は必須項目になります。項目を選択してください
+[2025-04-11 12:46:57] [INFO] [SYSTEM] ログシステムが正常に初期化されました
+[2025-04-11 12:46:57] [INFO] [SYSTEM] ログシステムを初期化します
+[2025-04-11 12:46:57] [INFO] [SYSTEM] シャットダウンフックを登録しました
+[2025-04-11 12:46:57] [INFO] [SYSTEM] リソースマネージャーが正常に初期化されました
+[2025-04-11 12:46:57] [INFO] [SYSTEM] リソースマネージャーを初期化しました
+[2025-04-11 12:46:57] [INFO] [SYSTEM] メインフレームを初期化しました
+[2025-04-11 12:46:57] [INFO] [SYSTEM] エンジニア一覧パネルを初期化しました
+[2025-04-11 12:46:57] [INFO] [SYSTEM] 画面遷移コントローラーを初期化しました
+[2025-04-11 12:46:57] [INFO] [SYSTEM] メインコントローラーを初期化しました
+[2025-04-11 12:46:57] [INFO] [SYSTEM] エンジニアコントローラーを初期化しました
+[2025-04-11 12:46:57] [INFO] [SYSTEM] アプリケーションを初期化しました
+[2025-04-11 12:46:57] [INFO] [SYSTEM] スレッド 'AsyncTask-LoadData' を管理対象に登録しました
+[2025-04-11 12:46:57] [INFO] [SYSTEM] イベントを処理しました: LOAD_DATA
+[2025-04-11 12:46:57] [INFO] [SYSTEM] 非同期タスクを開始: LoadData
+[2025-04-11 12:46:57] [INFO] [SYSTEM] エンジニアデータの読み込みを開始します
+[2025-04-11 12:46:57] [INFO] [SYSTEM] アクセススレッドを開始しました
+[2025-04-11 12:46:57] [INFO] [SYSTEM] CSVファイル読み込み開始: src\data\engineers.csv
+[2025-04-11 12:46:57] [INFO] [SYSTEM] CSVファイル読み込み完了: src\data\engineers.csv, 4行
+[2025-04-11 12:46:57] [INFO] [SYSTEM] Loaded 4 engineers.
+[2025-04-11 12:46:57] [INFO] [SYSTEM] 非同期タスクが完了: LoadData
+[2025-04-11 12:46:57] [INFO] [SYSTEM] アプリケーションの初期化が完了しました
+[2025-04-11 12:46:57] [INFO] [SYSTEM] パネルを切り替えました: ListPanel
+[2025-04-11 12:46:57] [INFO] [SYSTEM] 画面を切り替えました: LIST
+[2025-04-11 12:46:57] [INFO] [SYSTEM] エンジニアデータを更新しました: 4件
+[2025-04-11 12:46:57] [INFO] [SYSTEM] ビューを更新しました
+[2025-04-11 12:46:57] [INFO] [SYSTEM] ビューを更新しました
+[2025-04-11 12:46:59] [INFO] [UI] 新規追加ボタンが押されました
+[2025-04-11 12:46:59] [INFO] [SYSTEM] イベントを処理しました: CHANGE_PANEL
+[2025-04-11 12:46:59] [INFO] [SYSTEM] AbstractEngineerPanelを初期化しました
+[2025-04-11 12:46:59] [INFO] [UI] AddPanelを作成しました
+[2025-04-11 12:46:59] [INFO] [UI] AddPanelを初期化しました
+[2025-04-11 12:47:00] [INFO] [UI] AddPanelの初期化が完了しました
+[2025-04-11 12:47:00] [INFO] [SYSTEM] パネルを切り替えました: AddPanel
+[2025-04-11 12:47:00] [INFO] [SYSTEM] 画面を切り替えました: ADD
+[2025-04-11 12:47:19] [INFO] [SYSTEM] アプリケーション終了処理を開始します
+[2025-04-11 12:47:19] [INFO] [SYSTEM] ExecutorServiceを終了しています
+[2025-04-11 12:47:19] [INFO] [SYSTEM] 登録済みスレッドを終了しています
+[2025-04-11 12:47:19] [INFO] [SYSTEM] アプリケーション終了処理が完了しました
+[2025-04-11 12:48:16] [INFO] [SYSTEM] ログシステムが正常に初期化されました
+[2025-04-11 12:48:16] [INFO] [SYSTEM] ログシステムを初期化します
+[2025-04-11 12:48:16] [INFO] [SYSTEM] シャットダウンフックを登録しました
+[2025-04-11 12:48:16] [INFO] [SYSTEM] リソースマネージャーが正常に初期化されました
+[2025-04-11 12:48:16] [INFO] [SYSTEM] リソースマネージャーを初期化しました
+[2025-04-11 12:48:17] [INFO] [SYSTEM] メインフレームを初期化しました
+[2025-04-11 12:48:17] [INFO] [SYSTEM] エンジニア一覧パネルを初期化しました
+[2025-04-11 12:48:17] [INFO] [SYSTEM] 画面遷移コントローラーを初期化しました
+[2025-04-11 12:48:17] [INFO] [SYSTEM] メインコントローラーを初期化しました
+[2025-04-11 12:48:17] [INFO] [SYSTEM] エンジニアコントローラーを初期化しました
+[2025-04-11 12:48:17] [INFO] [SYSTEM] アプリケーションを初期化しました
+[2025-04-11 12:48:17] [INFO] [SYSTEM] スレッド 'AsyncTask-LoadData' を管理対象に登録しました
+[2025-04-11 12:48:17] [INFO] [SYSTEM] イベントを処理しました: LOAD_DATA
+[2025-04-11 12:48:17] [INFO] [SYSTEM] 非同期タスクを開始: LoadData
+[2025-04-11 12:48:17] [INFO] [SYSTEM] エンジニアデータの読み込みを開始します
+[2025-04-11 12:48:17] [INFO] [SYSTEM] アクセススレッドを開始しました
+[2025-04-11 12:48:17] [INFO] [SYSTEM] CSVファイル読み込み開始: src\data\engineers.csv
+[2025-04-11 12:48:17] [INFO] [SYSTEM] CSVファイル読み込み完了: src\data\engineers.csv, 4行
+[2025-04-11 12:48:17] [INFO] [SYSTEM] Loaded 4 engineers.
+[2025-04-11 12:48:17] [INFO] [SYSTEM] 非同期タスクが完了: LoadData
+[2025-04-11 12:48:17] [INFO] [SYSTEM] アプリケーションの初期化が完了しました
+[2025-04-11 12:48:17] [INFO] [SYSTEM] パネルを切り替えました: ListPanel
+[2025-04-11 12:48:17] [INFO] [SYSTEM] 画面を切り替えました: LIST
+[2025-04-11 12:48:17] [INFO] [SYSTEM] エンジニアデータを更新しました: 4件
+[2025-04-11 12:48:17] [INFO] [SYSTEM] ビューを更新しました
+[2025-04-11 12:48:17] [INFO] [SYSTEM] ビューを更新しました
+[2025-04-11 12:48:18] [INFO] [UI] 新規追加ボタンが押されました
+[2025-04-11 12:48:18] [INFO] [SYSTEM] イベントを処理しました: CHANGE_PANEL
+[2025-04-11 12:48:18] [INFO] [SYSTEM] AbstractEngineerPanelを初期化しました
+[2025-04-11 12:48:18] [INFO] [UI] AddPanelを作成しました
+[2025-04-11 12:48:18] [INFO] [UI] AddPanelを初期化しました
+[2025-04-11 12:48:18] [INFO] [UI] AddPanelの初期化が完了しました
+[2025-04-11 12:48:18] [INFO] [SYSTEM] パネルを切り替えました: AddPanel
+[2025-04-11 12:48:18] [INFO] [SYSTEM] 画面を切り替えました: ADD
+[2025-04-11 12:49:32] [INFO] [SYSTEM] アプリケーション終了処理を開始します
+[2025-04-11 12:49:32] [INFO] [SYSTEM] ExecutorServiceを終了しています
+[2025-04-11 12:49:32] [INFO] [SYSTEM] 登録済みスレッドを終了しています
+[2025-04-11 12:49:32] [INFO] [SYSTEM] アプリケーション終了処理が完了しました
+[2025-04-11 12:49:32] [INFO] [SYSTEM] シャットダウンします
+[2025-04-11 12:49:32] [INFO] [SYSTEM] 全リソースの解放処理を完了しました
+[2025-04-11 12:49:32] [INFO] [SYSTEM] システムをシャットダウンしています
+[2025-04-11 12:49:38] [INFO] [SYSTEM] ログシステムが正常に初期化されました
+[2025-04-11 12:49:38] [INFO] [SYSTEM] ログシステムを初期化します
+[2025-04-11 12:49:38] [INFO] [SYSTEM] シャットダウンフックを登録しました
+[2025-04-11 12:49:38] [INFO] [SYSTEM] リソースマネージャーが正常に初期化されました
+[2025-04-11 12:49:38] [INFO] [SYSTEM] リソースマネージャーを初期化しました
+[2025-04-11 12:49:38] [INFO] [SYSTEM] メインフレームを初期化しました
+[2025-04-11 12:49:38] [INFO] [SYSTEM] エンジニア一覧パネルを初期化しました
+[2025-04-11 12:49:38] [INFO] [SYSTEM] 画面遷移コントローラーを初期化しました
+[2025-04-11 12:49:38] [INFO] [SYSTEM] メインコントローラーを初期化しました
+[2025-04-11 12:49:38] [INFO] [SYSTEM] エンジニアコントローラーを初期化しました
+[2025-04-11 12:49:38] [INFO] [SYSTEM] アプリケーションを初期化しました
+[2025-04-11 12:49:38] [INFO] [SYSTEM] スレッド 'AsyncTask-LoadData' を管理対象に登録しました
+[2025-04-11 12:49:38] [INFO] [SYSTEM] イベントを処理しました: LOAD_DATA
+[2025-04-11 12:49:38] [INFO] [SYSTEM] 非同期タスクを開始: LoadData
+[2025-04-11 12:49:38] [INFO] [SYSTEM] エンジニアデータの読み込みを開始します
+[2025-04-11 12:49:38] [INFO] [SYSTEM] アクセススレッドを開始しました
+[2025-04-11 12:49:38] [INFO] [SYSTEM] CSVファイル読み込み開始: src\data\engineers.csv
+[2025-04-11 12:49:38] [INFO] [SYSTEM] CSVファイル読み込み完了: src\data\engineers.csv, 4行
+[2025-04-11 12:49:38] [INFO] [SYSTEM] Loaded 4 engineers.
+[2025-04-11 12:49:38] [INFO] [SYSTEM] 非同期タスクが完了: LoadData
+[2025-04-11 12:49:38] [INFO] [SYSTEM] アプリケーションの初期化が完了しました
+[2025-04-11 12:49:38] [INFO] [SYSTEM] パネルを切り替えました: ListPanel
+[2025-04-11 12:49:38] [INFO] [SYSTEM] 画面を切り替えました: LIST
+[2025-04-11 12:49:38] [INFO] [SYSTEM] エンジニアデータを更新しました: 4件
+[2025-04-11 12:49:38] [INFO] [SYSTEM] ビューを更新しました
+[2025-04-11 12:49:38] [INFO] [SYSTEM] ビューを更新しました
+[2025-04-11 12:49:39] [INFO] [UI] 新規追加ボタンが押されました
+[2025-04-11 12:49:39] [INFO] [SYSTEM] イベントを処理しました: CHANGE_PANEL
+[2025-04-11 12:49:39] [INFO] [SYSTEM] AbstractEngineerPanelを初期化しました
+[2025-04-11 12:49:39] [INFO] [UI] AddPanelを作成しました
+[2025-04-11 12:49:39] [INFO] [UI] AddPanelを初期化しました
+[2025-04-11 12:49:39] [INFO] [UI] AddPanelの初期化が完了しました
+[2025-04-11 12:49:39] [INFO] [SYSTEM] パネルを切り替えました: AddPanel
+[2025-04-11 12:49:39] [INFO] [SYSTEM] 画面を切り替えました: ADD
+[2025-04-11 12:50:10] [INFO] [SYSTEM] アプリケーション終了処理を開始します
+[2025-04-11 12:50:10] [INFO] [SYSTEM] ExecutorServiceを終了しています
+[2025-04-11 12:50:10] [INFO] [SYSTEM] 登録済みスレッドを終了しています
+[2025-04-11 12:50:10] [INFO] [SYSTEM] アプリケーション終了処理が完了しました
+[2025-04-11 12:50:10] [INFO] [SYSTEM] シャットダウンします
+[2025-04-11 12:50:10] [INFO] [SYSTEM] 全リソースの解放処理を完了しました
+[2025-04-11 12:50:10] [INFO] [SYSTEM] システムをシャットダウンしています
+[2025-04-11 14:15:39] [INFO] [SYSTEM] ログシステムが正常に初期化されました
+[2025-04-11 14:15:40] [INFO] [SYSTEM] ログシステムを初期化します
+[2025-04-11 14:15:40] [INFO] [SYSTEM] シャットダウンフックを登録しました
+[2025-04-11 14:15:40] [INFO] [SYSTEM] リソースマネージャーが正常に初期化されました
+[2025-04-11 14:15:40] [INFO] [SYSTEM] リソースマネージャーを初期化しました
+[2025-04-11 14:15:40] [INFO] [SYSTEM] メインフレームを初期化しました
+[2025-04-11 14:15:40] [INFO] [SYSTEM] エンジニア一覧パネルを初期化しました
+[2025-04-11 14:15:40] [INFO] [SYSTEM] 画面遷移コントローラーを初期化しました
+[2025-04-11 14:15:40] [INFO] [SYSTEM] メインコントローラーを初期化しました
+[2025-04-11 14:15:40] [INFO] [SYSTEM] エンジニアコントローラーを初期化しました
+[2025-04-11 14:15:40] [INFO] [SYSTEM] アプリケーションを初期化しました
+[2025-04-11 14:15:40] [INFO] [SYSTEM] スレッド 'AsyncTask-LoadData' を管理対象に登録しました
+[2025-04-11 14:15:40] [INFO] [SYSTEM] イベントを処理しました: LOAD_DATA
+[2025-04-11 14:15:40] [INFO] [SYSTEM] 非同期タスクを開始: LoadData
+[2025-04-11 14:15:40] [INFO] [SYSTEM] エンジニアデータの読み込みを開始します
+[2025-04-11 14:15:40] [INFO] [SYSTEM] アクセススレッドを開始しました
+[2025-04-11 14:15:40] [INFO] [SYSTEM] CSVファイル読み込み開始: src\data\engineers.csv
+[2025-04-11 14:15:40] [INFO] [SYSTEM] CSVファイル読み込み完了: src\data\engineers.csv, 4行
+[2025-04-11 14:15:40] [INFO] [SYSTEM] Loaded 4 engineers.
+[2025-04-11 14:15:40] [INFO] [SYSTEM] 非同期タスクが完了: LoadData
+[2025-04-11 14:15:40] [INFO] [SYSTEM] アプリケーションの初期化が完了しました
+[2025-04-11 14:15:40] [INFO] [SYSTEM] パネルを切り替えました: ListPanel
+[2025-04-11 14:15:40] [INFO] [SYSTEM] 画面を切り替えました: LIST
+[2025-04-11 14:15:40] [INFO] [SYSTEM] エンジニアデータを更新しました: 4件
+[2025-04-11 14:15:40] [INFO] [SYSTEM] ビューを更新しました
+[2025-04-11 14:15:40] [INFO] [SYSTEM] ビューを更新しました
+[2025-04-11 14:15:41] [INFO] [UI] 新規追加ボタンが押されました
+[2025-04-11 14:15:41] [INFO] [SYSTEM] イベントを処理しました: CHANGE_PANEL
+[2025-04-11 14:15:41] [INFO] [SYSTEM] AbstractEngineerPanelを初期化しました
+[2025-04-11 14:15:41] [INFO] [UI] AddPanelを作成しました
+[2025-04-11 14:15:41] [INFO] [UI] AddPanelを初期化しました
+[2025-04-11 14:15:41] [INFO] [UI] AddPanelの初期化が完了しました
+[2025-04-11 14:15:41] [INFO] [SYSTEM] パネルを切り替えました: AddPanel
+[2025-04-11 14:15:41] [INFO] [SYSTEM] 画面を切り替えました: ADD
+[2025-04-11 14:15:52] [WARNING] [UI] フィールドエラーを表示: idField - ID00000は使用できません
+[2025-04-11 14:15:52] [WARNING] [UI] フィールドエラーを表示: nameKanaField - *は必須項目になります。またはフリガナを20文字以内で入力してください
+[2025-04-11 14:15:52] [WARNING] [UI] フィールドエラーを表示: birthDate - *は必須項目になります。項目を選択してください
+[2025-04-11 14:15:52] [WARNING] [UI] フィールドエラーを表示: careerComboBox - *は必須項目になります。項目を選択してください
+[2025-04-11 14:15:52] [WARNING] [UI] フィールドエラーを表示: languages - *は必須項目になります。1つ以上項目を選択してください
+[2025-04-11 14:16:01] [WARNING] [UI] フィールドエラーを表示: nameKanaField - *は必須項目になります。またはフリガナを20文字以内で入力してください
+[2025-04-11 14:16:01] [WARNING] [UI] フィールドエラーを表示: birthDate - *は必須項目になります。項目を選択してください
+[2025-04-11 14:16:01] [WARNING] [UI] フィールドエラーを表示: careerComboBox - *は必須項目になります。項目を選択してください
+[2025-04-11 14:16:01] [WARNING] [UI] フィールドエラーを表示: languages - *は必須項目になります。1つ以上項目を選択してください
+[2025-04-11 14:17:56] [INFO] [SYSTEM] エンジニア情報の保存を開始します: ID=00006
+[2025-04-11 14:17:56] [INFO] [SYSTEM] 保存処理の元パネルを記録: AddPanel
+[2025-04-11 14:17:56] [INFO] [SYSTEM] スレッド 'AsyncTask-SaveEngineer' を管理対象に登録しました
+[2025-04-11 14:17:56] [INFO] [SYSTEM] イベントを処理しました: SAVE_DATA
+[2025-04-11 14:17:56] [INFO] [SYSTEM] 非同期タスクを開始: SaveEngineer
+[2025-04-11 14:17:56] [INFO] [SYSTEM] アクセススレッドを開始しました
+[2025-04-11 14:17:56] [INFO] [SYSTEM] CSVファイル読み込み開始: src\data\engineers.csv
+[2025-04-11 14:17:56] [INFO] [SYSTEM] CSVファイル読み込み完了: src\data\engineers.csv, 4行
+[2025-04-11 14:17:56] [INFO] [SYSTEM] アクセススレッドを開始しました
+[2025-04-11 14:17:56] [INFO] [SYSTEM] CSVファイル書き込み開始: src\data\engineers.csv
+[2025-04-11 14:17:56] [INFO] [SYSTEM] CSVファイル書き込み完了: src\data\engineers.csv, 6行
+[2025-04-11 14:17:56] [INFO] [SYSTEM] エンジニア情報を保存しました: ID=00006, 名前=山本　一
+[2025-04-11 14:17:56] [INFO] [SYSTEM] Added engineer with ID 00006 and name 山本　一
+[2025-04-11 14:17:56] [INFO] [SYSTEM] エンジニア情報の保存に成功しました: ID=00006
+[2025-04-11 14:17:56] [INFO] [SYSTEM] 非同期タスクが完了: SaveEngineer
+[2025-04-11 14:17:56] [INFO] [SYSTEM] AddPanelの完了処理を呼び出します（直接参照）: 00006
+[2025-04-11 14:17:56] [INFO] [SYSTEM] AddPanel.handleSaveComplete開始: ID=00006
+[2025-04-11 14:17:56] [INFO] [SYSTEM] 処理中状態を解除しました
+[2025-04-11 14:17:56] [INFO] [SYSTEM] 登録完了ダイアログを表示します: ID=00006
+[2025-04-11 14:17:56] [INFO] [SYSTEM] 登録完了ダイアログ表示処理を開始: ID=00006
+[2025-04-11 14:17:56] [INFO] [SYSTEM] EDT上での直接ダイアログ表示を実行: ID=00006
+[2025-04-11 14:17:56] [INFO] [SYSTEM] 直接ダイアログ表示を開始: ID=00006
+[2025-04-11 14:17:56] [INFO] [SYSTEM] ダイアログを表示します: ID=00006
+[2025-04-11 14:17:56] [INFO] [SYSTEM] AddPanelの処理状態をリセットしました
+[2025-04-11 14:18:01] [INFO] [SYSTEM] ダイアログの選択結果: 1, ID=00006
+[2025-04-11 14:18:01] [INFO] [SYSTEM] 直接ダイアログ処理完了 - 選択アクション: LIST, ID=00006
+[2025-04-11 14:18:01] [INFO] [SYSTEM] 選択されたアクション: LIST
+[2025-04-11 14:18:01] [INFO] [SYSTEM] 「一覧に戻る」が選択されました - 一覧画面に遷移します
+[2025-04-11 14:18:01] [INFO] [SYSTEM] スレッド 'AsyncTask-LoadData' を管理対象に登録しました
+[2025-04-11 14:18:01] [INFO] [SYSTEM] イベントを処理しました: LOAD_DATA
+[2025-04-11 14:18:01] [INFO] [SYSTEM] 非同期タスクを開始: LoadData
+[2025-04-11 14:18:01] [INFO] [SYSTEM] エンジニアデータの読み込みを開始します
+[2025-04-11 14:18:01] [INFO] [SYSTEM] イベントを処理しました: CHANGE_PANEL
+[2025-04-11 14:18:01] [INFO] [SYSTEM] アクセススレッドを開始しました
+[2025-04-11 14:18:01] [INFO] [SYSTEM] AddPanel.handleSaveComplete完了: ID=00006
+[2025-04-11 14:18:01] [INFO] [SYSTEM] CSVファイル読み込み開始: src\data\engineers.csv
+[2025-04-11 14:18:01] [INFO] [SYSTEM] ビューを更新しました
+[2025-04-11 14:18:01] [INFO] [SYSTEM] ビューを更新しました
+[2025-04-11 14:18:01] [INFO] [SYSTEM] CSVファイル読み込み完了: src\data\engineers.csv, 5行
+[2025-04-11 14:18:01] [INFO] [SYSTEM] Loaded 5 engineers.
+[2025-04-11 14:18:01] [INFO] [SYSTEM] 非同期タスクが完了: LoadData
+[2025-04-11 14:18:01] [INFO] [SYSTEM] パネルを切り替えました: ListPanel
+[2025-04-11 14:18:01] [INFO] [SYSTEM] 画面を切り替えました: LIST
+[2025-04-11 14:18:01] [INFO] [SYSTEM] エンジニアデータを更新しました: 5件
+[2025-04-11 14:18:01] [INFO] [SYSTEM] ビューを更新しました
+[2025-04-11 14:18:01] [INFO] [SYSTEM] ビューを更新しました
+[2025-04-11 14:18:09] [INFO] [UI] 1件の行が削除対象に選択されました
+[2025-04-11 14:18:11] [INFO] [SYSTEM] アプリケーション終了処理を開始します
+[2025-04-11 14:18:11] [INFO] [SYSTEM] ExecutorServiceを終了しています
+[2025-04-11 14:18:11] [INFO] [SYSTEM] 登録済みスレッドを終了しています
+[2025-04-11 14:18:11] [INFO] [SYSTEM] アプリケーション終了処理が完了しました
+[2025-04-11 14:18:11] [INFO] [SYSTEM] シャットダウンします
+[2025-04-11 14:23:29] [INFO] [SYSTEM] ログシステムが正常に初期化されました
+[2025-04-11 14:23:29] [INFO] [SYSTEM] ログシステムを初期化します
+[2025-04-11 14:23:29] [INFO] [SYSTEM] シャットダウンフックを登録しました
+[2025-04-11 14:23:29] [INFO] [SYSTEM] リソースマネージャーが正常に初期化されました
+[2025-04-11 14:23:29] [INFO] [SYSTEM] リソースマネージャーを初期化しました
+[2025-04-11 14:23:29] [INFO] [SYSTEM] メインフレームを初期化しました
+[2025-04-11 14:23:29] [INFO] [SYSTEM] エンジニア一覧パネルを初期化しました
+[2025-04-11 14:23:29] [INFO] [SYSTEM] 画面遷移コントローラーを初期化しました
+[2025-04-11 14:23:29] [INFO] [SYSTEM] メインコントローラーを初期化しました
+[2025-04-11 14:23:29] [INFO] [SYSTEM] エンジニアコントローラーを初期化しました
+[2025-04-11 14:23:29] [INFO] [SYSTEM] アプリケーションを初期化しました
+[2025-04-11 14:23:29] [INFO] [SYSTEM] スレッド 'AsyncTask-LoadData' を管理対象に登録しました
+[2025-04-11 14:23:29] [INFO] [SYSTEM] イベントを処理しました: LOAD_DATA
+[2025-04-11 14:23:29] [INFO] [SYSTEM] 非同期タスクを開始: LoadData
+[2025-04-11 14:23:29] [INFO] [SYSTEM] エンジニアデータの読み込みを開始します
+[2025-04-11 14:23:29] [INFO] [SYSTEM] アクセススレッドを開始しました
+[2025-04-11 14:23:29] [INFO] [SYSTEM] CSVファイル読み込み開始: src\data\engineers.csv
+[2025-04-11 14:23:29] [INFO] [SYSTEM] CSVファイル読み込み完了: src\data\engineers.csv, 5行
+[2025-04-11 14:23:29] [INFO] [SYSTEM] Loaded 5 engineers.
+[2025-04-11 14:23:29] [INFO] [SYSTEM] 非同期タスクが完了: LoadData
+[2025-04-11 14:23:30] [INFO] [SYSTEM] アプリケーションの初期化が完了しました
+[2025-04-11 14:23:30] [INFO] [SYSTEM] パネルを切り替えました: ListPanel
+[2025-04-11 14:23:30] [INFO] [SYSTEM] 画面を切り替えました: LIST
+[2025-04-11 14:23:30] [INFO] [SYSTEM] エンジニアデータを更新しました: 5件
+[2025-04-11 14:23:30] [INFO] [SYSTEM] ビューを更新しました
+[2025-04-11 14:23:30] [INFO] [SYSTEM] ビューを更新しました
+[2025-04-11 14:23:31] [INFO] [UI] 新規追加ボタンが押されました
+[2025-04-11 14:23:31] [INFO] [SYSTEM] イベントを処理しました: CHANGE_PANEL
+[2025-04-11 14:23:31] [INFO] [SYSTEM] AbstractEngineerPanelを初期化しました
+[2025-04-11 14:23:31] [INFO] [UI] AddPanelを作成しました
+[2025-04-11 14:23:31] [INFO] [UI] AddPanelを初期化しました
+[2025-04-11 14:23:31] [INFO] [UI] AddPanelの初期化が完了しました
+[2025-04-11 14:23:31] [INFO] [SYSTEM] パネルを切り替えました: AddPanel
+[2025-04-11 14:23:31] [INFO] [SYSTEM] 画面を切り替えました: ADD
+[2025-04-11 14:23:40] [INFO] [SYSTEM] アプリケーション終了処理を開始します
+[2025-04-11 14:23:40] [INFO] [SYSTEM] ExecutorServiceを終了しています
+[2025-04-11 14:23:40] [INFO] [SYSTEM] 登録済みスレッドを終了しています
+[2025-04-11 14:23:40] [INFO] [SYSTEM] アプリケーション終了処理が完了しました
+[2025-04-11 14:23:40] [INFO] [SYSTEM] シャットダウンします
+[2025-04-11 14:25:32] [INFO] [SYSTEM] ログシステムが正常に初期化されました
+[2025-04-11 14:25:32] [INFO] [SYSTEM] ログシステムを初期化します
+[2025-04-11 14:25:32] [INFO] [SYSTEM] シャットダウンフックを登録しました
+[2025-04-11 14:25:32] [INFO] [SYSTEM] リソースマネージャーが正常に初期化されました
+[2025-04-11 14:25:32] [INFO] [SYSTEM] リソースマネージャーを初期化しました
+[2025-04-11 14:25:33] [INFO] [SYSTEM] メインフレームを初期化しました
+[2025-04-11 14:25:33] [INFO] [SYSTEM] エンジニア一覧パネルを初期化しました
+[2025-04-11 14:25:33] [INFO] [SYSTEM] 画面遷移コントローラーを初期化しました
+[2025-04-11 14:25:33] [INFO] [SYSTEM] メインコントローラーを初期化しました
+[2025-04-11 14:25:33] [INFO] [SYSTEM] エンジニアコントローラーを初期化しました
+[2025-04-11 14:25:33] [INFO] [SYSTEM] アプリケーションを初期化しました
+[2025-04-11 14:25:33] [INFO] [SYSTEM] スレッド 'AsyncTask-LoadData' を管理対象に登録しました
+[2025-04-11 14:25:33] [INFO] [SYSTEM] イベントを処理しました: LOAD_DATA
+[2025-04-11 14:25:33] [INFO] [SYSTEM] 非同期タスクを開始: LoadData
+[2025-04-11 14:25:33] [INFO] [SYSTEM] エンジニアデータの読み込みを開始します
+[2025-04-11 14:25:33] [INFO] [SYSTEM] アクセススレッドを開始しました
+[2025-04-11 14:25:33] [INFO] [SYSTEM] CSVファイル読み込み開始: src\data\engineers.csv
+[2025-04-11 14:25:33] [INFO] [SYSTEM] CSVファイル読み込み完了: src\data\engineers.csv, 5行
+[2025-04-11 14:25:33] [INFO] [SYSTEM] Loaded 5 engineers.
+[2025-04-11 14:25:33] [INFO] [SYSTEM] 非同期タスクが完了: LoadData
+[2025-04-11 14:25:33] [INFO] [SYSTEM] アプリケーションの初期化が完了しました
+[2025-04-11 14:25:33] [INFO] [SYSTEM] パネルを切り替えました: ListPanel
+[2025-04-11 14:25:33] [INFO] [SYSTEM] 画面を切り替えました: LIST
+[2025-04-11 14:25:33] [INFO] [SYSTEM] エンジニアデータを更新しました: 5件
+[2025-04-11 14:25:33] [INFO] [SYSTEM] ビューを更新しました
+[2025-04-11 14:25:33] [INFO] [SYSTEM] ビューを更新しました
+[2025-04-11 14:25:35] [INFO] [UI] 新規追加ボタンが押されました
+[2025-04-11 14:25:35] [INFO] [SYSTEM] イベントを処理しました: CHANGE_PANEL
+[2025-04-11 14:25:35] [INFO] [SYSTEM] AbstractEngineerPanelを初期化しました
+[2025-04-11 14:25:35] [INFO] [UI] AddPanelを作成しました
+[2025-04-11 14:25:35] [INFO] [UI] AddPanelを初期化しました
+[2025-04-11 14:25:35] [INFO] [UI] AddPanelの初期化が完了しました
+[2025-04-11 14:25:35] [INFO] [SYSTEM] パネルを切り替えました: AddPanel
+[2025-04-11 14:25:35] [INFO] [SYSTEM] 画面を切り替えました: ADD

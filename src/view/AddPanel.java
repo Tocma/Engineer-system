@@ -282,10 +282,6 @@ public class AddPanel extends AbstractEngineerPanel {
      * @param container 配置先のコンテナ
      */
     private void createBasicInfoSection(JPanel container) {
-        // セクションタイトル
-        JLabel basicInfoTitle = createSectionTitle("基本情報");
-        container.add(basicInfoTitle);
-        container.add(createVerticalSpacer(10));
 
         // 氏名フィールド（必須）
         JLabel nameLabel = createFieldLabel("氏名", true);
@@ -464,10 +460,6 @@ public class AddPanel extends AbstractEngineerPanel {
      * @param container 配置先のコンテナ
      */
     private void createSkillSection(JPanel container) {
-        // セクションタイトル
-        JLabel skillTitle = createSectionTitle("スキル評価（1.0～5.0）");
-        container.add(skillTitle);
-        container.add(createVerticalSpacer(10));
 
         // 技術力
         JLabel technicalSkillLabel = createFieldLabel("技術力", false);
@@ -680,8 +672,10 @@ public class AddPanel extends AbstractEngineerPanel {
         } else if (!idField.getText().matches("ID\\d{5}")) {
             showFieldError("idField", MessageEnum.VALIDATION_ERROR_EMPLOYEE_ID.getMessage());
             isValid = false;
+        } else if (idField.getText().equals("ID00000") || idField.getText().equals("00000")) {
+            showFieldError("idField", "ID00000は使用できません");
+            isValid = false;
         }
-
         // フリガナの検証
         Validator kanaValidator = ValidatorEnum.NAME_KANA.getValidator();
         if (!kanaValidator.validate(nameKanaField.getText())) {
