@@ -76,12 +76,6 @@ public class DialogManager {
     private static final String DEFAULT_CONFIRM_TITLE = "確認";
     private static final String DEFAULT_COMPLETION_TITLE = "完了";
 
-    /** ダイアログアイコン用のカラー設定 */
-    private static final Color ERROR_COLOR = new Color(204, 0, 0);
-    private static final Color WARNING_COLOR = new Color(255, 153, 0);
-    private static final Color INFO_COLOR = new Color(0, 102, 204);
-    private static final Color SUCCESS_COLOR = new Color(0, 153, 51);
-
     /**
      * プライベートコンストラクタ
      * シングルトンパターンを実現するため、外部からのインスタンス化を防止します
