@@ -6,7 +6,7 @@
             "name": "通常起動",
             "request": "launch",
             "mainClass": "main.Main",
-            "projectName": "Engineer-system",
+            
             "cwd": "${workspaceFolder}",
             "vmArgs": "-ea"
         },
@@ -15,7 +15,7 @@
             "name": "テスト: 起動処理",
             "request": "launch",
             "mainClass": "main.Main",
-            "projectName": "Engineer-system",
+            
             "cwd": "${workspaceFolder}",
             "args": [
                 "--test=startup"
@@ -27,7 +27,7 @@
             "name": "テスト: 終了処理",
             "request": "launch",
             "mainClass": "main.Main",
-            "projectName": "Engineer-system",
+            
             "cwd": "${workspaceFolder}",
             "args": [
                 "--test=shutdown"
@@ -39,7 +39,7 @@
             "name": "テスト: CSV読み込み",
             "request": "launch",
             "mainClass": "main.Main",
-            "projectName": "Engineer-system",
+            
             "cwd": "${workspaceFolder}",
             "args": [
                 "--test=csv"
@@ -51,7 +51,7 @@
             "name": "テスト: すべて実行",
             "request": "launch",
             "mainClass": "main.Main",
-            "projectName": "Engineer-system",
+            
             "cwd": "${workspaceFolder}",
             "args": [
                 "--test=all"
@@ -63,7 +63,7 @@
             "name": "テストシステム直接実行",
             "request": "launch",
             "mainClass": "test.TestCoreSystem",
-            "projectName": "Engineer-system",
+            
             "cwd": "${workspaceFolder}",
             "args": [
                 "--test=all",
@@ -76,7 +76,7 @@
             "name": "テスト: 起動処理 (カスタム出力)",
             "request": "launch",
             "mainClass": "test.TestCoreSystem",
-            "projectName": "Engineer-system",
+            
             "cwd": "${workspaceFolder}",
             "args": [
                 "--test=startup",
@@ -89,7 +89,7 @@
             "name": "デバッグ: テスト起動",
             "request": "launch",
             "mainClass": "test.TestCoreSystem",
-            "projectName": "Engineer-system",
+            
             "cwd": "${workspaceFolder}",
             "args": [
                 "--test=startup"
@@ -104,7 +104,7 @@
             "name": "デバッグ: テスト終了",
             "request": "launch",
             "mainClass": "test.TestCoreSystem",
-            "projectName": "Engineer-system",
+            
             "cwd": "${workspaceFolder}",
             "args": [
                 "--test=shutdown"

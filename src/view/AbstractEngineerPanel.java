@@ -1,11 +1,7 @@
 package view;
 
-import model.EngineerDTO;
 import util.LogHandler;
 import util.LogHandler.LogType;
-import util.MessageEnum;
-import util.ValidatorEnum;
-
 import javax.swing.*;
 import javax.swing.border.Border;
 import javax.swing.text.JTextComponent;

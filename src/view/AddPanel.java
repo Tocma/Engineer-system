@@ -443,55 +443,6 @@ public class AddPanel extends AbstractEngineerPanel {
     }
 
     /**
-     * 言語が既に選択されているかチェック
-     *
-     * @param language チェックする言語
-     * @return 選択済みの場合true
-     */
-    private boolean isLanguageSelected(String language) {
-        for (JCheckBox checkBox : languageCheckBoxes) {
-            if (checkBox.getText().equals(language)) {
-                return true;
-            }
-        }
-        return false;
-    }
-
-    /**
-     * 言語チェックボックスを追加
-     *
-     * @param language 追加する言語
-     * @param panel    追加先のパネル
-     */
-    private void addLanguageCheckbox(String language, JPanel panel) {
-        // チェックボックスとボタンを含む行パネル
-        JPanel rowPanel = new JPanel(new BorderLayout(5, 0));
-        rowPanel.setBackground(Color.WHITE);
-
-        // チェックボックス（デフォルトで選択状態）
-        JCheckBox checkBox = new JCheckBox(language, true);
-        checkBox.setBackground(Color.WHITE);
-        registerComponent("language_" + language, checkBox);
-        languageCheckBoxes.add(checkBox);
-        rowPanel.add(checkBox, BorderLayout.CENTER);
-
-        // 削除ボタン
-        JButton removeButton = new JButton("×");
-        removeButton.setPreferredSize(new Dimension(25, 20));
-        removeButton.setMargin(new Insets(0, 0, 0, 0));
-        removeButton.addActionListener(e -> {
-            panel.remove(rowPanel);
-            languageCheckBoxes.remove(checkBox);
-            panel.revalidate();
-            panel.repaint();
-        });
-        rowPanel.add(removeButton, BorderLayout.EAST);
-
-        // パネルに追加
-        panel.add(rowPanel);
-    }
-
-    /**
      * 経歴セクションの作成
      * 経歴を入力するテキストエリアを配置
      *
@@ -1360,7 +1311,7 @@ public class AddPanel extends AbstractEngineerPanel {
     }
 
     // 内部クラス: CheckableItem
-    private static class CheckableItem {
+    public static class CheckableItem {
         private final String label;
         private boolean selected;
 
@@ -1387,7 +1338,7 @@ public class AddPanel extends AbstractEngineerPanel {
     }
 
     // 内部クラス: CheckBoxRenderer
-    private static class CheckBoxRenderer extends JCheckBox implements ListCellRenderer<CheckableItem> {
+    public static class CheckBoxRenderer extends JCheckBox implements ListCellRenderer<CheckableItem> {
         @Override
         public Component getListCellRendererComponent(JList<? extends CheckableItem> list,
                 CheckableItem value, int index,
