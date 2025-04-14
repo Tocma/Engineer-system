@@ -1409,7 +1409,7 @@ public class AddPanel extends AbstractEngineerPanel {
     }
 
     // 内部クラス: MultiSelectComboBox
-    private static class MultiSelectComboBox extends JComboBox<CheckableItem> {
+    public static class MultiSelectComboBox extends JComboBox<CheckableItem> {
         public MultiSelectComboBox(CheckableItem[] items) {
             super(items);
 
