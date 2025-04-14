@@ -67,7 +67,7 @@ public enum MessageEnum {
      * 社員IDは必須項目であり、既に登録されているID以外の5桁の数字を入力することが求められます。
      * ID00000は登録不可
      */
-    VALIDATION_ERROR_EMPLOYEE_ID("*は必須項目になります。すでに登録されているIDまたはID番号5桁の数字を入力してください"),
+    VALIDATION_ERROR_EMPLOYEE_ID("*は必須項目になります。または既に登録されているID以外を入力してください"),
 
     VALIDATION_ERROR_RESERVED_ID("ID00000は使用できません"),
 

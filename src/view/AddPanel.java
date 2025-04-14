@@ -394,22 +394,27 @@ public class AddPanel extends AbstractEngineerPanel {
         // セクションタイトル
         JLabel languageTitle = createSectionTitle("扱える言語");
         JLabel requiredMark = new JLabel(REQUIRED_MARK);
+        JLabel errorLabel = createFieldErrorLabel("languages");
 
-        JPanel titlePanel = new JPanel(new FlowLayout(FlowLayout.LEFT, 0, 0));
+        JPanel titlePanel = new JPanel(new FlowLayout(FlowLayout.LEFT, 10, 0));
         titlePanel.setBackground(Color.WHITE);
         titlePanel.add(languageTitle);
         titlePanel.add(requiredMark);
+
+        errorLabel.setVisible(false);
+        errorLabel.setForeground(ERROR_COLOR);
+        errorLabel.setFont(errorLabel.getFont().deriveFont(Font.PLAIN, 11f));
+        titlePanel.add(Box.createHorizontalStrut(10)); // ラベルとエラーの間隔
+        titlePanel.add(errorLabel);
 
         container.add(titlePanel);
         container.add(createVerticalSpacer(10));
 
         // 利用可能な言語リスト
         String[] availableLanguages = {
-                "Java", "Python", "C#", "C++", "JavaScript",
-                "TypeScript", "PHP", "Ruby", "Swift", "Kotlin",
-                "Go", "Rust", "Scala", "SQL", "HTML/CSS",
-                "Dart", "Perl", "R", "COBOL", "Fortran",
-                "Lua", "Haskell", "Clojure", "Groovy", "Assembly"
+                "C++", "C#", "Java", "Python", "JavaScript",
+                "TypeScript", "PHP", "Ruby", "Go", "Swift",
+                "Kotlin", "SQL", "HTML/CSS",
         };
 
         // CheckableItemの配列を作成
@@ -430,11 +435,6 @@ public class AddPanel extends AbstractEngineerPanel {
         // container.add(langSelectLabel);
         container.add(createVerticalSpacer(5));
         container.add(languageComboBox);
-
-        // 言語選択のエラー表示用
-        createFieldErrorLabel("languages");
-        container.add(getFieldErrorLabel("languages"));
-        container.add(createVerticalSpacer(10));
 
         // 既存のチェックボックスリストは初期化しておく（互換性のため）
         languageCheckBoxes = new ArrayList<>();

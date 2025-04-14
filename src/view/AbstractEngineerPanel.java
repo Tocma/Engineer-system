@@ -244,6 +244,8 @@ public abstract class AbstractEngineerPanel extends JPanel {
         errorLabel.setVisible(false);
         errorLabel.setFont(errorLabel.getFont().deriveFont(Font.PLAIN, 11f));
 
+        errorLabel.setPreferredSize(new Dimension(300, 15));
+
         // マップに登録
         fieldErrorLabels.put(fieldName, errorLabel);
 
@@ -448,9 +450,9 @@ public abstract class AbstractEngineerPanel extends JPanel {
         // ラベルは左寄せ
         topPanel.add(label, BorderLayout.WEST);
 
-        // エラーメッセージラベルを作成し、右寄せで配置
+        // エラーメッセージラベルを作成し、左寄せで配置
         JLabel errorLabel = createFieldErrorLabel(fieldName);
-        topPanel.add(errorLabel, BorderLayout.EAST);
+        topPanel.add(errorLabel, BorderLayout.CENTER);
 
         // フィールドパネル
         JPanel fieldPanel = new JPanel(new BorderLayout());
