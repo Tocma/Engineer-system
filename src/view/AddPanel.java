@@ -10,6 +10,8 @@ import util.Validator;
 import util.ValidatorEnum;
 
 import javax.swing.*;
+import javax.swing.border.Border;
+
 import java.awt.*;
 import java.time.LocalDate;
 import java.util.ArrayList;
@@ -427,6 +429,7 @@ public class AddPanel extends AbstractEngineerPanel {
         languageComboBox = new MultiSelectComboBox(items);
         languageComboBox.setPreferredSize(new Dimension(300, 25));
         registerComponent("languageComboBox", languageComboBox);
+        registerComponent("languages", languageComboBox); // エラー表示用に別名でも登録
 
         // ラベルを作成
         // JLabel langSelectLabel = new JLabel("言語を選択してください（クリックして複数選択可）:");
@@ -755,6 +758,7 @@ public class AddPanel extends AbstractEngineerPanel {
         // 扱える言語の検証（1つ以上選択）
         if (languageComboBox.getSelectedItems().isEmpty()) {
             showFieldError("languages", MessageEnum.VALIDATION_ERROR_PROGRAMMING_LANGUAGES.getMessage());
+            markComponentError("languageComboBox", null);
             isValid = false;
         }
 
@@ -870,6 +874,79 @@ public class AddPanel extends AbstractEngineerPanel {
         // DTOの構築と返却
         return builder.build();
     }
+
+    /**
+ * コンポーネントにエラー表示を設定
+ * エラーが発生したコンポーネントに赤枠を表示し、エラーコンポーネントとして管理
+ * MultiSelectComboBoxのサポートを追加
+ *
+ * @param componentName エラーが発生したコンポーネント名
+ * @param errorMessage  エラーメッセージ（nullの場合はエラーメッセージを更新しない）
+ */
+@Override
+protected void markComponentError(String componentName, String errorMessage) {
+    Component component = getComponent(componentName);
+    if (component == null) {
+        return;
+    }
+
+    // JComponentかどうか確認
+    if (component instanceof JComponent) {
+        JComponent jComponent = (JComponent) component;
+
+        // 元のボーダーを保存（まだ保存されていない場合）
+        if (!originalBorders.containsKey(jComponent)) {
+            originalBorders.put(jComponent, jComponent.getBorder());
+        }
+
+        // エラーボーダーを設定
+        jComponent.setBorder(ERROR_BORDER);
+
+        // エラーコンポーネントとして登録
+        errorComponents.put(componentName, component);
+
+        // エラーメッセージが指定されている場合は表示
+        if (errorMessage != null) {
+            showErrorMessage(errorMessage);
+        }
+    }
+    
+    // 特別な処理: languageComboBoxがコンポーネント名の場合、そのエラー表示も処理
+    if ("languages".equals(componentName) && languageComboBox != null) {
+        // MultiSelectComboBoxに赤枠を設定
+        if (!originalBorders.containsKey(languageComboBox)) {
+            originalBorders.put(languageComboBox, languageComboBox.getBorder());
+        }
+        languageComboBox.setBorder(ERROR_BORDER);
+        errorComponents.put("languageComboBox", languageComboBox);
+    }
+}
+
+/**
+ * コンポーネントのエラー表示をクリア
+ * 特定のコンポーネントのエラー表示を解除し、関連するエラーメッセージも非表示にします
+ * MultiSelectComboBoxのサポートを追加
+ *
+ * @param componentName エラー表示を解除するコンポーネント名
+ */
+@Override
+protected void clearComponentError(String componentName) {
+    super.clearComponentError(componentName);
+    
+    // 特別な処理: languagesのエラーがクリアされた場合、languageComboBoxも処理
+    if ("languages".equals(componentName) && languageComboBox != null) {
+        // 元のボーダーに戻す
+        Border originalBorder = originalBorders.remove(languageComboBox);
+        if (originalBorder != null) {
+            languageComboBox.setBorder(originalBorder);
+        } else {
+            languageComboBox.setBorder(null);
+        }
+        
+        // エラーコンポーネントから削除
+        errorComponents.remove("languageComboBox");
+    }
+}
 
     /**
      * スキル評価をビルダーに設定
