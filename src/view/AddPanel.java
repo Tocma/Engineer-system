@@ -10,13 +10,13 @@ import util.Validator;
 import util.ValidatorEnum;
 
 import javax.swing.*;
-import javax.swing.text.JTextComponent;
 import java.awt.*;
 import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import javax.swing.plaf.basic.BasicComboBoxRenderer;
 import java.util.logging.Level;
 
 /**
@@ -137,6 +137,9 @@ public class AddPanel extends AbstractEngineerPanel {
 
     /** 扱える言語リスト */
     private List<JCheckBox> languageCheckBoxes;
+
+    /** 言語選択コンボボックス */
+    private MultiSelectComboBox languageComboBox;
 
     /** 氏名フィールド */
     private JTextField nameField;
@@ -381,6 +384,12 @@ public class AddPanel extends AbstractEngineerPanel {
      *
      * @param container 配置先のコンテナ
      */
+    /**
+     * 言語スキルセクションの作成
+     * プログラミング言語の選択機能をMultiSelectComboBoxで実装
+     *
+     * @param container 配置先のコンテナ
+     */
     private void createLanguageSection(JPanel container) {
         // セクションタイトル
         JLabel languageTitle = createSectionTitle("扱える言語");
@@ -394,10 +403,6 @@ public class AddPanel extends AbstractEngineerPanel {
         container.add(titlePanel);
         container.add(createVerticalSpacer(10));
 
-        // 言語選択コンボボックスとボタンのパネル
-        JPanel languageSelectPanel = new JPanel(new FlowLayout(FlowLayout.LEFT, 5, 0));
-        languageSelectPanel.setBackground(Color.WHITE);
-
         // 利用可能な言語リスト
         String[] availableLanguages = {
                 "Java", "Python", "C#", "C++", "JavaScript",
@@ -407,54 +412,32 @@ public class AddPanel extends AbstractEngineerPanel {
                 "Lua", "Haskell", "Clojure", "Groovy", "Assembly"
         };
 
-        // 言語選択コンボボックス
-        JComboBox<String> languageComboBox = new JComboBox<>(availableLanguages);
-        languageComboBox.setPreferredSize(new Dimension(150, 25));
+        // CheckableItemの配列を作成
+        CheckableItem[] items = new CheckableItem[availableLanguages.length];
+        for (int i = 0; i < availableLanguages.length; i++) {
+            items[i] = new CheckableItem(availableLanguages[i]);
+        }
+
+        // MultiSelectComboBoxの作成
+        languageComboBox = new MultiSelectComboBox(items);
+        languageComboBox.setPreferredSize(new Dimension(300, 25));
         registerComponent("languageComboBox", languageComboBox);
-        languageSelectPanel.add(languageComboBox);
 
-        // 追加ボタン
-        JButton addLanguageButton = new JButton("追加");
-        addLanguageButton.setPreferredSize(new Dimension(80, 25));
-        registerComponent("addLanguageButton", addLanguageButton);
-        languageSelectPanel.add(addLanguageButton);
+        // ラベルを作成
+        // JLabel langSelectLabel = new JLabel("言語を選択してください（クリックして複数選択可）:");
 
-        container.add(languageSelectPanel);
-        container.add(createVerticalSpacer(10));
-
-        // 選択済み言語パネル（チェックボックスグループ）
-        JPanel selectedLanguagesPanel = new JPanel();
-        selectedLanguagesPanel.setLayout(new BoxLayout(selectedLanguagesPanel, BoxLayout.Y_AXIS));
-        selectedLanguagesPanel.setBackground(Color.WHITE);
-        selectedLanguagesPanel.setBorder(BorderFactory.createTitledBorder("選択済み言語"));
-        registerComponent("selectedLanguagesPanel", selectedLanguagesPanel);
-
-        // スクロール可能なパネルに配置
-        JScrollPane scrollPane = new JScrollPane(selectedLanguagesPanel);
-        scrollPane.setPreferredSize(new Dimension(300, 150));
-        scrollPane.setBorder(BorderFactory.createEmptyBorder());
-        container.add(scrollPane);
+        // コンテナに追加
+        // container.add(langSelectLabel);
+        container.add(createVerticalSpacer(5));
+        container.add(languageComboBox);
 
         // 言語選択のエラー表示用
         createFieldErrorLabel("languages");
         container.add(getFieldErrorLabel("languages"));
         container.add(createVerticalSpacer(10));
 
-        // 言語チェックボックスリストの初期化
+        // 既存のチェックボックスリストは初期化しておく（互換性のため）
         languageCheckBoxes = new ArrayList<>();
-
-        // 追加ボタンのイベント設定
-        addLanguageButton.addActionListener(e -> {
-            String selectedLanguage = (String) languageComboBox.getSelectedItem();
-            if (selectedLanguage != null && !isLanguageSelected(selectedLanguage)) {
-                addLanguageCheckbox(selectedLanguage, selectedLanguagesPanel);
-                selectedLanguagesPanel.revalidate();
-                selectedLanguagesPanel.repaint();
-
-                // エラー表示をクリア（もし表示されていれば）
-                clearComponentError("languages");
-            }
-        });
 
         container.add(createVerticalSpacer(20));
     }
@@ -819,14 +802,7 @@ public class AddPanel extends AbstractEngineerPanel {
         }
 
         // 扱える言語の検証（1つ以上選択）
-        boolean hasLanguage = false;
-        for (JCheckBox checkBox : languageCheckBoxes) {
-            if (checkBox.isSelected()) {
-                hasLanguage = true;
-                break;
-            }
-        }
-        if (!hasLanguage) {
+        if (languageComboBox.getSelectedItems().isEmpty()) {
             showFieldError("languages", MessageEnum.VALIDATION_ERROR_PROGRAMMING_LANGUAGES.getMessage());
             isValid = false;
         }
@@ -1002,20 +978,16 @@ public class AddPanel extends AbstractEngineerPanel {
 
     /**
      * 選択された言語のリストを取得
-     * チェックされた言語チェックボックスから言語名を取得
+     * MultiSelectComboBoxから選択された言語の一覧を取得
      *
      * @return 選択された言語のリスト
      */
     private List<String> getSelectedLanguages() {
-        List<String> selectedLanguages = new ArrayList<>();
-
-        for (JCheckBox checkBox : languageCheckBoxes) {
-            if (checkBox.isSelected()) {
-                selectedLanguages.add(checkBox.getText());
-            }
+        if (languageComboBox == null) {
+            return new ArrayList<>();
         }
 
-        return selectedLanguages;
+        return languageComboBox.getSelectedItems();
     }
 
     /**
@@ -1385,5 +1357,107 @@ public class AddPanel extends AbstractEngineerPanel {
         }
 
         return ratings;
+    }
+
+    // 内部クラス: CheckableItem
+    private static class CheckableItem {
+        private final String label;
+        private boolean selected;
+
+        public CheckableItem(String label) {
+            this.label = label;
+        }
+
+        public String getLabel() {
+            return label;
+        }
+
+        public boolean isSelected() {
+            return selected;
+        }
+
+        public void setSelected(boolean selected) {
+            this.selected = selected;
+        }
+
+        @Override
+        public String toString() {
+            return label;
+        }
+    }
+
+    // 内部クラス: CheckBoxRenderer
+    private static class CheckBoxRenderer extends JCheckBox implements ListCellRenderer<CheckableItem> {
+        @Override
+        public Component getListCellRendererComponent(JList<? extends CheckableItem> list,
+                CheckableItem value, int index,
+                boolean isSelected, boolean cellHasFocus) {
+            if (value == null) {
+                setText("");
+                setSelected(false);
+                return this;
+            }
+
+            setText(value.getLabel());
+            setSelected(value.isSelected());
+            setBackground(isSelected ? list.getSelectionBackground() : list.getBackground());
+            setForeground(isSelected ? list.getSelectionForeground() : list.getForeground());
+            setEnabled(list.isEnabled());
+            setFont(list.getFont());
+            return this;
+        }
+    }
+
+    // 内部クラス: MultiSelectComboBox
+    private static class MultiSelectComboBox extends JComboBox<CheckableItem> {
+        public MultiSelectComboBox(CheckableItem[] items) {
+            super(items);
+
+            // 表示レンダラー（カンマ区切り表示）
+            setRenderer(new BasicComboBoxRenderer() {
+                @Override
+                public Component getListCellRendererComponent(JList list, Object value,
+                        int index, boolean isSelected, boolean cellHasFocus) {
+                    if (index == -1) {
+                        return new JLabel(getSelectedLabels());
+                    }
+                    return new CheckBoxRenderer().getListCellRendererComponent(
+                            list, (CheckableItem) value, index, isSelected, cellHasFocus);
+                }
+            });
+
+            // 選択時の処理（選択された項目のチェック状態をトグル）
+            addActionListener(e -> {
+                Object selected = getSelectedItem();
+                if (selected instanceof CheckableItem item) {
+                    item.setSelected(!item.isSelected());
+                    repaint(); // 上部表示更新
+                }
+            });
+        }
+
+        // 選択された項目をカンマ区切りで返す
+        public String getSelectedLabels() {
+            List<String> selected = new ArrayList<>();
+            for (int i = 0; i < getModel().getSize(); i++) {
+                CheckableItem item = getModel().getElementAt(i);
+                if (item.isSelected()) {
+                    selected.add(item.getLabel());
+                }
+            }
+            return selected.isEmpty() ? "" : String.join(", ", selected);
+        }
+
+        // 選択された項目のリストを取得
+        public List<String> getSelectedItems() {
+            List<String> selected = new ArrayList<>();
+            for (int i = 0; i < getModel().getSize(); i++) {
+                CheckableItem item = getModel().getElementAt(i);
+                if (item.isSelected()) {
+                    selected.add(item.getLabel());
+                }
+            }
+            return selected;
+        }
     }
 }
