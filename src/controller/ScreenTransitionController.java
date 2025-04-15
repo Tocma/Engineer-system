@@ -3,7 +3,6 @@ package controller;
 import util.LogHandler;
 import util.LogHandler.LogType;
 import view.ListPanel;
-//import view.DetailPanel;
 import view.AddPanel;
 import view.MainFrame;
 import javax.swing.JPanel;
@@ -73,8 +72,8 @@ import java.util.logging.Level;
  * </p>
  *
  * @author Nakano
- * @version 3.1.0
- * @since 2025-04-04
+ * @version 4.0.0
+ * @since 2025-04-15
  */
 public class ScreenTransitionController {
 

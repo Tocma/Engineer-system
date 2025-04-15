@@ -1,0 +1,115 @@
+@startuml sequenceDiagram
+    actor User
+    participant DetailPanel
+    participant DialogManager
+    participant MainController
+    participant EngineerController
+    participant Validator
+    participant EngineerBuilder
+    participant EngineerDAO
+    participant CSVAccess
+    participant LogHandler
+
+    User->>DetailPanel: エンジニア選択
+    activate DetailPanel
+    
+    DetailPanel->>MainController: エンジニア情報取得要求(loadEngineer(engineerId))
+    activate MainController
+    
+    MainController->>EngineerController: エンジニア情報取得(getEngineer(engineerId))
+    activate EngineerController
+    
+    EngineerController->>EngineerDAO: エンジニア検索(findById(engineerId))
+    activate EngineerDAO
+    
+    EngineerDAO->>CSVAccess: CSVデータ読み込み(execute("READ"))
+    activate CSVAccess
+    CSVAccess-->>EngineerDAO: 取得したエンジニアデータ
+    deactivate CSVAccess
+    
+    EngineerDAO-->>EngineerController: 取得したエンジニアDTO(engineerDTO)
+    deactivate EngineerDAO
+    
+    EngineerController-->>MainController: 取得したエンジニアDTO(engineerDTO)
+    deactivate EngineerController
+    
+    MainController-->>DetailPanel: 取得したエンジニアDTO(engineerDTO)
+    deactivate MainController
+    
+    DetailPanel->>DetailPanel: 入力フィールドへデータセット(setInputFieldValues(engineerDTO))
+    
+    User->>DetailPanel: 情報更新
+    
+    User->>DetailPanel: 更新ボタン押下
+    
+    DetailPanel->>DetailPanel: 入力データ検証(validateInputs())
+    activate DetailPanel
+    
+    loop 各入力フィールド
+        DetailPanel->>Validator: 入力データ検証(validate(inputValue))
+        activate Validator
+        
+        alt 検証エラー
+            Validator-->>DetailPanel: 検証失敗(false, エラーメッセージ)
+            DetailPanel->>DetailPanel: エラーメッセージ表示(showError(fieldName, message))
+            DetailPanel->>DialogManager: 検証エラーダイアログ表示(showError(message))
+            activate DialogManager
+            DialogManager-->>User: エラーダイアログ表示
+            deactivate DialogManager
+        else 検証OK
+            Validator-->>DetailPanel: 検証成功(true)
+        end
+        deactivate Validator
+    end
+    
+    alt 全項目検証OK
+        DetailPanel->>EngineerBuilder: エンジニアDTO更新処理(build())
+        activate EngineerBuilder
+        EngineerBuilder-->>DetailPanel: 更新後のエンジニアDTO(updatedEngineerDTO)
+        deactivate EngineerBuilder
+        
+        DetailPanel->>MainController: エンジニア更新要求(handleUpdate(updatedEngineerDTO))
+        activate MainController
+        
+        MainController->>EngineerController: エンジニア情報更新(updateEngineer(updatedEngineerDTO))
+        activate EngineerController
+        
+        EngineerController->>EngineerDAO: エンジニア情報更新処理(update(updatedEngineerDTO))
+        activate EngineerDAO
+        
+        EngineerDAO->>CSVAccess: CSVデータ更新処理(execute("WRITE"))
+        activate CSVAccess
+        
+        alt 更新成功
+            CSVAccess-->>EngineerDAO: 更新成功(true)
+            EngineerDAO-->>EngineerController: 更新成功(true)
+            EngineerController-->>MainController: 更新成功(true)
+            MainController-->>DetailPanel: 更新成功(true)
+            
+            DetailPanel->>DialogManager: 更新成功ダイアログ表示(showSuccess("更新が完了しました"))
+            DialogManager-->>User: 完了ダイアログ表示
+            
+            DetailPanel->>MainController: 一覧画面表示要求(showListPanel())
+            
+            Note over LogHandler: ログ記録
+            MainController->>LogHandler: エンジニア情報更新完了ログ記録(log("エンジニア情報更新完了"))
+        else 更新失敗
+            CSVAccess-->>EngineerDAO: 更新失敗(false)
+            EngineerDAO-->>EngineerController: 更新失敗(false)
+            EngineerController-->>MainController: 更新失敗(false)
+            MainController-->>DetailPanel: 更新失敗(false)
+            
+            DetailPanel->>DialogManager: 更新エラーダイアログ表示(showError("更新に失敗しました"))
+            DialogManager-->>User: エラーダイアログ表示
+            
+            Note over LogHandler: エラーログ記録
+            MainController->>LogHandler: エンジニア情報更新失敗ログ記録(logError("エンジニア情報更新失敗"))
+        end
+        deactivate CSVAccess
+        deactivate EngineerDAO
+        deactivate EngineerController
+        deactivate MainController
+    end
+    deactivate DetailPanel
+    deactivate DetailPanel
+@enduml

@@ -1,0 +1,107 @@
+' ' ' 新規登録通常
+@startuml
+actor User
+participant AddPanel
+participant DialogManager
+participant Validator
+participant EngineerBuilder
+participant MainController
+participant EngineerController
+
+participant EngineerDAO
+participant EngineerCSVDAO
+participant AccessThread
+
+participant CSVAccess
+participant CSVファイル #Red
+
+User ->> AddPanel: 新規登録ボタン押下
+activate AddPanel
+
+AddPanel ->> AddPanel: 各入力フィールドを非活性化
+AddPanel ->> AddPanel: 登録ボタンを非活性化
+AddPanel ->> AddPanel: 入力値を検証
+activate AddPanel
+
+loop 各入力フィールド
+    AddPanel ->> Validator: 入力値を検証(inputValue)
+    activate Validator
+
+    alt 検証エラー
+        Validator -->> AddPanel: false, エラーメッセージ
+        AddPanel ->> AddPanel: エラーを表示(fieldName, message)
+        AddPanel ->> DialogManager: エラーダイアログを表示(message)
+        activate DialogManager
+        DialogManager -->> User: エラーダイアログ表示
+        deactivate DialogManager
+    else 検証OK
+        Validator -->> AddPanel: true
+    end
+    deactivate Validator
+end
+
+AddPanel ->> EngineerBuilder: EngineerDTOを生成
+activate EngineerBuilder
+EngineerBuilder -->> AddPanel: engineerDTO
+deactivate EngineerBuilder
+
+AddPanel ->> MainController: EngineerDTOを登録
+activate MainController
+
+MainController ->> EngineerController: エンジニアを追加(engineerDTO)
+activate EngineerController
+
+EngineerController ->> EngineerDAO: IDの重複チェック(id)
+
+activate EngineerDAO
+EngineerDAO ->> EngineerDAO:IDの重複チェック(id)
+
+EngineerDAO -->> EngineerController: false（重複なし）
+
+EngineerController ->> EngineerDAO: データを保存
+EngineerDAO ->> EngineerCSVDAO: データを保存
+activate EngineerCSVDAO
+
+EngineerCSVDAO ->> AccessThread:スレッド生成
+activate AccessThread
+AccessThread ->> CSVAccess
+activate CSVAccess
+CSVAccess ->> CSVAccess : ファイルロック
+CSVAccess ->> CSVファイル: 書き込み処理
+activate CSVファイル
+CSVファイル -->> CSVAccess: 書き込み完了
+
+deactivate CSVファイル
+CSVAccess ->> CSVAccess : ファイルロック解除
+CSVAccess -->> AccessThread: 書き込み成功
+deactivate CSVAccess
+AccessThread -->> EngineerCSVDAO: 書き込み成功
+deactivate
+EngineerCSVDAO -->> EngineerDAO:書き込み成功
+deactivate
+
+alt 書き込み成功
+    EngineerDAO -->> EngineerController: 保存成功
+    deactivate EngineerDAO
+
+    EngineerController -->> MainController: 保存成功
+    deactivate EngineerController
+
+    MainController -->> AddPanel: 保存成功
+
+    AddPanel ->> DialogManager: 完了ダイアログを表示("登録が完了しました")
+    activate DialogManager
+    DialogManager -->> User: 完了ダイアログ表示
+    User ->> DialogManager: OKボタンを押下
+    DialogManager -->> AddPanel: ダイアログ完了通知
+    deactivate DialogManager
+
+
+
+    AddPanel ->> AddPanel: 各入力フィールドとボタンを再度活性化
+    AddPanel ->> AddPanel: 入力フォームをクリア
+    AddPanel ->> MainController: 画面を再表示
+
+
+deactivate AddPanel
+@enduml

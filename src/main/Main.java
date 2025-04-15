@@ -59,8 +59,8 @@ import java.util.logging.Level;
  * </p>
  *
  * @author Nakano
- * @version 3.0.0
- * @since 2025-04-04
+ * @version 4.0.0
+ * @since 2025-04-15
  */
 public class Main {
 

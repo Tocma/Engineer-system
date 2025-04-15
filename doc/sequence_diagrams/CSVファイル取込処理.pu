@@ -1,0 +1,180 @@
+
+@startuml sequenceDiagram
+
+    title CSV読み込み操作（エラー処理と追加出力機能）エラー時と読み込みしたエンジニアリストを取得する
+    
+    actor User as User
+    User->>ListPanel: CSV読込ボタン押下
+        activate ListPanel
+ListPanel->>ListPanel: 読み込みボタン無効化
+        ListPanel-->>User: ファイル選択ダイアログ表示
+User-->>ListPanel: 読み込むCSVファイル選択と読込ボタン押下
+        
+    
+    ListPanel->>MainController: データ読み込み要求
+    activate MainController
+    
+    MainController->>EngineerController: 選択したエンジニアリスト取得要求
+    activate EngineerController
+    
+    EngineerController->>EngineerDAO: 選択したエンジニアリストの取得指示
+    activate EngineerDAO
+    
+    EngineerDAO->>EngineerCSVDAO: 選択したエンジニアリストの取得指示
+    activate EngineerCSVDAO
+    
+    EngineerCSVDAO->>AccessThread: CSVAccess用スレッド生成("read", null)
+    activate AccessThread
+    
+    AccessThread->>CSVAccess: CSV読み込み処理開始
+    activate CSVAccess
+    
+    CSVAccess->>CSVAccess: ReadLock取得
+    note right of CSVAccess: CSVAccessがロック管理を担当
+      
+    CSVAccess->>CSVAccess: BufferedReader生成(UTF-8)
+    CSVAccess->>CSVAccess: ヘッダー行読み込み
+    
+    CSVAccess->>CSVAccess: エラーエンジニアリスト初期化
+    
+    loop CSVの各データ行に対して
+        CSVAccess->>CSVAccess: 行データ読み込み
+        CSVAccess->>EngineerBuilder: DTOビルダー生成
+        activate EngineerBuilder
+        
+        loop 各カラムに対して
+            alt カラムデータが不正
+                EngineerBuilder->>EngineerBuilder: エラーフラグ設定
+            else
+                EngineerBuilder->>EngineerBuilder: 値のセット
+            end
+        end
+        
+        alt ビルド中にエラー発生
+            EngineerBuilder-->>CSVAccess: エラー通知と行番号
+            CSVAccess->>CSVAccess: エラーエンジニアリストに追加
+        else
+            EngineerBuilder-->>CSVAccess: EngineerDTO生成
+            CSVAccess->>CSVAccess: DTOリストに追加
+        end
+        deactivate EngineerBuilder
+    end
+            CSVAccess->>CSVAccess: ファイルクローズ
+    CSVAccess->>CSVAccess: ReadLock解放
+CSVAccess-->>AccessThread: CSV読み込み終了と処理結果返却
+    alt 読み込み中に致命的エラー発生
+    
+    deactivate CSVAccess
+    
+    AccessThread-->>EngineerCSVDAO: CSVAccess用スレッド終了と処理結果返却
+    deactivate AccessThread
+    EngineerCSVDAO->>CSVAccessResult: 読み込み結果を要求
+activate CSVAccessResult
+CSVAccessResult->>CSVAccessResult: 読み込み結果の処理
+CSVAccessResult-->>EngineerCSVDAO: 読み込み結果or追記データリスト返却
+deactivate CSVAccessResult
+
+
+
+
+
+
+    alt 読み込み失敗（致命的エラー）
+
+        EngineerCSVDAO-->>EngineerDAO: エラー結果返却
+        EngineerDAO-->>EngineerController: エラー結果返却
+        EngineerController-->>MainController: エラー結果返却  
+MainController-->>ListPanel: データ読み込み終了とエラー結果返却
+        ListPanel->>DialogManager: エラーダイアログ表示要求
+        activate DialogManager
+        DialogManager->>User: 「CSV読み込み中にエラーが発生しました」表示
+        User-->>DialogManager: OK押下
+        deactivate DialogManager
+        
+    else 部分的エラーあり
+
+        EngineerCSVDAO-->>EngineerDAO: DTOリストとエラーエンジニアリスト返却
+        EngineerDAO-->>EngineerController: DTOリストとエラーエンジニアリスト返却
+        EngineerController-->>MainController: DTOリストとエラーエンジニアリスト返却
+MainController-->>ListPanel: データ読み込み終了とエラーエンジニアリスト返却
+        
+        
+        
+        ListPanel->>DialogManager: エラーダイアログ表示要求(エラーエンジニアリスト)
+        activate DialogManager
+        DialogManager->>User: 「一部のデータに問題がありました」とエラーエンジニアリスト表示
+        User-->>DialogManager: OK押下
+        deactivate DialogManager
+ 
+        
+    else 読み込み成功
+
+        EngineerCSVDAO-->>EngineerDAO: 読込完了通知
+        deactivate EngineerCSVDAO
+        EngineerDAO-->>EngineerController: 読込完了通知
+        deactivate EngineerDAO
+        EngineerController-->>MainController: 読込完了通知
+
+
+deactivate CSVAccessResult
+        
+        
+
+        
+        MainController->>EngineerController: 追加CSV出力要求(ファイルパス)      
+        EngineerController->>EngineerCSVDAO: exportCSV(path, engineerAddList)呼び出し
+        activate EngineerCSVDAO
+        
+        
+        
+        EngineerCSVDAO->>AccessThread: CSVAccess用スレッド生成("write", 追記データ)
+        activate AccessThread
+        
+        AccessThread->>CSVAccess: CSV出力処理開始 FileWriter (true) で追記
+        activate CSVAccess
+        
+        CSVAccess->>CSVAccess: WriteLock取得
+        CSVAccess->>CSVAccess: 追記データをCSVに出力
+            CSVAccess->>CSVAccess: ファイルクローズ
+        CSVAccess->>CSVAccess: WriteLock解放
+        
+        CSVAccess-->>AccessThread: 出力完了通知
+        deactivate CSVAccess
+        
+        AccessThread-->>EngineerCSVDAO: 処理完了通知
+        deactivate AccessThread
+        
+        EngineerCSVDAO-->>EngineerController: 成功通知と結合データリスト返却
+        deactivate EngineerCSVDAO
+        
+        EngineerController-->>MainController: 成功通知と結合データリスト返却
+        deactivate EngineerController
+        
+        MainController-->>ListPanel: 更新データ設定
+        deactivate MainController
+        
+        ListPanel->>ListPanel: テーブルモデル更新
+        ListPanel->>ListPanel: ページネーション再設定
+        ListPanel->>DialogManager: 完了ダイアログ表示要求
+        
+        activate DialogManager
+        DialogManager->>User: 「読み込み完了しました」表示
+        User-->>DialogManager: OK押下
+        deactivate DialogManager
+        
+        ListPanel-->>User: 更新データ一覧表示
+ListPanel->>ListPanel: 読み込みボタン有効化
+    end
+
+    deactivate ListPanel
+@enduml
+
+
+
+
+
+
+
+
+
+

@@ -1,11 +1,9 @@
 package view;
 
 import javax.swing.*;
-
 import model.EngineerDTO;
 import util.LogHandler;
 import util.LogHandler.LogType;
-
 import java.awt.*;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
@@ -62,7 +60,7 @@ import java.util.stream.Collectors;
  *
  * @author Nakano
  * @version 4.0.0
- * @since 2025-04-08
+ * @since 2025-04-15
  */
 public class DialogManager {
 

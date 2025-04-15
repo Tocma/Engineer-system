@@ -46,7 +46,7 @@ import java.util.logging.Level;
  *
  * @author Nakano
  * @version 4.0.0
- * @since 2025-04-08
+ * @since 2025-04-15
  */
 public class CSVAccess extends AccessThread {
 
@@ -67,10 +67,9 @@ public class CSVAccess extends AccessThread {
 
     /** CSVのヘッダー行 */
     private static final String[] CSV_HEADERS = {
-            "id", "name", "nameKana", "birthDate", "joinDate", "career",
-            "programmingLanguages", "careerHistory", "trainingHistory",
-            "technicalSkill", "learningAttitude", "communicationSkill",
-            "leadership", "note", "registeredDate"
+            "社員ID(必須)","氏名(必須)","フリガナ(必須)","生年月日(必須)",
+            "入社年月(必須)","エンジニア歴(必須)","扱える言語(必須)","経歴,研修の受講歴",
+            "技術力","受講態度","コミュニケーション能力","リーダーシップ","備考","登録日"
     };
 
     /** 上書きモードフラグ（追記モードで書き込む場合はtrue） */

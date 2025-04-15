@@ -45,8 +45,8 @@ import java.util.logging.Level;
  * </p>
  *
  * @author Nakano
- * @version 3.1.0
- * @since 2025-04-04
+ * @version 4.0.0
+ * @since 2025-04-15
  */
 public class MainFrame extends AbstractFrame {
 
@@ -62,8 +62,8 @@ public class MainFrame extends AbstractFrame {
     /** 終了処理登録済みのスレッド一覧 */
     private final List<Thread> managedThreads;
 
-    /** スレッド終了待機時間（ミリ秒） */
-    private static final long THREAD_TERMINATION_TIMEOUT = 3000L;
+    /** スレッド終了待機時間5秒（ミリ秒） */
+    private static final long THREAD_TERMINATION_TIMEOUT = 5000L;
 
     /**
      * コンストラクタ
@@ -85,7 +85,6 @@ public class MainFrame extends AbstractFrame {
     @Override
     protected void customizeFrame() {
         frame.setTitle("エンジニア人材管理");
-        initializeMenuBar();
         LogHandler.getInstance().log(Level.INFO, LogType.SYSTEM, "メインフレームを初期化しました");
     }
 
@@ -179,29 +178,6 @@ public class MainFrame extends AbstractFrame {
             LogHandler.getInstance().logError(LogType.SYSTEM, "スレッド終了待機中に割り込みが発生しました", e);
             Thread.currentThread().interrupt(); // 割り込みステータスを保持
         }
-    }
-
-    /**
-     * メニューバーを初期化
-     */
-    private void initializeMenuBar() {
-        JMenuBar menuBar = new JMenuBar();
-
-        // ファイルメニュー
-        JMenu fileMenu = new JMenu("ファイル");
-        JMenuItem exitItem = new JMenuItem("終了");
-        exitItem.addActionListener(e -> performShutdown());
-        fileMenu.add(exitItem);
-
-        // 表示メニュー
-        JMenu viewMenu = new JMenu("表示");
-        JMenuItem refreshItem = new JMenuItem("更新");
-        refreshItem.addActionListener(e -> refreshView());
-        viewMenu.add(refreshItem);
-
-        menuBar.add(fileMenu);
-        menuBar.add(viewMenu);
-        frame.setJMenuBar(menuBar);
     }
 
     /**

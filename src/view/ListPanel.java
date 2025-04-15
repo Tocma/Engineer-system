@@ -6,9 +6,7 @@ import util.LogHandler.LogType;
 import javax.swing.*;
 import javax.swing.table.DefaultTableModel;
 import javax.swing.table.TableRowSorter;
-
 import controller.MainController;
-
 import java.awt.*;
 import java.text.DecimalFormat;
 import java.util.ArrayList;
@@ -20,8 +18,8 @@ import java.util.logging.Level;
  * ページング、ソート、検索、追加、取込、削除機能
  *
  * @author Nakano
- * @version 3.1.0
- * @since 2025-04-04
+ * @version 4.0.0
+ * @since 2025-04-15
  */
 public class ListPanel extends JPanel {
 
@@ -111,7 +109,7 @@ public class ListPanel extends JPanel {
         setupPaginationEvents();
 
         // ロギング
-        LogHandler.getInstance().log(Level.INFO, LogType.SYSTEM, "エンジニア一覧パネルを初期化しました");
+        LogHandler.getInstance().log(Level.INFO, LogType.SYSTEM, "エンジニア一覧画面を初期化しました");
     }
 
     /**
@@ -763,7 +761,7 @@ public class ListPanel extends JPanel {
             // 選択されたエンジニアリストを取得
             List<EngineerDTO> selectedEngineers = getSelectedEngineers();
 
-            // 実際の削除は Controller に委譲する予定
+            // ここに削除処理を実装する（TODO）
             // 現在はメッセージのみログに記録
             LogHandler.getInstance().log(Level.INFO, LogType.UI,
                     String.format("%d件の行が削除対象に選択されました", selectedRows.length));

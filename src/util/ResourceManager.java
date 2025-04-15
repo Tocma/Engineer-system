@@ -46,8 +46,8 @@ import util.LogHandler.LogType;
  * </p>
  *
  * @author Nakano
- * @version 3.0.0
- * @since 2025-04-04
+ * @version 4.0.0
+ * @since 2025-04-15
  */
 public class ResourceManager {
 
@@ -60,7 +60,8 @@ public class ResourceManager {
     /**
      * CSVヘッダー定義
      */
-    private static final String DEFAULT_CSV_HEADER = "id,name,nameKana,birthDate,joinDate,career,programmingLanguages,careerHistory,trainingHistory,technicalSkill,learningAttitude,communicationSkill,leadership,note,registeredDate";
+    private static final String DEFAULT_CSV_HEADER = "社員ID(必須),氏名(必須),フリガナ(必須),生年月日(必須),入社年月(必須),エンジニア歴(必須),扱える言語(必須),経歴,研修の受講歴,技術力,受講態度,コミュニケーション能力,リーダーシップ,備考";
+;
 
     /**
      * オープンしているリソースの追跡用マップ

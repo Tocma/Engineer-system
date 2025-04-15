@@ -1,0 +1,142 @@
+' 新規登録異常
+@startuml
+actor User
+participant AddPanel
+participant DialogManager
+participant MainController
+participant Validator
+participant EngineerController
+participant EngineerBuilder
+participant EngineerDAO
+participant EngineerCSVDAO
+participant AccessThread
+participant CSVAccess
+
+
+
+participant CSVファイル #Red
+
+User ->> AddPanel: 登録ボタン押下
+activate AddPanel
+
+AddPanel ->> AddPanel: 各入力フィールドを非活性化
+AddPanel ->> AddPanel: 登録ボタンを非活性化
+AddPanel ->> AddPanel: 入力値を検証
+activate AddPanel
+
+loop 各入力フィールド
+    AddPanel ->> Validator: 入力値を検証(inputValue)
+    activate Validator
+    
+        Validator -->> AddPanel: 検証エラー（必須項目）or（形式不正）or（文字数超過）
+        AddPanel ->> AddPanel: エラーを表示(field, "必須項目です")
+
+        AddPanel ->> AddPanel: エラーを表示(field, "形式が不正です")
+    
+        AddPanel ->> AddPanel: エラーを表示(field, "文字数制限を超えています")
+        AddPanel ->> DialogManager: エラーダイアログを表示
+        activate DialogManager
+        DialogManager -->> User: エラーダイアログ表示　再入力へ
+        deactivate DialogManager
+    
+
+end
+
+alt 検証OK
+            Validator -->> AddPanel:入力値検証OK
+        deactivate Validator
+    AddPanel ->> EngineerBuilder: EngineerDTOを生成
+    activate EngineerBuilder
+    
+    alt DTO生成エラー
+        EngineerBuilder -->> AddPanel: データ生成エラー
+        AddPanel ->> DialogManager: エラーダイアログを表示("データの生成に失敗しました")
+        activate DialogManager
+        DialogManager -->> User: エラーダイアログ表示　再入力へ
+        deactivate DialogManager
+    else DTO生成成功
+        EngineerBuilder -->> AddPanel: engineerDTO
+        deactivate EngineerBuilder
+        
+        AddPanel ->> MainController: EngineerDTOを登録
+        activate MainController
+        
+        MainController ->> EngineerController: エンジニアを追加(engineerDTO)
+        activate EngineerController
+        
+        EngineerController ->> EngineerDAO: IDの重複チェック(id)
+        
+        activate EngineerDAO
+        EngineerDAO ->> EngineerDAO :IDの重複チェック
+        
+        alt ID重複
+            EngineerDAO -->> EngineerController: ID重複あり
+            EngineerController -->> MainController: 登録失敗（DuplicateIdException）
+            MainController -->> AddPanel: 登録失敗
+            AddPanel ->> DialogManager: エラーダイアログを表示("既に登録されているIDです")
+            activate DialogManager
+            DialogManager -->> User: エラーダイアログ表示　再入力へ
+            deactivate DialogManager
+        else ID重複なし
+            EngineerDAO -->> EngineerController: ID重複なし
+            
+            EngineerController ->> EngineerDAO: データを保存(engineerDTO)
+            EngineerDAO ->> EngineerCSVDAO: データ保存
+            activate EngineerCSVDAO
+           
+            EngineerCSVDAO ->> AccessThread: スレッド生成
+            activate AccessThread
+            AccessThread ->> CSVAccess : データ登録処理開始
+
+        
+
+
+            activate CSVAccess
+            CSVAccess ->> CSVAccess:ファイルロック
+            CSVAccess ->> CSVファイル: 書き込み処理
+            activate CSVファイル
+            CSVファイル -->> CSVAccess: エラー発生
+            
+            deactivate CSVファイル
+            CSVAccess ->> CSVAccess:ファイルロック解除
+            
+            
+            alt ファイルアクセスエラー
+                CSVAccess -->> AccessThread: エラー（IOException）
+                deactivate CSVAccess
+                AccessThread -->> EngineerCSVDAO :　エラー
+                deactivate AccessThread
+
+                EngineerCSVDAO -->> EngineerDAO:エラー
+                deactivate EngineerCSVDAO
+                EngineerDAO -->> EngineerController: 保存失敗（DataAccessException）
+                deactivate 
+                EngineerController -->> MainController: 登録失敗
+                deactivate
+                MainController -->> AddPanel: 登録失敗
+                AddPanel ->> DialogManager: エラーダイアログを表示("データの保存に失敗しました")
+                activate DialogManager
+            else ファイルロックエラー
+                MainController -->> AddPanel: 登録失敗
+                AddPanel ->> DialogManager: エラーダイアログを表示("ファイルにアクセスできません")
+            
+            else データ整合性エラー
+                MainController -->> AddPanel: 登録失敗
+                
+                AddPanel ->> DialogManager: エラーダイアログを表示("データの整合性エラーが発生しました")
+            end
+            deactivate CSVAccess
+        end
+        deactivate EngineerDAO
+        deactivate EngineerController
+    end
+
+end
+                DialogManager -->> User: エラーダイアログ表示
+User ->> DialogManager: OKボタンを押下
+DialogManager -->> AddPanel: ダイアログ完了通知
+deactivate DialogManager
+AddPanel ->> AddPanel: 各入力フィールドとボタンを再度活性化
+deactivate AddPanel
+@enduml
+

@@ -1,0 +1,109 @@
+' 通常終了時
+@startuml sequenceDiagram
+    actor User
+    participant MainFrame
+    participant DialogManager
+    participant MainController
+    participant EngineerController
+    participant EngineerDAO
+    participant CSVAccess
+    participant ResourceManager
+    participant LogHandler
+    participant CSVファイル #Red
+
+    ' 終了イベントの開始
+    User->>MainFrame: 終了ボタン押下/ウィンドウ×クリック
+    activate MainFrame
+
+    ' 終了確認
+    MainFrame->>DialogManager: "アプリケーションを終了しますか？"
+    
+    activate DialogManager
+    DialogManager -->> User: ダイアログ表示
+    User ->> DialogManager:はいorキャンセル
+
+    alt キャンセル
+        DialogManager-->>MainFrame: キャンセル（false）
+        MainFrame-->>User: 終了キャンセル
+    else 終了確認
+        DialogManager-->>MainFrame: 確認（true）
+        deactivate DialogManager
+
+        MainFrame->>MainController: シャットダウン処理開始
+        activate MainController
+
+        ' 未保存データの確認
+        MainController->>EngineerController: 未保存データがあるか確認
+        activate EngineerController
+
+        alt 未保存データあり
+            EngineerController-->>MainController: 未保存データあり（true）
+            MainController->>DialogManager: "未保存のデータがあります。保存してから終了しますか？\n保存をキャンセルして終了しますか？"
+            activate DialogManager
+            DialogManager ->> User :　メッセージ
+            alt 保存する
+                User ->> DialogManager :　保存して終了
+                DialogManager-->>MainController: 保存する（true）
+                deactivate DialogManager
+                MainController->>EngineerController: データを保存
+
+                EngineerController->>EngineerDAO: 保存処理開始
+                activate EngineerDAO
+
+                EngineerDAO->>CSVAccess: "CSV書き込み開始"
+                
+                activate CSVAccess
+                CSVAccess->>CSVファイル: データを書き込む
+                activate CSVファイル
+                CSVファイル-->>CSVAccess: 書き込み完了（成功/失敗）
+                deactivate CSVファイル
+
+            
+                    CSVAccess-->>EngineerDAO: 保存成功
+                    deactivate CSVAccess
+                    EngineerDAO-->>EngineerController: 保存成功
+                    deactivate EngineerDAO
+                    EngineerController-->> MainController: 保存成功
+                    deactivate EngineerController
+                
+
+            end
+        end
+        deactivate EngineerController
+
+        ' リソースの解放
+        MainController->>ResourceManager: 全リソース解放処理
+        activate ResourceManager
+
+        ' ファイルハンドルの解放
+        ResourceManager->>ResourceManager: ファイルハンドルを閉じる
+
+        ' 一時ファイルの削除
+        ResourceManager->>ResourceManager: 一時ファイルの接続を解除
+
+        ' メモリの解放
+        ResourceManager->>ResourceManager: メモリを解放
+        ResourceManager-->>MainController: リソース解放成功
+        deactivate ResourceManager
+
+
+        ' GUIリソースの解放
+        MainController->>MainFrame: GUIリソースを解放
+        MainFrame->>MainFrame: コンポーネントを全て破棄
+        MainFrame-->>MainController: リソース解放完了
+        MainFrame-->>User: UI終了を確認（ウィンドウが閉じる）
+        deactivate MainFrame
+
+        ' ログハンドラのクローズ
+        MainController->>LogHandler: 終了ログを記録。ログシステムを終了
+        activate LogHandler
+        LogHandler->>LogHandler: ログをフラッシュ
+        LogHandler->>LogHandler: ログファイルを閉じる
+        LogHandler-->>MainController: 記録成功
+        deactivate LogHandler
+
+        ' アプリケーション終了
+        MainController->>MainController: アプリケーション終了　System.exit(0)
+        deactivate MainController
+    end
+@enduml

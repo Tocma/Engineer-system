@@ -44,7 +44,7 @@ import java.util.stream.Collectors;
  *
  * @author Nakano
  * @version 4.0.0
- * @since 2025-04-08
+ * @since 2025-04-15
  */
 public class EngineerCSVDAO implements EngineerDAO {
 
@@ -56,10 +56,9 @@ public class EngineerCSVDAO implements EngineerDAO {
 
     /** CSVカラム定義 */
     private static final String[] CSV_HEADERS = {
-            "id", "name", "nameKana", "birthDate", "joinDate", "career",
-            "programmingLanguages", "careerHistory", "trainingHistory",
-            "technicalSkill", "learningAttitude", "communicationSkill",
-            "leadership", "note", "registeredDate"
+            "社員ID(必須)","氏名(必須)","フリガナ(必須)","生年月日(必須)",
+            "入社年月(必須)","エンジニア歴(必須)","扱える言語(必須)","経歴,研修の受講歴",
+            "技術力","受講態度","コミュニケーション能力","リーダーシップ","備考","登録日"
     };
 
     /** DialogManagerインスタンス */

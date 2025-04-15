@@ -1,0 +1,109 @@
+@startuml sequenceDiagram
+    actor User
+    participant ListPanel
+    participant DialogManager
+    participant MainController
+    participant EngineerController
+    participant EngineerDAO
+    participant EngineerCSVDAO
+    participant AccessThread
+    participant CSVAccess
+    participant CSVファイル #Red
+
+    User->>ListPanel: 削除ボタン押下
+    activate ListPanel
+    
+    ' 削除確認ダイアログ
+    ListPanel->>DialogManager: 削除確認ダイアログを表示("選択したエンジニア情報を削除しますか？")
+    activate DialogManager
+    DialogManager ->> User :メッセージ
+        
+
+    alt 削除確認
+    User ->>DialogManager:はい
+        DialogManager-->>ListPanel: 削除確定
+        deactivate DialogManager
+
+        ListPanel->>MainController: エンジニア削除要求(engineerId)
+        activate MainController
+
+
+        ' エンジニア情報の存在確認
+        MainController->>EngineerController: エンジニア削除実行(engineerId)
+        activate EngineerController
+
+        EngineerController->>EngineerDAO: 削除処理
+
+        activate EngineerDAO
+                EngineerDAO-->>EngineerDAO: 該当ID確認
+
+
+        alt エンジニア情報が存在しない
+
+        
+
+        
+            EngineerDAO-->>EngineerController:　該当者なし
+            EngineerController-->>MainController: 該当者なし
+            MainController->>DialogManager: 削除対象エラー("削除対象のエンジニアが見つかりません")
+            DialogManager-->>User: エラーダイアログ表示　削除処理終了
+        else エンジニア情報存在
+
+
+                ' 削除処理実行
+
+        deactivate CSVAccess
+
+            EngineerDAO->>EngineerCSVDAO: CSVデータ削除
+            activate EngineerCSVDAO
+            EngineerCSVDAO ->> AccessThread : スレッド生成
+            activate AccessThread
+            AccessThread ->> CSVAccess:削除処理
+            activate CSVAccess
+            CSVAccess ->> CSVAccess:ファイルロック
+            CSVAccess ->> CSVファイル :ファイルへアクセス
+            activate CSVファイル
+            CSVファイル -->> CSVAccess :エラー
+            deactivate CSVファイル
+                        CSVAccess ->>CSVAccess:ファイルロック解除
+
+                alt ファイルアクセスエラー
+                    CSVAccess-->>AccessThread: IOException発生
+                    AccessThread -->> EngineerCSVDAO:エラー
+                    EngineerCSVDAO -->> EngineerDAO :エラー
+                    EngineerDAO-->>EngineerController: DataAccessException発生
+                    EngineerController-->>MainController: DeleteException発生
+                    MainController->>DialogManager: ファイルアクセスエラー("ファイルアクセスエラーが発生しました")
+
+
+                else ファイルロックエラー
+                                    CSVAccess-->>AccessThread: FileLockException発生
+                    AccessThread -->> EngineerCSVDAO:エラー
+                    EngineerCSVDAO -->> EngineerDAO :エラー
+                    EngineerDAO-->>EngineerController: エラー
+                    EngineerController-->>MainController: エラー
+                    MainController->>DialogManager: ファイルロックエラー("ファイルがロックされています")
+
+
+                else データ整合性エラー
+                    CSVAccess-->>AccessThread: DataIntegrityException発生
+                    AccessThread -->> EngineerCSVDAO:エラー
+                    EngineerCSVDAO -->> EngineerDAO :エラー
+                    EngineerDAO-->>EngineerController: エラー
+                    EngineerController-->>MainController: エラー
+                    MainController->>DialogManager: データ整合性エラー("データの整合性エラーが発生しました")
+
+                    
+
+                end
+                deactivate CSVAccess
+           
+        end
+        deactivate EngineerDAO
+        deactivate EngineerController
+        deactivate MainController
+
+   
+    
+    deactivate ListPanel
+@enduml

@@ -24,7 +24,7 @@ import java.util.regex.Pattern;
  * </p>
  *
  * <p>
- * バージョン4.1.0で追加された主な機能：
+ * バージョン4.0.0で追加された主な機能：
  * <ul>
  * <li>フィールドごとのエラーメッセージ表示機能</li>
  * <li>複数のバリデーションエラーの同時表示</li>
@@ -81,8 +81,8 @@ import java.util.regex.Pattern;
  * </pre>
  *
  * @author Nakano
- * @version 4.1.0
- * @since 2025-04-11
+ * @version 4.0.0
+ * @since 2025-04-15
  */
 public abstract class AbstractEngineerPanel extends JPanel {
 

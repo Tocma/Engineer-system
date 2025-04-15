@@ -62,8 +62,9 @@ import java.util.regex.Pattern;
  * </pre>
  * </p>
  *
- * @author [著者名]
- * @version 1.0
+ * @author Nakano
+ * @version 4.0.0
+ * @since 2025-04-15
  * @see Validator
  * @see ValidationEnum
  * @see MessageEnum

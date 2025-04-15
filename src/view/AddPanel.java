@@ -8,10 +8,8 @@ import util.LogHandler.LogType;
 import util.MessageEnum;
 import util.Validator;
 import util.ValidatorEnum;
-
 import javax.swing.*;
 import javax.swing.border.Border;
-
 import java.awt.*;
 import java.time.LocalDate;
 import java.util.ArrayList;
@@ -32,7 +30,7 @@ import java.util.logging.Level;
  * </p>
  *
  * <p>
- * バージョン4.1.0での主な改善点：
+ * バージョン4.0.0での主な改善点：
  * <ul>
  * <li>フィールド毎のエラー表示機能の実装 - エラーメッセージが各フィールドの下に表示</li>
  * <li>複数のバリデーションエラーを同時に表示する機能</li>
@@ -84,8 +82,8 @@ import java.util.logging.Level;
  * </p>
  *
  * @author Nakano
- * @version 4.1.0
- * @since 2025-04-11
+ * @version 4.0.0
+ * @since 2025-04-15
  */
 public class AddPanel extends AbstractEngineerPanel {
 
@@ -723,7 +721,7 @@ public class AddPanel extends AbstractEngineerPanel {
         if (isEmpty(idField)) {
             showFieldError("idField", MessageEnum.VALIDATION_ERROR_EMPLOYEE_ID.getMessage());
             isValid = false;
-        } else if (!idField.getText().matches("ID\\d{5}")) {
+        } else if (!idField.getText().matches("^\\d{1,5}$")) {
             showFieldError("idField", MessageEnum.VALIDATION_ERROR_EMPLOYEE_ID.getMessage());
             isValid = false;
         } else if (idField.getText().equals("ID00000") || idField.getText().equals("00000")) {

@@ -1,0 +1,102 @@
+' 検索
+@startuml sequenceDiagram
+    actor User
+    participant ListPanel
+    participant DialogManager
+    participant MainController
+    participant EngineerController
+    participant Validator
+    participant EngineerDAO
+    participant CSVAccess
+    participant LogHandler
+
+    User->>ListPanel: 検索条件を入力
+    activate ListPanel
+    
+    User->>ListPanel: 検索ボタン押下
+    
+    ListPanel->>ListPanel: 検索条件の検証(validateSearchCriteria())
+    activate ListPanel
+    
+    loop 各検索条件
+        ListPanel->>Validator: 入力値の検証(validate(criteriaValue))
+        activate Validator
+        
+        alt 検証エラー
+            Validator-->>ListPanel: 検証失敗(false, エラーメッセージ)
+            ListPanel->>DialogManager: 検索条件エラーダイアログを表示(showError(message))
+            activate DialogManager
+            DialogManager-->>User: エラーダイアログ表示
+            deactivate DialogManager
+        else 検証OK
+            Validator-->>ListPanel: 検証成功(true)
+        end
+        deactivate Validator
+    end
+    
+    alt 検証成功
+        ListPanel->>ListPanel: 検索条件の作成(buildSearchCriteria())
+        Note over ListPanel: 検索条件をMapに格納
+        
+        ListPanel->>MainController: 検索要求(handleSearch(searchCriteria))
+        activate MainController
+        
+        MainController->>EngineerController: エンジニア検索(searchEngineers(searchCriteria))
+        activate EngineerController
+        
+        EngineerController->>EngineerDAO: エンジニアデータ取得(search(searchCriteria))
+        activate EngineerDAO
+        
+        EngineerDAO->>CSVAccess: CSVデータ読み込み(execute("READ"))
+        activate CSVAccess
+        CSVAccess-->>EngineerDAO: 取得したエンジニアデータ一覧
+        deactivate CSVAccess
+        
+        EngineerDAO->>EngineerDAO: 検索条件に基づくデータフィルタリング(filterEngineers(allEngineersData, searchCriteria))
+        Note over EngineerDAO: 検索条件に基づきデータを抽出
+        
+        alt 検索結果あり
+            EngineerDAO-->>EngineerController: 検索結果エンジニアリスト(List<EngineerDTO>)
+            EngineerController-->>MainController: 検索結果エンジニアリスト(List<EngineerDTO>)
+            MainController-->>ListPanel: 検索結果エンジニアリスト(List<EngineerDTO>)
+            
+            ListPanel->>ListPanel: テーブルモデル更新(updateTableModel(engineers))
+            ListPanel->>ListPanel: ページネーション更新(updatePagination())
+            
+            Note over LogHandler: 検索成功ログ記録
+            MainController->>LogHandler: 検索完了ログ記録(log("検索完了: " + 件数))
+        else 検索結果なし
+            EngineerDAO-->>EngineerController: 検索結果なし(empty list)
+            EngineerController-->>MainController: 検索結果なし(empty list)
+            MainController-->>ListPanel: 検索結果なし(empty list)
+            
+            ListPanel->>DialogManager: 検索結果なしダイアログ表示(showInformation("検索結果が0件です"))
+            DialogManager-->>User: 情報ダイアログ表示
+            
+            ListPanel->>ListPanel: テーブルモデルをクリア(clearTableModel())
+            ListPanel->>ListPanel: ページネーション更新(updatePagination())
+            
+            Note over LogHandler: 検索結果なしログ記録
+            MainController->>LogHandler: 検索結果0件ログ記録(log("検索結果0件"))
+        end
+        
+        deactivate EngineerDAO
+        deactivate EngineerController
+        deactivate MainController
+    end
+    
+    alt ソート要求あり
+        User->>ListPanel: ソートカラムをクリック
+        ListPanel->>ListPanel: ソート処理(handleSort(column))
+        ListPanel->>ListPanel: ソート後のテーブルモデル更新(updateTableModel(sortedData))
+    end
+    
+    alt ページ移動要求あり
+        User->>ListPanel: ページ移動ボタンをクリック
+        ListPanel->>ListPanel: ページ変更処理(handlePageChange(pageNumber))
+        ListPanel->>ListPanel: ページデータのテーブルモデル更新(updateTableModel(pageData))
+    end
+    
+    deactivate ListPanel
+    deactivate ListPanel
+@enduml

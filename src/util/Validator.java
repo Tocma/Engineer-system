@@ -54,8 +54,9 @@ package util;
  * システムを拡張することができます（Open-Closed Principle）。
  * </p>
  * 
- * @author [著者名]
- * @version 1.0
+ * @author Nakano
+ * @version 4.0.0
+ * @since 2025-04-15
  * @see ValidationEnum
  * @see TextValidator
  * @see DateValidator

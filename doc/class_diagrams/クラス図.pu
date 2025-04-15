@@ -1,0 +1,296 @@
+@startuml class
+
+' スタイル設定
+skinparam classAttributeIconSize 0
+skinparam packageStyle rectangle
+skinparam linetype ortho
+skinparam backgroundColor white
+skinparam roundcorner 5
+skinparam class {
+    BackgroundColor white
+    ArrowColor black
+    BorderColor black
+}
+
+' パッケージの定義
+package "mainパッケージ" as main {
+    class Main {
+        -config: Properties
+        +main(args: String[]): void
+        -initializeSystem(): void
+        -initializeLogger(): void
+        -initializeUI(): void
+        -checkDirectory(): void
+    }
+}
+
+package "viewパッケージ" as view {
+    abstract class AbstractFrame {
+        #frame: JFrame
+        #initialize(): void
+        #initializeFrame(): void
+        #setFrameSize(width: int, height: int): void
+    }
+
+    abstract class AbstractEngineerPanel {
+        #panel: JPanel
+        #components: Map<String, Component>
+        #initialize(): void
+        #initializePanel(): void
+        #validateInput(): boolean
+    }
+
+    class MainFrame {
+        -currentPanel: JPanel
+        +showPanel(panel: JPanel): void
+        -initializeMenuBar(): void
+        +getFrame(): JFrame
+    }
+
+    class ListPanel {
+        -table: JTable
+        -searchField: JTextField
+        -sortButton: JButton
+        -pageSize: int
+        -currentPage: int
+        +initialize(): void
+        -setupTable(): void
+        -setupSearchField(): void
+        -setupPagination(): void
+        -search(): void
+        -sort(): void
+        -exportCSV(): void
+        -updatePage(pageNum: int): void
+    }
+
+    class DetailPanel {
+        +initialize(): void
+        +loadEngineerData(engineer: EngineerDTO): void
+        -setupUpdateButton(): void
+        #validateInput(): boolean
+        -displayRegistrationDate(): void
+        -updateFields(engineer: EngineerDTO): void
+    }
+
+    class AddPanel {
+        +initialize(): void
+        -setupAddButton(): void
+        #validateInput(): boolean
+        -clearFields(): void
+        -setupValidation(): void
+    }
+
+    class DialogManager <<Singleton>> {
+        -{static}
+    INSTANCE: DialogManager
+    -DialogManager()
+    +{static}getInstance(): DialogManager
+    +showErrorDialog(message: String): void
+    +showConfirmDialog(message: String): boolean
+    +showCompletionDialog(message: String): void
+}
+}
+
+package "controllerパッケージ" as controller {
+class MainController {
+    -ScreenTransitionController: ScreenTransitionController
+    -engineerController: EngineerController
+    +initialize(): void
+    +handleEvent(event: String, data: Object): void
+}
+
+class EngineerController {
+    -engineerDAO: EngineerDAO
+    +getEngineers(): List<EngineerDTO>
+    +addEngineer(engineer: EngineerDTO): void
+    +updateEngineer(engineer: EngineerDTO): void
+    +validateEngineer(engineer: EngineerDTO): boolean
+}
+
+class ScreenTransitionController {
+    -mainFrame: MainFrame
+    +showPanel(panelType: String): void
+    +refreshView(): void
+    +getCurrentPanel(): JPanel
+}
+}
+
+package "modelパッケージ" as model {
+class EngineerDTO {
+    -id: String
+    -name: String
+    -nameKana: String
+    -birthDate: Date
+    -joinDate: Date
+    -career: int
+    -programmingLanguages: List<String>
+    -careerHistory: String
+    -trainingHistory: String
+    -technicalSkill: double
+    -learningAttitude: double
+    -communicationSkill: double
+    -leadership: double
+    -note: String
+    -registeredDate: Date
+    +getters()
+    +setters()
+    +toString(): String
+}
+
+class EngineerBuilder {
+    -engineer: EngineerDTO
+    +build(): EngineerDTO
+    +setId(id: String): EngineerBuilder
+    +setName(name: String): EngineerBuilder
+    +setNameKana(nameKana: String): EngineerBuilder
+    +setBirthDate(birthDate: Date): EngineerBuilder
+    +setJoinDate(joinDate: Date): EngineerBuilder
+    +setCareer(career: int): EngineerBuilder
+    +setProgrammingLanguages(languages: List<String>): EngineerBuilder
+    +setCareerHistory(history: String): EngineerBuilder
+    +setTrainingHistory(history: String): EngineerBuilder
+    +setTechnicalSkill(skill: double): EngineerBuilder
+    +setLearningAttitude(attitude: double): EngineerBuilder
+    +setCommunicationSkill(skill: double): EngineerBuilder
+    +setLeadership(leadership: double): EngineerBuilder
+    +setNote(note: String): EngineerBuilder
+    +setRegisteredDate(date: Date): EngineerBuilder
+}
+
+interface EngineerDAO {
+    +findAll(): List<EngineerDTO>
+    +findById(id: String): EngineerDTO>
+    +save(engineer: EngineerDTO): void
+    +update(engineer: EngineerDTO): void
+    +delete(id: String): void
+}
+
+class EngineerCSVDAO {
+    -csvFile: File
+    -lock: ReadWriteLock
+    -charset: Charset
+    +findAll(): List<EngineerDTO>
+    +findById(id: String): EngineerDTO
+    +save(engineer: EngineerDTO): void
+    +update(engineer: EngineerDTO): void
+    +delete(id: String): void
+    -readCSV(): List<String[]>
+    -writeCSV(lines: List<String[]>): void
+    -convertToDTO(line: String[]): EngineerDTO
+    -convertToCSV(engineer: EngineerDTO): String[]
+}
+
+abstract class AccessThread {
+    #running: boolean
+    #thread: Thread
+    +run(): void
+    +start(): void
+    +stop(): void
+    #processOperation(): void
+}
+
+class CSVAccess {
+    -operation: String
+    -data: Object
+    -csvFile: File
+    +execute(): void
+    -read(): List<String>
+    -write(lines: List<String>): void
+}
+}
+
+package "utilパッケージ" as util {
+interface Validator {
+    +validate(value: String): boolean
+    +getErrorMessage(): String
+}
+
+class LogHandler <<Singleton>> {
+    -{static}
+INSTANCE: LogHandler
+-logger: Logger
+-LogHandler()
++{static}getInstance(): LogHandler
++log(level: Level, message: String): void
+-setupLogger(): void
+}
+
+class TextValidator {
+-maxLength: int
+-pattern: Pattern
+-errorMessage: String
++validate(value: String): boolean
++getErrorMessage(): String
+-checkLength(value: String): boolean
+-checkPattern(value: String): boolean
+}
+
+class DateValidator {
+-minDate: Date
+-maxDate: Date
+-errorMessage: String
++validate(value: String): boolean
++getErrorMessage(): String
+-parseDate(value: String): Date
+}
+
+class IDValidator {
+-usedIds: Set<String>
+-errorMessage: String
++validate(value: String): boolean
++getErrorMessage(): String
+-checkFormat(value: String): boolean
+-checkUnique(value: String): boolean
+}
+
+enum ValidationEnum {
+NAME
+NAME_KANA
+EMPLOYEE_ID
+CAREER_HISTORY
+TRAINING_HISTORY
+NOTE
++getValidator(): Validator
++getErrorMessage(): String
+}
+}
+
+' 継承関係の定義（実線＋三角形の矢印）
+AbstractFrame <|-- MainFrame : "継承"
+AbstractEngineerPanel <|-- DetailPanel : "継承"
+AbstractEngineerPanel <|-- AddPanel : "継承"
+AccessThread <|-- CSVAccess : "継承"
+
+' インターフェース実装の定義（点線＋三角形の矢印）
+Validator <|.. TextValidator : "実装"
+Validator <|.. DateValidator : "実装"
+Validator <|.. IDValidator : "実装"
+EngineerDAO <|.. EngineerCSVDAO : "実装"
+
+' コンポジション関係の定義（塗りつぶしダイヤモンド）
+MainFrame *-- "1" ListPanel : "含む"
+MainFrame *-- "1" DetailPanel : "含む"
+MainFrame *-- "1" AddPanel : "含む"
+
+' 関連関係の定義（実線の矢印）
+MainController "1" --> "1" ScreenTransitionController : "制御する"
+MainController "1" --> "1" EngineerController : "制御する"
+EngineerController "1" --> "1" EngineerDAO : "利用する"
+EngineerCSVDAO "1" --> "1" CSVAccess : "利用する"
+
+' 依存関係の定義（点線の矢印）
+ListPanel ..> DialogManager : "使用する"
+DetailPanel ..> DialogManager : "使用する"
+AddPanel ..> DialogManager : "使用する"
+EngineerController ..> EngineerDTO : "使用する"
+EngineerCSVDAO ..> EngineerDTO : "使用する"
+DetailPanel ..> EngineerDTO : "使用する"
+AddPanel ..> EngineerDTO : "使用する"
+EngineerCSVDAO ..> EngineerBuilder : "使用する"
+
+' レイアウト調整用の設定
+hide empty members
+skinparam padding 2
+skinparam roundcorner 20
+
+@enduml

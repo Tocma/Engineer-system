@@ -1,0 +1,101 @@
+@startuml sequenceDiagram
+
+title CSV出力操作（CSVAccessでのWriteLock管理）
+
+actor User as User
+
+User->>ListPanel: CSV出力ボタン押下
+activate ListPanel
+ListPanel->>ListPanel: 出力ボタン無効化
+ListPanel->>User: 出力確認ダイアログ表示
+
+alt キャンセル
+    User-->>DialogManager: キャンセル選択
+    activate DialogManager
+    DialogManager-->>ListPanel: キャンセル通知
+    ListPanel->>ListPanel: 出力ボタン有効化
+else 出力実行
+    User-->>DialogManager: 出力ボタン押下
+    deactivate DialogManager
+
+    ListPanel->>User: 出力先パス選択ダイアログ表示
+    User-->>ListPanel: 保存先パス選択ボタン押下
+
+    ListPanel->>MainController: 選択パスとデータ出力要求
+    activate MainController
+    MainController->>EngineerController: データ出力要求（パス指定）
+    activate EngineerController
+    EngineerController->>EngineerCSVDAO: exportCSV(path, engineerList)呼び出し
+    activate EngineerCSVDAO
+
+
+
+    EngineerCSVDAO->>AccessThread: CSVAccess用スレッド生成("write", engineerList, path)
+    activate AccessThread
+
+    AccessThread->>CSVAccess: CSV出力処理開始
+    activate CSVAccess
+
+    CSVAccess->>CSVAccess: WriteLock取得
+    note right of CSVAccess: CSVAccessがロック管理を担当
+
+    CSVAccess->>CSVAccess: BufferedWriter生成(UTF-8)
+    CSVAccess->>CSVAccess: ヘッダー行出力
+
+    loop エンジニアDTOリストの各要素
+        CSVAccess->>CSVAccess: DTOをCSV形式に変換
+        CSVAccess->>CSVAccess: CSV行出力
+    end
+
+    alt 出力中にエラー発生
+
+        CSVAccess->>CSVAccess: WriteLock解放
+        note right of CSVAccess: エラー時も確実にロック解放
+        CSVAccess-->>AccessThread: エラー通知
+    else 正常終了
+        CSVAccess->>CSVAccess: ファイルクローズ
+        CSVAccess->>CSVAccess: WriteLock解放
+        note right of CSVAccess: 処理完了後にロック解放
+        CSVAccess-->>AccessThread: 出力完了通知
+    end
+    deactivate CSVAccess
+
+    AccessThread-->>EngineerCSVDAO: 処理結果返却
+    deactivate AccessThread
+
+
+
+    alt 出力失敗
+        EngineerCSVDAO-->>EngineerController: エラー通知
+        EngineerController-->>MainController: エラー通知
+        MainController-->>ListPanel: データ出力終了とエラー通知
+        ListPanel->>DialogManager: エラーダイアログ表示要求
+        activate DialogManager
+        DialogManager->>User: 「CSV出力中にエラーが発生しました」表示
+        User-->>DialogManager: OK押下
+        deactivate DialogManager
+    else 出力成功
+        EngineerCSVDAO-->>EngineerController: 成功通知
+        deactivate EngineerCSVDAO
+        EngineerController-->>MainController: 成功通知
+        deactivate EngineerController
+        MainController-->>ListPanel: データ出力終了と成功通知
+        deactivate EngineerController
+        deactivate MainController
+        ListPanel->>DialogManager: 完了ダイアログ表示要求
+        activate DialogManager
+        DialogManager->>User: 「CSVファイルの出力が完了しました」表示
+        User-->>DialogManager: OK押下
+        deactivate DialogManager
+    end
+    ListPanel->>ListPanel: 出力ボタン有効化
+
+
+end
+deactivate ListPanel
+@enduml
+
+
+
+
+

@@ -1,0 +1,94 @@
+@startuml sequenceDiagram
+    actor User
+    participant ListPanel
+    participant DialogManager
+    participant MainController
+    participant EngineerController
+    participant EngineerDAO
+    participant EngineerCSVDAO
+    participant AccessThread
+    participant CSVAccess
+    participant CSVファイル #Red
+
+    User->>ListPanel: エンジニア選択
+    activate ListPanel
+    
+    User->>ListPanel: 削除ボタン押下
+    
+    ListPanel->>DialogManager: showConfirmation("選択したエンジニア情報を削除しますか？")
+    activate DialogManager
+    DialogManager ->> User :メッセージ
+    
+    alt キャンセル
+    User ->> DialogManager :キャンセル
+        DialogManager-->>ListPanel: false
+        ListPanel-->>User: 削除キャンセル
+    else 削除実行
+        User ->>DialogManager:はい
+        DialogManager-->>ListPanel: true
+        deactivate DialogManager
+        
+        ListPanel->>MainController: エンジニア削除要求(engineerId)
+        activate MainController
+        
+        MainController->>EngineerController: エンジニア削除実行(engineerId)
+        activate EngineerController
+        
+        EngineerController->>EngineerDAO: エンジニア削除
+
+        activate EngineerDAO
+        EngineerDAO ->> EngineerDAO:該当IDチェック
+        EngineerDAO->>EngineerCSVDAO: 削除処理
+        activate EngineerCSVDAO
+        EngineerCSVDAO ->> AccessThread:スレッド生成
+        activate AccessThread
+    
+        AccessThread ->> CSVAccess :　データ削除
+        activate CSVAccess
+        CSVAccess ->> CSVAccess :ファイルロック
+        CSVAccess ->> CSVファイル :該当データ削除
+        activate CSVファイル
+        CSVファイル -->> CSVAccess :削除完了
+
+        deactivate CSVファイル
+                CSVAccess ->> CSVAccess :ファイルロック解除
+        CSVAccess-->>AccessThread: 該当エンジニアデータ削除完了
+        deactivate CSVAccess
+        AccessThread -->> EngineerCSVDAO:削除完了
+        deactivate
+    
+
+    
+            
+
+                EngineerCSVDAO-->>EngineerDAO: 削除成功
+                
+                deactivate 
+                EngineerDAO-->>EngineerDAO:リストから該当データ削除
+                deactivate CSVAccess
+                EngineerDAO-->>EngineerController: 削除成功
+                deactivate EngineerDAO
+                EngineerController-->>MainController: 削除成功
+                deactivate EngineerController
+                MainController-->>ListPanel: 削除成功
+                deactivate MainController
+
+                
+                ListPanel->>DialogManager: showSuccess("削除が完了しました")
+                activate DialogManager
+                DialogManager-->>User: 完了ダイアログ表示
+                User ->> DialogManager:OK
+                DialogManager -->> ListPanel:通知完了
+                deactivate DialogManager
+                
+                ListPanel->>ListPanel: 一覧データ更新処理()
+            deactivate CSVAccess
+        
+        deactivate EngineerDAO
+        deactivate EngineerController
+        deactivate MainController
+    end
+    deactivate ListPanel
+
+
+@enduml

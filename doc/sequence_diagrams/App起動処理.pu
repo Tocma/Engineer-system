@@ -1,0 +1,106 @@
+' 通常起動時
+@startuml sequenceDiagram
+    actor User
+    participant Main
+
+    participant LogHandler
+    participant MainController
+    participant ResourceManager
+    participant EngineerController
+    participant EngineerDAO
+    participant MainFrame
+    participant ViewController
+    participant CSVファイル #Red
+
+    User->>Main: アプリケーションを起動
+    activate Main
+
+    ' システムリソースの初期化フェーズ
+    Main->>ResourceManager: リソースを初期化
+    activate ResourceManager
+    ResourceManager->>ResourceManager: 必要なディレクトリを作成
+    
+    ResourceManager->>CSVファイル: CSVファイルの存在を確認
+    activate CSVファイル
+    alt CSVファイルが存在しない場合
+        ResourceManager->>CSVファイル: CSVファイルを作成
+        CSVファイル-->>ResourceManager: CSVファイルを作成完了
+        deactivate CSVファイル
+        ResourceManager-->>Main: 初期化完了
+    else CSVファイルが存在する場合
+        ResourceManager-->>Main: 初期化完了
+        
+    end
+    deactivate ResourceManager
+
+    ' ログシステムの初期化フェーズ
+    Main->>LogHandler: ログシステムのインスタンスを取得
+    activate LogHandler
+    LogHandler->>LogHandler: ログディレクトリを準備
+    LogHandler->>LogHandler: ログ設定を構成
+    LogHandler-->>Main: ログシステム準備完了
+    deactivate LogHandler
+
+    ' メインコントローラーの初期化フェーズ
+    Main->>MainController: メインコントローラーを初期化
+    activate MainController
+    
+    ' エンジニアコントローラーの初期化
+    MainController->>EngineerController: エンジニアコントローラーを初期化
+    activate EngineerController
+    
+    ' データアクセスの初期化
+    EngineerController->>EngineerDAO: CSVデータをロード
+    activate EngineerDAO
+    
+    EngineerDAO->>CSVファイル: 初期データを読み込み
+    activate CSVファイル
+    CSVファイル-->>EngineerDAO: 初期データを読み込み完了
+    deactivate CSVファイル
+    EngineerDAO-->>EngineerController: エンジニアデータを返却
+    deactivate EngineerDAO
+    
+    EngineerController-->>MainController: 初期化完了
+    deactivate EngineerController
+
+   ' メインフレームの初期化フェーズ
+    MainController->>MainFrame: 初期画面を準備（ウィンドウの基本設定）
+    activate MainFrame
+    MainFrame->>MainFrame: 初期画面のウィンドウ設定\n（サイズ、レイアウト等）を準備
+    MainFrame-->>MainController: 初期画面準備完了
+    deactivate MainFrame
+
+    ' ビューコントローラーの初期化
+    MainController->>ViewController: ビューコントローラーを初期化
+    activate ViewController
+    ViewController->>ViewController: UIコンポーネントを準備
+    ViewController->>ViewController: イベントハンドラを設定
+    ViewController-->>MainController: 初期化完了
+    deactivate ViewController
+
+    ' 画面表示の準備
+    MainController->>ViewController: データを渡して画面準備を指示
+    activate ViewController
+    ViewController->>MainFrame: 初期画面を構築
+    activate MainFrame
+    MainFrame-->>ViewController: 構築完了
+    deactivate MainFrame
+    ViewController-->>MainController: 画面準備完了
+    deactivate ViewController
+
+
+    MainController-->>Main: 初期化完了
+  
+
+    ' メイン画面の表示
+    
+    Main->>MainController: メイン画面を表示
+    MainController->>MainFrame: メインフレームを表示
+    activate MainFrame
+    MainFrame-->>User: メイン画面を表示
+    deactivate MainFrame
+
+    ' 起動完了ログ
+    Main->>LogHandler: "アプリケーション起動完了" を記録
+    deactivate Main
+@enduml

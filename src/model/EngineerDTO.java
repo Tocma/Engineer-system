@@ -30,8 +30,8 @@ import java.util.Objects;
  * </p>
  * 
  * @author Nakano
- * @version 2.1.0
- * @since 2025-04-03
+ * @version 4.0.0
+ * @since 2025-04-15
  */
 public class EngineerDTO {
     // 必須フィールド
