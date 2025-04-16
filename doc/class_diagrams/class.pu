@@ -1,0 +1,407 @@
+@startuml エンジニア管理システム改善版
+
+' スタイル設定
+skinparam classAttributeIconSize 0
+skinparam linetype ortho
+skinparam shadowing false
+skinparam DefaultFontSize 16
+skinparam padding 2
+skinparam roundcorner 8
+skinparam packageStyle rectangle
+
+' パッケージとクラスの色設定
+skinparam package {
+    BackgroundColor transparent
+    BorderColor black
+    FontSize 16
+    FontStyle bold
+}
+
+skinparam class {
+    BackgroundColor white
+    ArrowColor black
+    BorderColor black
+    BorderThickness 1
+}
+
+' パッケージごとの背景色設定
+skinparam packageStyle frame
+
+' パッケージの配置調整
+together {
+    package "viewパッケージ" as view #LightYellow {
+        together {
+            abstract class AbstractFrame {
+                # frame: JFrame
+                # {static} DEFAULT_WIDTH: int
+                # {static} DEFAULT_HEIGHT: int
+                # initialize(): void
+                # initializeFrame(): void
+                # setFrameSize(width: int, height: int): void
+                + setVisible(visible: boolean): void
+                + getFrame(): JFrame
+                # {abstract} customizeFrame(): void
+            }
+
+            abstract class AbstractEngineerPanel {
+                # panel: JPanel
+                # components: Map<String, Component>
+                # errorMessageLabel: JLabel
+                # fieldErrorLabels: Map<String, JLabel>
+                # initialize(): void
+                # initializePanel(): void
+                # createFormRow(...): JPanel
+                # showErrorMessage(message: String): void
+                # clearAllFieldErrors(): void
+                # markComponentError(...): void
+                # {abstract} validateInput(): boolean
+            }
+
+            class MainFrame {
+                - currentPanel: JPanel
+                - contentPanel: JPanel
+                - executor: ExecutorService
+                + performShutdown(): void
+                + showPanel(panel: JPanel): void
+                + refreshView(): void
+                + registerThread(thread: Thread): void
+                + getCurrentPanel(): JPanel
+            }
+        }
+
+        together {
+            class ListPanel {
+                - table: JTable
+                - tableModel: DefaultTableModel
+                - pageSize: int
+                - currentPage: int
+                - allData: List<EngineerDTO>
+                + setEngineerData(engineers: List<EngineerDTO>): void
+                + addEngineerData(engineer: EngineerDTO): void
+                + getSelectedEngineer(): EngineerDTO
+                - addNewEngineer(): void
+                - search(...): void
+            }
+
+            class AddPanel {
+                - mainController: MainController
+                - processing: boolean
+                - idField: JTextField
+                - nameField: JTextField
+                - languageComboBox: MultiSelectComboBox
+                - addButton: JButton
+                + initialize(): void
+                - addEngineer(): void
+                # validateInput(): boolean
+                - buildEngineerDTO(): EngineerDTO
+                + handleSaveComplete(engineer: EngineerDTO): void
+                + setProcessing(processing: boolean): void
+            }
+
+            class "AddPanel.CheckableItem" as CheckableItem {
+                - label: String
+                - selected: boolean
+            }
+
+            class "AddPanel.MultiSelectComboBox" as MultiSelectComboBox {
+                + getSelectedItems(): List<String>
+            }
+        }
+
+        class DialogManager <<Singleton>> {
+            - {static} INSTANCE: DialogManager
+            + {static} getInstance(): DialogManager
+            + showErrorDialog(message: String): void
+            + showCompletionDialog(message: String): void
+            + showRegisterCompletionDialog(engineer: EngineerDTO): String
+        }
+    }
+
+    
+
+
+
+package "mainパッケージ" as main #LightBlue {
+    class Main {
+        - {static} LOG_DIR: String
+        - {static} shutdownHookRegistered: boolean
+        - {static} resourceManager: ResourceManager
+        - {static} mainController: MainController
+        + {static} main(args: String[]): void
+        - {static} isTestMode(args: String[]): boolean
+        - {static} runTestMode(args: String[]): void
+        - {static} initializeLogger(): void
+        - {static} initializeResourceManager(): void
+        - {static} registerShutdownHook(): void
+        - {static} initializeApplication(): void
+        - {static} handleFatalError(e: Exception): void
+        - {static} cleanup(): void
+    }
+}
+
+
+
+package "utilパッケージ" as util #LightSkyBlue {
+    together {
+        class ResourceManager {
+            - openResources: Map<String, Closeable>
+            - initialized: boolean
+            - dataDirectoryPath: Path
+            + initialize(): void
+            + releaseAllResources(): boolean
+        }
+
+        class LogHandler <<Singleton>> {
+            + enum LogType { UI, SYSTEM }
+            - {static} INSTANCE: LogHandler
+            - logger: Logger
+            + {static} getInstance(): LogHandler
+            + log(type: LogType, message: String): void
+            + logError(type: LogType, message: String, throwable: Throwable): void
+        }
+    }
+
+    together {
+        interface Validator {
+            + validate(value: String): boolean
+            + getErrorMessage(): String
+        }
+
+        class TextValidator {
+            - maxLength: int
+            - pattern: Pattern
+            + validate(value: String): boolean
+        }
+
+        class DateValidator {
+            - minDate: Date
+            - maxDate: Date
+            + validate(value: String): boolean
+        }
+
+        class IDValidator {
+            - usedIds: Set<String>
+            + validate(value: String): boolean
+        }
+
+        enum ValidatorEnum {
+            NAME
+            NAME_KANA
+            EMPLOYEE_ID
+            BIRTH_DATE
+            JOIN_DATE
+            + getValidator(): Validator
+            + setValidator(validator: Validator): void
+        }
+
+        enum MessageEnum {
+            VALIDATION_ERROR_NAME
+            DIALOG_ERROR_TITLE
+            DIALOG_COMPLETION_ENGINEER_ADDED
+            + getMessage(): String
+            + format(args: Object...): String
+        }
+    }
+}
+package "controllerパッケージ" as controller #LightGreen {
+    together {
+        class MainController {
+            - screenController: ScreenTransitionController
+            - engineerController: EngineerController
+            - mainFrame: MainFrame
+            - runningTasks: ConcurrentMap<String, Thread>
+            + initialize(): void
+            + handleEvent(event: String, data: Object): void
+            + startAsyncTask(taskId: String, task: Runnable): void
+            - handleSaveData(data: Object): void
+            - handleLoadData(): void
+        }
+
+        class EngineerController {
+            - engineerDAO: EngineerDAO
+            + loadEngineers(): List<EngineerDTO>
+            + addEngineer(engineer: EngineerDTO): boolean
+            + updateEngineer(engineer: EngineerDTO): boolean
+            + validateEngineer(engineer: EngineerDTO): boolean
+        }
+
+        class ScreenTransitionController {
+            - mainFrame: MainFrame
+            - listPanel: ListPanel
+            - addPanel: AddPanel
+            - panelCache: Map<String, JPanel>
+            - currentPanelType: String
+            + showPanel(panelType: String): void
+            + refreshView(): void
+            + getCurrentPanel(): JPanel
+        }
+    }
+}
+package "modelパッケージ" as model #LightCoral {
+        together {
+            class EngineerDTO {
+                - id: String
+                - name: String
+                - nameKana: String
+                - birthDate: LocalDate
+                - joinDate: LocalDate
+                - career: int
+                - programmingLanguages: List<String>
+                + getId(): String
+                + getName(): String
+                + getRegisteredDate(): LocalDate
+            }
+
+            class EngineerBuilder {
+                - engineer: EngineerDTO
+                + build(): EngineerDTO
+                + setId(id: String): EngineerBuilder
+                + setName(name: String): EngineerBuilder
+                + setNameKana(nameKana: String): EngineerBuilder
+            }
+        }
+
+        together {
+            interface EngineerDAO {
+                + findAll(): List<EngineerDTO>
+                + findById(id: String): EngineerDTO
+                + save(engineer: EngineerDTO): void
+                + update(engineer: EngineerDTO): void
+                + delete(id: String): void
+            }
+
+            class EngineerCSVDAO {
+                - csvFilePath: String
+                - dialogManager: DialogManager
+                + findAll(): List<EngineerDTO>
+                + save(engineer: EngineerDTO): void
+                + readCSV(): CSVAccessResult
+                - writeCSV(engineers: List<EngineerDTO>): boolean
+            }
+        }
+
+        together {
+            abstract class AccessThread {
+                # running: boolean
+                # thread: Thread
+                + run(): void
+                + start(): void
+                # {abstract} processOperation(): void
+            }
+
+            class CSVAccess {
+                - operation: String
+                - data: Object
+                - csvFile: File
+                + execute(): void
+                # processOperation(): void
+                - readCSV(): CSVAccessResult
+                - writeCSV(lines: List<String>): boolean
+            }
+
+            class CSVAccessResult {
+                - successData: List<EngineerDTO>
+                - errorData: List<EngineerDTO>
+                - duplicateIds: List<String>
+                + getSuccessData(): List<EngineerDTO>
+                + hasDuplicateIds(): boolean
+                + isOverwriteConfirmed(): boolean
+            }
+        }
+    }
+}
+
+' 継承関係の定義（実線＋三角形の矢印）
+AbstractFrame <|-- MainFrame : "継承"
+AbstractEngineerPanel <|-- AddPanel : "継承"
+AbstractEngineerPanel <|-- ListPanel : "継承"
+AccessThread <|-- CSVAccess : "継承"
+
+' インターフェース実装の定義（点線＋三角形の矢印）
+Validator <|.. TextValidator : "実装"
+Validator <|.. DateValidator : "実装"
+Validator <|.. IDValidator : "実装"
+EngineerDAO <|.. EngineerCSVDAO : "実装"
+
+' コンポジション関係の定義（塗りつぶしダイヤモンド）
+MainFrame *-- "0..1" ListPanel : "含む"
+MainFrame *-- "0..1" AddPanel : "含む"
+EngineerBuilder *-- "1" EngineerDTO : "作成する"
+ScreenTransitionController *-- "1" ListPanel : "管理する"
+ScreenTransitionController *-- "0..1" AddPanel : "管理する"
+
+' 関連関係の定義（実線の矢印）
+MainController "1" --> "1" ScreenTransitionController : "画面遷移を制御"
+MainController "1" --> "1" EngineerController : "エンジニア情報を制御"
+MainController "1" --> "1" MainFrame : "UIを管理"
+EngineerController "1" --> "1" EngineerDAO : "データアクセスを利用"
+EngineerCSVDAO "1" --> "1..n" CSVAccess : "CSV操作を実行"
+Main "1" --> "1" MainController : "起動・制御"
+Main "1" --> "1" ResourceManager : "リソースを管理"
+
+' 依存関係の定義（点線の矢印）
+AddPanel ..> DialogManager : "ダイアログ表示を依頼"
+AddPanel ..> EngineerDTO : "エンジニア情報を扱う"
+AddPanel ..> EngineerBuilder : "エンジニア情報を構築"
+ListPanel ..> DialogManager : "ダイアログ表示を依頼"
+ListPanel ..> EngineerDTO : "エンジニア情報を表示"
+EngineerController ..> EngineerDTO : "エンジニア情報を操作"
+EngineerCSVDAO ..> EngineerDTO : "エンジニア情報を変換"
+EngineerCSVDAO ..> EngineerBuilder : "エンジニア情報を構築"
+EngineerCSVDAO ..> CSVAccessResult : "CSV操作結果を使用"
+EngineerCSVDAO ..> DialogManager : "重複ID確認ダイアログを表示"
+
+' 追加依存関係の定義
+AddPanel ..> CheckableItem : "使用する"
+AddPanel ..> MultiSelectComboBox : "使用する"
+MultiSelectComboBox ..> CheckableItem : "項目として使用"
+
+' view内の依存関係
+AddPanel ..> ValidatorEnum : "検証ルールを使用"
+AddPanel ..> MessageEnum : "メッセージを参照"
+ListPanel ..> MessageEnum : "メッセージを参照"
+
+' controller内の依存関係
+MainController ..> LogHandler : "ログ出力に使用"
+EngineerController ..> LogHandler : "ログ出力に使用"
+
+' model内の依存関係
+EngineerCSVDAO ..> LogHandler : "ログ出力に使用"
+CSVAccess ..> LogHandler : "ログ出力に使用"
+CSVAccess ..> CSVAccessResult : "結果を生成"
+
+' システム全体の関連
+Main ..> LogHandler : "ログ出力に使用"
+MainController ..> DialogManager : "ダイアログ表示を依頼"
+EngineerController ..> ValidatorEnum : "検証ルールを参照"
+
+' 登録プロセスに関連する中心的なクラス間のフロー
+' ここでは特に登録完了までのクラス関連を明示
+AddPanel -[#blue,thickness=2]-> MainController : "① 登録実行"
+MainController -[#blue,thickness=2]-> EngineerController : "② データ保存要求"
+EngineerController -[#blue,thickness=2]-> EngineerCSVDAO : "③ CSV保存"
+EngineerCSVDAO -[#blue,thickness=2]-> CSVAccess : "④ ファイル操作"
+CSVAccess -[#blue,thickness=2,dashed]-> MainController : "⑤ 保存結果通知"
+MainController -[#blue,thickness=2]-> AddPanel : "⑥ 完了通知"
+AddPanel -[#blue,thickness=2]-> DialogManager : "⑦ ダイアログ表示要求"
+
+' タイトルと注釈
+title エンジニア管理システム - 登録完了までのクラス図
+
+legend right
+<color:#0000FF>青色の太線</color>: 登録完了プロセスのフロー
+①〜⑦: プロセスの実行順序
+--
+パッケージの色分け:
+<back:#LightBlue>メインパッケージ</back>
+<back:#LightYellow>ビューパッケージ</back>
+<back:#LightGreen>コントローラーパッケージ</back>
+<back:#LightCoral>モデルパッケージ</back>
+<back:#LightSkyBlue>ユーティリティパッケージ</back>
+endlegend
+
+' レイアウト調整用の設定
+hide empty members
+skinparam nodesep 100
+skinparam ranksep 200
+@enduml
