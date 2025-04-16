@@ -8,18 +8,22 @@ import javax.swing.table.DefaultTableModel;
 import javax.swing.table.TableRowSorter;
 import controller.MainController;
 import java.awt.*;
+import java.text.Collator;
 import java.text.DecimalFormat;
+import java.time.LocalDate;
 import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.List;
+import java.util.Locale;
 import java.util.logging.Level;
 
 /**
  * エンジニア一覧を表示するパネルクラス
  * ページング、ソート、検索、追加、取込、削除機能
  *
- * @author Nakano
- * @version 4.0.0
- * @since 2025-04-15
+ * @author Bando
+ * @version 4.1.0
+ * @since 2025-04-16
  */
 public class ListPanel extends JPanel {
 
@@ -58,6 +62,12 @@ public class ListPanel extends JPanel {
     private JComboBox<String> monthBox;
     private JComboBox<String> dayBox;
     private JComboBox<String> careerBox;
+
+    /** ソート関係 */
+    private TableRowSorter<DefaultTableModel> sorter; // ← createTable() の sorter をフィールド化
+    private boolean isAscending = true;
+    private int lastSortedColumn = -1;
+    private List<EngineerDTO> currentDisplayData = new ArrayList<>(); // ソート表示用
 
     /** メインコントローラー参照 */
     private MainController mainController;
@@ -108,6 +118,9 @@ public class ListPanel extends JPanel {
         // ページネーションのイベント設定
         setupPaginationEvents();
 
+        // ソート設定とイベント登録
+        configureSorter();
+
         // ロギング
         LogHandler.getInstance().log(Level.INFO, LogType.SYSTEM, "エンジニア一覧画面を初期化しました");
     }
@@ -135,7 +148,7 @@ public class ListPanel extends JPanel {
         JTable newTable = new JTable(tableModel);
 
         // ソーター設定
-        TableRowSorter<DefaultTableModel> sorter = new TableRowSorter<>(tableModel);
+        sorter = new TableRowSorter<>(tableModel);
         newTable.setRowSorter(sorter);
 
         // 列幅設定
@@ -327,6 +340,118 @@ public class ListPanel extends JPanel {
         nextButton.addActionListener(e -> changePage(1));
     }
 
+    private void configureSorter() {
+        for (int i = 0; i < COLUMN_NAMES.length; i++) {
+            sorter.setSortable(i, i != 4); // 「扱える言語」はソート対象外
+        }
+
+        table.getTableHeader().addMouseListener(new java.awt.event.MouseAdapter() {
+            @Override
+            public void mouseClicked(java.awt.event.MouseEvent e) {
+                int columnIndex = table.columnAtPoint(e.getPoint());
+                sortByColumn(columnIndex);
+            }
+        });
+    }
+
+    /**
+     * 指定された列インデックスに基づいてエンジニア情報のリストをソートします。
+     *
+     * @param columnIndex ソート対象の列インデックス（0:社員ID, 1:氏名かな, 2:生年月日, 3:経験年数）
+     */
+
+    private void sortByColumn(int columnIndex) {
+        Comparator<EngineerDTO> baseComparator;
+
+        try {
+            switch (columnIndex) {
+                case 0 -> {
+                    baseComparator = Comparator.comparing(e -> parseNumericId(e.getId()),
+                            Comparator.nullsLast(Integer::compareTo));
+
+                }
+                case 1 ->
+                    baseComparator = Comparator.comparing(
+                            EngineerDTO::getNameKana,
+                            getJapaneseKanaComparator());
+                case 2 -> baseComparator = Comparator.comparing(EngineerDTO::getBirthDate,
+                        Comparator.nullsLast(LocalDate::compareTo));
+                case 3 -> baseComparator = Comparator.comparingDouble(EngineerDTO::getCareer);
+                default -> {
+                    return;
+                }
+            }
+
+            Comparator<EngineerDTO> idComparator = Comparator
+                    .comparing((EngineerDTO e) -> Integer.parseInt(e.getId().replaceAll("\\D+", "")));
+
+            if (lastSortedColumn == columnIndex) {
+                isAscending = !isAscending;
+            } else {
+                isAscending = true;
+                lastSortedColumn = columnIndex;
+            }
+
+            // ログ出力：ソート対象と順序
+            LogHandler.getInstance().log(
+                    Level.INFO,
+                    LogType.UI,
+                    String.format("ソート実行: 列=%s, 順序=%s", COLUMN_NAMES[columnIndex], isAscending ? "昇順" : "降順"));
+
+            Comparator<EngineerDTO> finalComparator = isAscending
+                    ? baseComparator.thenComparing(idComparator)
+                    : baseComparator.reversed().thenComparing(idComparator);
+
+            // 「全件データ」をソートする
+            List<EngineerDTO> sorted = new ArrayList<>(allData);
+            sorted.sort(finalComparator);
+            currentDisplayData = sorted;
+
+            currentPage = 1;
+            updateTableForCurrentPage();
+            updatePageLabel();
+            updatePaginationButtons();
+
+            // 見た目の矢印は設定
+            sorter.setSortKeys(List.of(new RowSorter.SortKey(columnIndex,
+                    isAscending ? SortOrder.ASCENDING : SortOrder.DESCENDING)));
+
+            // ↓ TableRowSorter による内部ソートを抑制（Comparatorを機能しないものにする）
+            sorter.setComparator(columnIndex, (o1, o2) -> 0);
+
+            LogHandler.getInstance().log(
+                    Level.INFO,
+                    LogType.SYSTEM,
+                    String.format("ソート完了: ", currentDisplayData.size()));
+        } catch (Exception e) {
+            LogHandler.getInstance().logError(LogType.SYSTEM, "ソート処理中にエラーが発生しました", e);
+        }
+
+    }
+
+    //  IDの数値変換
+    private int parseNumericId(String id) {
+        try {
+            return Integer.parseInt(id.replaceAll("\\D+", ""));
+        } catch (NumberFormatException e) {
+            return Integer.MAX_VALUE;
+        }
+    }
+
+    // かな順Comparator
+    private Comparator<String> getJapaneseKanaComparator() {
+        Collator collator = Collator.getInstance(Locale.JAPANESE);
+        return (s1, s2) -> {
+            if (s1 == null && s2 == null)
+                return 0;
+            if (s1 == null)
+                return -1;
+            if (s2 == null)
+                return 1;
+            return collator.compare(s1, s2);
+        };
+    }
+
     /**
      * 検索条件に基づいてデータをフィルタリング
      * 
@@ -500,15 +625,15 @@ public class ListPanel extends JPanel {
     private void updateTableForCurrentPage() {
         // テーブルデータのクリア
         tableModel.setRowCount(0);
+        List<EngineerDTO> sourceData = currentDisplayData.isEmpty() ? allData : currentDisplayData;
 
         // 表示範囲の計算
         int startIndex = (currentPage - 1) * pageSize;
-        int endIndex = Math.min(startIndex + pageSize, allData.size());
+        int endIndex = Math.min(startIndex + pageSize, sourceData.size());
 
         // データの追加
         for (int i = startIndex; i < endIndex; i++) {
-            EngineerDTO engineer = allData.get(i);
-            addEngineerToTable(engineer);
+            addEngineerToTable(sourceData.get(i));
         }
     }
 
