@@ -21,9 +21,9 @@ import java.util.logging.Level;
  * エンジニア一覧を表示するパネルクラス
  * ページング、ソート、検索、追加、取込、削除機能
  *
- * @author Bando
- * @version 4.1.0
- * @since 2025-04-16
+ * @author Naagai
+ * @version 4.2.0
+ * @since 2025-04-24
  */
 public class ListPanel extends JPanel {
 
@@ -71,6 +71,11 @@ public class ListPanel extends JPanel {
 
     /** メインコントローラー参照 */
     private MainController mainController;
+
+    /** ViewがControllerへの参照を持つためのセッター */
+    public void setController(MainController mainController) {
+        this.mainController = mainController;
+    }
 
     /**
      * コンストラクタ
@@ -429,7 +434,7 @@ public class ListPanel extends JPanel {
 
     }
 
-    //  IDの数値変換
+    // IDの数値変換
     private int parseNumericId(String id) {
         try {
             return Integer.parseInt(id.replaceAll("\\D+", ""));
@@ -867,6 +872,9 @@ public class ListPanel extends JPanel {
     private void loadTemplate() {
         LogHandler.getInstance().log(Level.INFO, LogType.UI, "テンプレートボタンが押されました");
         // ここにテンプレート読み込み処理を実装する（TODO）
+        if (mainController != null) {
+            mainController.handleEvent("TEMPLATE", null); // ← 文字列イベント名で委譲
+        }
     }
 
     /**
@@ -875,6 +883,8 @@ public class ListPanel extends JPanel {
     private void exportData() {
         LogHandler.getInstance().log(Level.INFO, LogType.UI, "出力ボタンが押されました");
         // ここにエクスポート処理を実装する（TODO）
+        // if (mainController != null) {
+        // mainController.handleEvent("EXPORT_CSV", null);
     }
 
     /**

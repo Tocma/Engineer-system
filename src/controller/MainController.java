@@ -1,5 +1,6 @@
 package controller;
 
+import model.EngineerCSVDAO;
 import model.EngineerDTO;
 import util.LogHandler;
 import util.LogHandler.LogType;
@@ -8,11 +9,14 @@ import view.AddPanel;
 import view.DialogManager;
 import view.ListPanel;
 import view.MainFrame;
+import java.io.File;
 import java.util.List;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.logging.Level;
+import javax.swing.JFileChooser;
+import javax.swing.JOptionPane;
 import javax.swing.JPanel;
 
 /**
@@ -62,9 +66,9 @@ import javax.swing.JPanel;
  * </ul>
  * </p>
  *
- * @author Nakano
- * @version 4.0.0
- * @since 2025-04-15
+ * @author Nagai
+ * @version 4.2.0
+ * @since 2025-04-24
  */
 public class MainController {
 
@@ -170,6 +174,15 @@ public class MainController {
                 case "VIEW_DETAIL":
                     handleViewDetail((String) data);
                     break;
+                case "TEMPLATE":
+                    handleTemplateExport();
+                    break;
+                /**
+                 * 実装途中です
+                 * case "EXPORT_CSV":
+                 * handleExportCSV();
+                 * break;
+                 */
                 case "SHUTDOWN":
                     initiateShutdown();
                     break;
@@ -524,6 +537,102 @@ public class MainController {
             LogHandler.getInstance().logError(LogType.SYSTEM,
                     "エンジニア詳細表示中にエラーが発生しました: ID=" + engineerId, e);
         }
+    }
+
+    /* テンプレート出力機能 */
+    public void handleTemplateExport() {
+        JFileChooser fileChooser = new JFileChooser();
+        fileChooser.setDialogTitle("テンプレートCSVの保存先を選択してください");
+        fileChooser.setSelectedFile(new File("エンジニア情報テンプレート.csv"));
+
+        boolean fileSaved = false;
+
+        while (!fileSaved) {
+            int userSelection = fileChooser.showSaveDialog(null);
+
+            if (userSelection != JFileChooser.APPROVE_OPTION) {
+                return; // キャンセル → 処理終了
+            }
+
+            File fileToSave = fileChooser.getSelectedFile();
+
+            if (fileToSave.exists()) {
+                int overwriteConfirm = JOptionPane.showConfirmDialog(
+                        null,
+                        "同じ名前のファイルが既に存在します。上書きしますか？",
+                        "上書き確認",
+                        JOptionPane.YES_NO_CANCEL_OPTION);
+
+                if (overwriteConfirm == JOptionPane.YES_OPTION) {
+                    // 上書きを許可された → 保存してループ終了
+                    if (saveTemplate(fileToSave)) {
+                        fileSaved = true;
+                    } else {
+                        break; // エラー → 終了
+                    }
+                } else if (overwriteConfirm == JOptionPane.NO_OPTION) {
+                    continue; // 別名保存を促す → 再度ループ
+                } else {
+                    return; // キャンセル → 終了
+                }
+            } else {
+                // 新規ファイル → 保存
+                if (saveTemplate(fileToSave)) {
+                    fileSaved = true;
+                } else {
+                    break; // エラー → 終了
+                }
+            }
+        }
+    }
+
+    /** CSV出力機能 */
+    /**
+     * 実装途中です
+     * public void handleExportCSV() {
+     * JFileChooser fileChooser = new JFileChooser();
+     * fileChooser.setDialogTitle("保存先を選択");
+     * fileChooser.setSelectedFile(new File("エンジニア情報一覧.csv"));
+     * 
+     * while (true) {
+     * int result = fileChooser.showSaveDialog(null);
+     * if (result != JFileChooser.APPROVE_OPTION) return;
+     * 
+     * File file = fileChooser.getSelectedFile();
+     * if (file.exists()) {
+     * int overwrite = JOptionPane.showConfirmDialog(
+     * null,
+     * "既にファイルがあります。上書きしますか？",
+     * "上書き確認",
+     * JOptionPane.YES_NO_OPTION
+     * );
+     * 
+     * if (overwrite != JOptionPane.YES_OPTION) continue;
+     * }
+     * 
+     * List<EngineerDTO> data = mainFrame.getListPanel().getSelectedEngineers();
+     * boolean success = new EngineerCSVDAO().exportCSV(data, file.getPath());
+     * 
+     * if (success) {
+     * DialogManager.getInstance().showInfoDialog("完了", "CSVを出力しました");
+     * } else {
+     * DialogManager.getInstance().showErrorDialog("失敗", "CSV出力に失敗しました");
+     * }
+     * 
+     * break;
+     * }
+     * }
+     */
+
+    // ヘルパーメソッド：保存処理を共通化
+    private boolean saveTemplate(File file) {
+        boolean result = new EngineerCSVDAO().exportTemplate(file.getPath());
+        if (result) {
+            DialogManager.getInstance().showInfoDialog("出力完了", "CSVテンプレートを保存しました。");
+        } else {
+            DialogManager.getInstance().showErrorDialog("出力エラー", "テンプレート出力に失敗しました。");
+        }
+        return result;
     }
 
     /**
