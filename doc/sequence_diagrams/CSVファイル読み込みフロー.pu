@@ -1,0 +1,57 @@
+@startuml CSVValidation
+title CSV読み込み処理とバリデーションフロー
+
+actor ユーザー
+participant "MainController" as MC
+participant "EngineerCSVDAO" as CSVDAO
+participant "CSVAccess" as CSVAccess
+participant "ValidatorFactory" as VF
+participant "ValidationService" as VS
+participant "各Validator" as Validators
+participant "EngineerBuilder" as Builder
+participant "EngineerDTO" as DTO
+
+ユーザー -> MC: インポート指示
+MC -> CSVDAO: readCSV()
+CSVDAO -> CSVAccess: new CSVAccess("read", null, file)
+CSVAccess -> CSVAccess: execute()
+CSVAccess --> CSVDAO: CSVAccessResult
+
+loop 各CSV行に対して
+    CSVDAO -> CSVDAO: convertToDTO(line)
+
+    CSVDAO -> VF: getValidators()
+    VF --> CSVDAO: バリデータセット
+
+    CSVDAO -> VS: validateCSVLine(line, validators)
+
+    loop 各フィールドに対して
+        VS -> Validators: preprocess(value)
+        Validators --> VS: 前処理済み値
+        VS -> Validators: validate(processedValue)
+        Validators --> VS: 検証結果
+    end
+
+    alt バリデーション成功
+        VS --> CSVDAO: 検証成功
+        CSVDAO -> Builder: 各フィールド値の設定
+        Builder -> DTO: 構築
+        DTO --> CSVDAO: エンジニアDTO
+        CSVDAO -> CSVDAO: successData.add(engineerDTO)
+    else バリデーション失敗
+        VS --> CSVDAO: 検証失敗(エラー情報)
+        CSVDAO -> CSVDAO: errorData.add(createErrorEngineer())
+    end
+end
+
+CSVDAO -> CSVDAO: 重複ID検出処理
+CSVDAO --> MC: CSVAccessResult(成功データ、エラーデータ、重複ID)
+
+alt 重複IDがある場合
+    MC -> MC: handleDuplicateIds()
+    MC -> ユーザー: 重複ID確認ダイアログ
+    ユーザー -> MC: 上書き/保持の選択
+end
+
+MC -> ユーザー: インポート結果表示
+@enduml

@@ -1,0 +1,52 @@
+@startuml UIValidation
+title UI入力時のバリデーション処理フロー
+
+actor ユーザー
+participant "AddPanel" as UI
+participant "ValidatorFactory" as VF
+participant "ValidationService" as VS
+participant "各Validator" as Validators
+participant "EngineerBuilder" as Builder
+participant "EngineerDTO" as DTO
+participant "MainController" as MC
+participant "EngineerCSVDAO" as DAO
+
+ユーザー -> UI: フォーム入力
+ユーザー -> UI: 登録ボタンクリック
+UI -> UI: validateInput()
+
+UI -> VF: getValidators()
+VF --> UI: バリデータセット
+
+UI -> VS: validateForm(formData, validators)
+
+loop 各フィールドに対して
+    VS -> Validators: preprocess(value)
+    Validators --> VS: 前処理済み値
+    VS -> Validators: validate(processedValue)
+    Validators --> VS: 検証結果
+
+    alt 検証失敗
+        VS -> UI: フィールドエラー情報
+        UI -> UI: showFieldError()
+    end
+end
+
+alt すべての検証成功
+    VS --> UI: 検証成功
+    UI -> UI: buildEngineerDTO()
+    UI -> Builder: 各フィールド値の設定
+    Builder -> DTO: 構築
+    DTO --> UI: エンジニアDTO
+    UI -> UI: setProcessing(true)
+    UI -> MC: handleEvent("SAVE_DATA", engineer)
+    MC -> DAO: save(engineer)
+    DAO --> MC: 保存結果
+    MC -> UI: handleSaveComplete(engineer)
+    UI -> ユーザー: 完了ダイアログ
+else 検証失敗
+    VS --> UI: 検証失敗(エラーリスト)
+    UI -> UI: エラーフィールドにフォーカス
+    UI -> ユーザー: エラー表示
+end
+@enduml

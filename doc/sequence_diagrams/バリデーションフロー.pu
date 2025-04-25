@@ -1,0 +1,363 @@
+@startuml ValidationFlow
+skinparam SequenceMessageAlignment center
+skinparam responseMessageBelowArrow true
+skinparam maxMessageSize 150
+skinparam noteBorderColor #A9DCDF
+skinparam noteBackgroundColor #E8F8F9
+
+title エンジニア情報バリデーション処理の詳細フロー
+
+participant "AddPanel\n(UI画面)" as UI
+participant "ValidatorFactory\n(バリデータ生成)" as Factory
+participant "ValidationService\n(検証実行管理)" as Service
+participant "AbstractValidator\n(基底クラス)" as Abstract
+participant "IdValidator\n(ID検証)" as IdValidator
+participant "NameValidator\n(氏名検証)" as NameValidator
+participant "NameKanaValidator\n(フリガナ検証)" as KanaValidator
+participant "DateValidator\n(日付検証)" as DateValidator
+participant "CareerValidator\n(経験年数検証)" as CareerValidator
+participant "LanguageValidator\n(言語検証)" as LangValidator
+participant "SkillValidator\n(評価検証)" as SkillValidator
+participant "TextValidator\n(テキスト検証)" as TextValidator
+participant "ValidationResult\n(検証結果)" as Result
+participant "EngineerBuilder\n(DTO構築)" as Builder
+
+note over UI
+    登録ボタンクリック時の
+    バリデーション処理開始
+end note
+
+UI -> Factory: createValidators()
+activate Factory
+
+Factory -> IdValidator: new IdValidator("id", errorMessage)
+Factory -> NameValidator: new NameValidator("name", errorMessage)
+Factory -> KanaValidator: new NameKanaValidator("nameKana", errorMessage)
+Factory -> DateValidator: new DateValidator("birthDate", errorMessage, minDate, maxDate)
+Factory -> DateValidator: new DateValidator("joinDate", errorMessage, minDate, maxDate)
+Factory -> CareerValidator: new CareerValidator("career", errorMessage, 0, 50)
+Factory -> LangValidator: new LanguageValidator("programmingLanguages", errorMessage)
+Factory -> SkillValidator: new SkillValidator("technicalSkill", errorMessage)
+Factory -> TextValidator: new TextValidator("careerHistory", errorMessage, 200)
+
+Factory --> UI: validators: Map<String, Validator>
+deactivate Factory
+
+UI -> Service: validateForm(formData, validators)
+activate Service
+Service -> Result: new ValidationResult()
+activate Result
+
+note over Service
+    各フィールドごとに
+    バリデーション実行
+end note
+
+loop 各フィールドに対して
+    Service -> Service: validator = validators.get(fieldName)
+
+    alt ID検証の場合
+        Service -> IdValidator: preprocess(value)
+        activate IdValidator
+
+        note right of IdValidator
+            1. 全角数字→半角変換
+            2. ID標準形式への変換
+            3. スペース削除
+        end note
+
+        IdValidator -> IdValidator: convertFullWidthToHalfWidth(value)
+        IdValidator -> IdValidator: standardizeId(value)
+        IdValidator --> Service: processedValue
+        deactivate IdValidator
+
+        Service -> IdValidator: validate(processedValue)
+        activate IdValidator
+
+        note right of IdValidator
+            1. nullチェック
+            2. 空文字チェック
+            3. ID形式チェック
+            4. 禁止ID(ID00000)チェック
+            5. 重複IDチェック
+        end note
+
+        IdValidator -> IdValidator: checkFormat(value)
+        IdValidator -> IdValidator: checkForbiddenId(value)
+        IdValidator -> IdValidator: checkUnique(value)
+        IdValidator --> Service: validationResult (boolean)
+        deactivate IdValidator
+
+    else 氏名検証の場合
+        Service -> NameValidator: preprocess(value)
+        activate NameValidator
+
+        note right of NameValidator
+            1. スペース削除
+            2. 半角カタカナ→全角変換
+        end note
+
+        NameValidator -> NameValidator: removeSpaces(value)
+        NameValidator -> NameValidator: convertHalfWidthKatakanaToFullWidth(value)
+        NameValidator --> Service: processedValue
+        deactivate NameValidator
+
+        Service -> NameValidator: validate(processedValue)
+        activate NameValidator
+
+        note right of NameValidator
+            1. nullチェック
+            2. 空文字チェック
+            3. 文字数チェック（20文字以内）
+            4. 文字種チェック（日本語のみ）
+        end note
+
+        NameValidator -> NameValidator: checkLength(value, 20)
+        NameValidator -> NameValidator: checkPattern(value, 日本語パターン)
+        NameValidator --> Service: validationResult (boolean)
+        deactivate NameValidator
+
+    else フリガナ検証の場合
+        Service -> KanaValidator: preprocess(value)
+        activate KanaValidator
+
+        note right of KanaValidator
+            1. スペース削除
+            2. ひらがな→カタカナ変換
+            3. 半角カタカナ→全角変換
+        end note
+
+        KanaValidator -> KanaValidator: removeSpaces(value)
+        KanaValidator -> KanaValidator: convertHiraganaToKatakana(value)
+        KanaValidator -> KanaValidator: convertHalfWidthKatakanaToFullWidth(value)
+        KanaValidator --> Service: processedValue
+        deactivate KanaValidator
+
+        Service -> KanaValidator: validate(processedValue)
+        activate KanaValidator
+
+        note right of KanaValidator
+            1. nullチェック
+            2. 空文字チェック
+            3. 文字数チェック（20文字以内）
+            4. 文字種チェック（カタカナのみ）
+        end note
+
+        KanaValidator -> KanaValidator: checkLength(value, 20)
+        KanaValidator -> KanaValidator: checkPattern(value, カタカナパターン)
+        KanaValidator --> Service: validationResult (boolean)
+        deactivate KanaValidator
+
+    else 日付検証の場合
+        Service -> DateValidator: preprocess(value)
+        activate DateValidator
+
+        note right of DateValidator
+            日付文字列の標準化
+            （YYYY-MM-DD形式）
+        end note
+
+        DateValidator -> DateValidator: normalizeDateFormat(value)
+        DateValidator --> Service: processedValue
+        deactivate DateValidator
+
+        Service -> DateValidator: validate(processedValue)
+        activate DateValidator
+
+        note right of DateValidator
+            1. nullチェック
+            2. 空文字チェック
+            3. 日付形式チェック
+            4. 範囲チェック（1950年～現在）
+            5. 存在する日付かチェック
+        end note
+
+        DateValidator -> DateValidator: parseDate(value)
+        DateValidator -> DateValidator: checkDateRange(date, minDate, maxDate)
+        DateValidator -> DateValidator: checkValidDate(year, month, day)
+        DateValidator --> Service: validationResult (boolean)
+        deactivate DateValidator
+
+    else エンジニア歴検証の場合
+        Service -> CareerValidator: preprocess(value)
+        activate CareerValidator
+
+        note right of CareerValidator
+            数値形式の正規化
+        end note
+
+        CareerValidator -> CareerValidator: normalizeNumeric(value)
+        CareerValidator --> Service: processedValue
+        deactivate CareerValidator
+
+        Service -> CareerValidator: validate(processedValue)
+        activate CareerValidator
+
+        note right of CareerValidator
+            1. nullチェック
+            2. 空文字チェック
+            3. 数値形式チェック
+            4. 範囲チェック（0～50年）
+        end note
+
+        CareerValidator -> CareerValidator: checkNumeric(value)
+        CareerValidator -> CareerValidator: checkRange(value, 0, 50)
+        CareerValidator --> Service: validationResult (boolean)
+        deactivate CareerValidator
+
+    else 扱える言語検証の場合
+        Service -> LangValidator: preprocess(value)
+        activate LangValidator
+        LangValidator --> Service: processedValue
+        deactivate LangValidator
+
+        Service -> LangValidator: validate(processedValue)
+        activate LangValidator
+
+        note right of LangValidator
+            1. nullチェック
+            2. 空リストチェック
+            3. 選択数チェック（1つ以上）
+        end note
+
+        LangValidator -> LangValidator: checkSelectionCount(value)
+        LangValidator --> Service: validationResult (boolean)
+        deactivate LangValidator
+
+    else スキル評価検証の場合
+        Service -> SkillValidator: preprocess(value)
+        activate SkillValidator
+
+        note right of SkillValidator
+            数値形式の正規化（0.5刻み）
+        end note
+
+        SkillValidator -> SkillValidator: normalizeRating(value)
+        SkillValidator --> Service: processedValue
+        deactivate SkillValidator
+
+        Service -> SkillValidator: validate(processedValue)
+        activate SkillValidator
+
+        note right of SkillValidator
+            1. nullチェック（任意項目）
+            2. 数値形式チェック
+            3. 範囲チェック（1.0～5.0）
+            4. 刻み値チェック（0.5刻み）
+        end note
+
+        SkillValidator -> SkillValidator: checkNumeric(value)
+        SkillValidator -> SkillValidator: checkRange(value, 1.0, 5.0)
+        SkillValidator -> SkillValidator: checkStepValue(value, 0.5)
+        SkillValidator --> Service: validationResult (boolean)
+        deactivate SkillValidator
+
+    else テキストフィールド検証の場合
+        Service -> TextValidator: preprocess(value)
+        activate TextValidator
+
+        note right of TextValidator
+            1. 全角英数字→半角変換
+        end note
+
+        TextValidator -> TextValidator: convertFullWidthAlphanumericToHalfWidth(value)
+        TextValidator --> Service: processedValue
+        deactivate TextValidator
+
+        Service -> TextValidator: validate(processedValue)
+        activate TextValidator
+
+        note right of TextValidator
+            1. nullチェック（任意項目）
+            2. 文字数チェック
+            （経歴・研修：200文字以内、
+            備考：500文字以内）
+        end note
+
+        TextValidator -> TextValidator: checkLength(value, maxLength)
+        TextValidator --> Service: validationResult (boolean)
+        deactivate TextValidator
+    end
+
+    alt バリデーション失敗
+        Service -> Result: addError(fieldName, errorMessage)
+        activate Result
+        Result --> Service
+        deactivate Result
+    else バリデーション成功
+        Service -> Result: addProcessedValue(fieldName, processedValue)
+        activate Result
+        Result --> Service
+        deactivate Result
+    end
+end
+
+Service -> Result: isValid()
+activate Result
+Result --> Service: valid (boolean)
+deactivate Result
+
+Service --> UI: validationResult
+deactivate Service
+
+alt 検証成功
+    UI -> Result: getProcessedValues()
+    activate Result
+    Result --> UI: processedValues: Map<String, String>
+    deactivate Result
+
+    UI -> Builder: new EngineerBuilder()
+    activate Builder
+
+    note over UI, Builder
+    前処理済みの値を
+    EngineerBuilderに設定
+end note
+
+UI -> Builder: setId(processedValues.get("id"))
+UI -> Builder: setName(processedValues.get("name"))
+UI -> Builder: setNameKana(processedValues.get("nameKana"))
+UI -> Builder: setBirthDate(parseDateValue(processedValues.get("birthDate")))
+UI -> Builder: setJoinDate(parseDateValue(processedValues.get("joinDate")))
+UI -> Builder: setCareer(Integer.parseInt(processedValues.get("career")))
+UI -> Builder: setProgrammingLanguages(parseLanguages(processedValues.get("programmingLanguages")))
+UI -> Builder: setCareerHistory(processedValues.get("careerHistory"))
+UI -> Builder: setTrainingHistory(processedValues.get("trainingHistory"))
+UI -> Builder: setTechnicalSkill(parseDouble(processedValues.get("technicalSkill")))
+UI -> Builder: setLeadership(parseDouble(processedValues.get("leadership")))
+UI -> Builder: setNote(processedValues.get("note"))
+
+UI -> Builder: build()
+
+note right of Builder
+    内部でバリデーション実行
+    （二重チェック）
+end note
+
+Builder -> Builder: validateRequiredFields()
+Builder --> UI: engineerDTO
+deactivate Builder
+
+note over UI
+    保存処理へ進む
+end note
+
+else 検証失敗
+UI -> Result: getErrors()
+activate Result
+Result --> UI: errors: Map<String, String>
+deactivate Result
+
+loop 各エラーに対して
+    UI -> UI: showFieldError(fieldName, errorMessage)
+end
+
+UI -> UI: エラーフィールドにフォーカス
+
+note over UI
+    エラーメッセージ表示
+    エラーフィールド強調表示（赤枠）
+    end note
+end
+
+@enduml
