@@ -7,6 +7,7 @@ import util.LogHandler;
 import util.LogHandler.LogType;
 import util.MessageEnum;
 import util.Validator;
+import util.IDValidator;
 import util.ValidatorEnum;
 import javax.swing.*;
 import javax.swing.border.Border;
@@ -82,8 +83,8 @@ import java.util.logging.Level;
  * </p>
  *
  * @author Nakano
- * @version 4.0.0
- * @since 2025-04-15
+ * @version 4.2.1
+ * @since 2025-04-25
  */
 public class AddPanel extends AbstractEngineerPanel {
 
@@ -721,12 +722,20 @@ public class AddPanel extends AbstractEngineerPanel {
         if (isEmpty(idField)) {
             showFieldError("idField", MessageEnum.VALIDATION_ERROR_EMPLOYEE_ID.getMessage());
             isValid = false;
-        } else if (!idField.getText().matches("^\\d{1,5}$")) {
-            showFieldError("idField", MessageEnum.VALIDATION_ERROR_EMPLOYEE_ID.getMessage());
-            isValid = false;
-        } else if (idField.getText().equals("ID00000") || idField.getText().equals("00000")) {
-            showFieldError("idField", "ID00000は使用できません");
-            isValid = false;
+        } else {
+            // 入力値を取得して全角数字を半角に変換
+            String idValue = IDValidator.convertFullWidthToHalfWidth(idField.getText().trim());
+
+            // ID形式チェック
+            if (!IDValidator.checkIdFormat(idValue)) {
+                showFieldError("idField", "社員IDは5桁以内の数字で入力してください");
+                isValid = false;
+            }
+            // 禁止ID（ID00000）チェック
+            else if (IDValidator.isForbiddenId(idValue)) {
+                showFieldError("idField", "ID00000は使用できません");
+                isValid = false;
+            }
         }
         // フリガナの検証
         Validator kanaValidator = ValidatorEnum.NAME_KANA.getValidator();
@@ -811,7 +820,11 @@ public class AddPanel extends AbstractEngineerPanel {
         EngineerBuilder builder = new EngineerBuilder();
 
         // 基本情報の設定
-        builder.setId(idField.getText().trim());
+        // 社員IDの設定（標準化）
+        String idValue = IDValidator.convertFullWidthToHalfWidth(idField.getText().trim());
+        // IDを標準化
+        String normalizedId = IDValidator.standardizeId(idValue);
+        builder.setId(normalizedId);
         builder.setName(nameField.getText().trim());
         builder.setNameKana(nameKanaField.getText().trim());
 
@@ -874,77 +887,77 @@ public class AddPanel extends AbstractEngineerPanel {
     }
 
     /**
- * コンポーネントにエラー表示を設定
- * エラーが発生したコンポーネントに赤枠を表示し、エラーコンポーネントとして管理
- * MultiSelectComboBoxのサポートを追加
- *
- * @param componentName エラーが発生したコンポーネント名
- * @param errorMessage  エラーメッセージ（nullの場合はエラーメッセージを更新しない）
- */
-@Override
-protected void markComponentError(String componentName, String errorMessage) {
-    Component component = getComponent(componentName);
-    if (component == null) {
-        return;
-    }
-
-    // JComponentかどうか確認
-    if (component instanceof JComponent) {
-        JComponent jComponent = (JComponent) component;
-
-        // 元のボーダーを保存（まだ保存されていない場合）
-        if (!originalBorders.containsKey(jComponent)) {
-            originalBorders.put(jComponent, jComponent.getBorder());
+     * コンポーネントにエラー表示を設定
+     * エラーが発生したコンポーネントに赤枠を表示し、エラーコンポーネントとして管理
+     * MultiSelectComboBoxのサポートを追加
+     *
+     * @param componentName エラーが発生したコンポーネント名
+     * @param errorMessage  エラーメッセージ（nullの場合はエラーメッセージを更新しない）
+     */
+    @Override
+    protected void markComponentError(String componentName, String errorMessage) {
+        Component component = getComponent(componentName);
+        if (component == null) {
+            return;
         }
 
-        // エラーボーダーを設定
-        jComponent.setBorder(ERROR_BORDER);
+        // JComponentかどうか確認
+        if (component instanceof JComponent) {
+            JComponent jComponent = (JComponent) component;
 
-        // エラーコンポーネントとして登録
-        errorComponents.put(componentName, component);
+            // 元のボーダーを保存（まだ保存されていない場合）
+            if (!originalBorders.containsKey(jComponent)) {
+                originalBorders.put(jComponent, jComponent.getBorder());
+            }
 
-        // エラーメッセージが指定されている場合は表示
-        if (errorMessage != null) {
-            showErrorMessage(errorMessage);
+            // エラーボーダーを設定
+            jComponent.setBorder(ERROR_BORDER);
+
+            // エラーコンポーネントとして登録
+            errorComponents.put(componentName, component);
+
+            // エラーメッセージが指定されている場合は表示
+            if (errorMessage != null) {
+                showErrorMessage(errorMessage);
+            }
+        }
+
+        // 特別な処理: languageComboBoxがコンポーネント名の場合、そのエラー表示も処理
+        if ("languages".equals(componentName) && languageComboBox != null) {
+            // MultiSelectComboBoxに赤枠を設定
+            if (!originalBorders.containsKey(languageComboBox)) {
+                originalBorders.put(languageComboBox, languageComboBox.getBorder());
+            }
+            languageComboBox.setBorder(ERROR_BORDER);
+            errorComponents.put("languageComboBox", languageComboBox);
         }
     }
-    
-    // 特別な処理: languageComboBoxがコンポーネント名の場合、そのエラー表示も処理
-    if ("languages".equals(componentName) && languageComboBox != null) {
-        // MultiSelectComboBoxに赤枠を設定
-        if (!originalBorders.containsKey(languageComboBox)) {
-            originalBorders.put(languageComboBox, languageComboBox.getBorder());
-        }
-        languageComboBox.setBorder(ERROR_BORDER);
-        errorComponents.put("languageComboBox", languageComboBox);
-    }
-}
 
-/**
- * コンポーネントのエラー表示をクリア
- * 特定のコンポーネントのエラー表示を解除し、関連するエラーメッセージも非表示にします
- * MultiSelectComboBoxのサポートを追加
- *
- * @param componentName エラー表示を解除するコンポーネント名
- */
-@Override
-protected void clearComponentError(String componentName) {
-    super.clearComponentError(componentName);
-    
-    // 特別な処理: languagesのエラーがクリアされた場合、languageComboBoxも処理
-    if ("languages".equals(componentName) && languageComboBox != null) {
-        // 元のボーダーに戻す
-        Border originalBorder = originalBorders.remove(languageComboBox);
-        if (originalBorder != null) {
-            languageComboBox.setBorder(originalBorder);
-        } else {
-            languageComboBox.setBorder(null);
+    /**
+     * コンポーネントのエラー表示をクリア
+     * 特定のコンポーネントのエラー表示を解除し、関連するエラーメッセージも非表示にします
+     * MultiSelectComboBoxのサポートを追加
+     *
+     * @param componentName エラー表示を解除するコンポーネント名
+     */
+    @Override
+    protected void clearComponentError(String componentName) {
+        super.clearComponentError(componentName);
+
+        // 特別な処理: languagesのエラーがクリアされた場合、languageComboBoxも処理
+        if ("languages".equals(componentName) && languageComboBox != null) {
+            // 元のボーダーに戻す
+            Border originalBorder = originalBorders.remove(languageComboBox);
+            if (originalBorder != null) {
+                languageComboBox.setBorder(originalBorder);
+            } else {
+                languageComboBox.setBorder(null);
+            }
+
+            // エラーコンポーネントから削除
+            errorComponents.remove("languageComboBox");
         }
-        
-        // エラーコンポーネントから削除
-        errorComponents.remove("languageComboBox");
     }
-}
 
     /**
      * スキル評価をビルダーに設定

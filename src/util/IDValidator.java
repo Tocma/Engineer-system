@@ -1,8 +1,11 @@
 package util;
 
 import java.util.Set;
+import java.util.logging.Level;
 import java.util.HashSet;
 import java.util.regex.Pattern;
+
+import util.LogHandler.LogType;
 
 /**
  * 社員IDを検証するための {@link Validator} インターフェース実装クラス。
@@ -63,8 +66,8 @@ import java.util.regex.Pattern;
  * </p>
  *
  * @author Nakano
- * @version 4.0.0
- * @since 2025-04-15
+ * @version 4.2.1
+ * @since 2025-04-25
  * @see Validator
  * @see ValidationEnum
  * @see MessageEnum
@@ -104,6 +107,118 @@ public class IDValidator implements Validator {
     }
 
     /**
+     * 全角数字を半角数字に変換するユーティリティメソッド
+     * 
+     * @param input 変換対象の文字列
+     * @return 半角数字に変換された文字列
+     */
+    public static String convertFullWidthToHalfWidth(String input) {
+        if (input == null) {
+            return "";
+        }
+
+        StringBuilder sb = new StringBuilder(input.length());
+        for (int i = 0; i < input.length(); i++) {
+            char c = input.charAt(i);
+            // 全角数字（U+FF10〜U+FF19）を半角（U+0030〜U+0039）に変換
+            if (c >= '０' && c <= '９') {
+                sb.append((char) (c - '０' + '0'));
+            } else {
+                sb.append(c);
+            }
+        }
+        return sb.toString();
+    }
+
+    /**
+     * ID値から数字部分を抽出する共通スタティックメソッド
+     * 
+     * @param value 対象のID値
+     * @return 数字部分の文字列
+     */
+    public static String extractNumericPart(String value) {
+        if (value == null) {
+            return "";
+        }
+
+        if (value.toUpperCase().startsWith("ID")) {
+            return value.substring(2);
+        }
+        return value;
+    }
+
+    /**
+     * 社員IDを標準形式（ID00000）に変換するスタティックメソッド
+     * 
+     * @param idValue 元の社員ID
+     * @return 標準化されたID
+     */
+    public static String standardizeId(String idValue) {
+        // 空文字チェック
+        if (idValue == null || idValue.trim().isEmpty()) {
+            return "";
+        }
+
+        try {
+            // IDプレフィックス有無の確認と数値部分の抽出
+            String numericPart = extractNumericPart(idValue);
+
+            // 数値部分のみかチェック
+            if (!ID_PATTERN.matcher(numericPart).matches()) {
+                LogHandler.getInstance().log(Level.WARNING, LogType.SYSTEM,
+                        "社員IDに数字以外の文字が含まれているか、5桁を超えています: " + idValue);
+                return idValue; // 変換に失敗した場合は元の値を返す
+            }
+
+            // 数値部分を左部0埋めして5桁に
+            String paddedId = String.format("%05d", Integer.parseInt(numericPart));
+
+            // IDプレフィックスを付加
+            return "ID" + paddedId;
+        } catch (NumberFormatException e) {
+            // 数値変換エラーの場合は元の値を返す
+            LogHandler.getInstance().logError(LogType.SYSTEM, "社員IDの標準化に失敗しました: " + idValue, e);
+            return idValue;
+        }
+    }
+
+    /**
+     * ID値が標準IDフォーマットチェックに合格するか検証するスタティックメソッド
+     * 
+     * @param idValue 検証するID値
+     * @return 検証に合格した場合true、失敗した場合false
+     */
+    public static boolean checkIdFormat(String idValue) {
+        if (idValue == null || idValue.trim().isEmpty()) {
+            return false;
+        }
+
+        // 「ID」接頭辞がある場合は取り除く
+        String numericPart = extractNumericPart(idValue);
+
+        // 数字部分が1〜5桁の数字のみで構成されているかチェック
+        return ID_PATTERN.matcher(numericPart).matches();
+    }
+
+    /**
+     * ID値が禁止IDかどうかをチェックするスタティックメソッド
+     * 
+     * @param idValue 検証するID値
+     * @return 禁止IDの場合true、そうでなければfalse
+     */
+    public static boolean isForbiddenId(String idValue) {
+        if (idValue == null || idValue.trim().isEmpty()) {
+            return false;
+        }
+
+        // 標準形式に変換
+        String standardizedId = standardizeId(idValue);
+
+        // ID00000は禁止
+        return "ID00000".equals(standardizedId);
+    }
+
+    /**
      * 指定されたID値を検証します。
      * <p>
      * 以下の条件をすべて満たす場合に true を返します：
@@ -124,19 +239,21 @@ public class IDValidator implements Validator {
             return false;
         }
 
+        // 全角数字を半角に変換
+        String convertedValue = convertFullWidthToHalfWidth(value.trim());
+
         // ID形式のチェック
-        if (!checkFormat(value)) {
+        if (!checkIdFormat(convertedValue)) {
             return false;
         }
 
         // ID00000の登録を禁止する
-        String standardizedId = standardizeId(value);
-        if ("ID00000".equals(standardizedId)) {
+        if (isForbiddenId(convertedValue)) {
             return false;
         }
 
         // 重複チェック
-        if (!checkUnique(value)) {
+        if (!checkUnique(convertedValue)) {
             return false;
         }
 
@@ -166,11 +283,8 @@ public class IDValidator implements Validator {
      * @return 形式が正しい場合は true、そうでなければ false
      */
     private boolean checkFormat(String value) {
-        // 「ID」接頭辞がある場合は取り除く
-        String numericPart = extractNumericPart(value);
-
-        // 数字部分が1〜5桁の数字のみで構成されているかチェック
-        return ID_PATTERN.matcher(numericPart).matches();
+        // 共通メソッドを使用
+        return checkIdFormat(value);
     }
 
     /**
@@ -189,50 +303,6 @@ public class IDValidator implements Validator {
 
         // 既存IDリストとの重複チェック
         return !usedIds.contains(standardizedId);
-    }
-
-    /**
-     * ID値から数字部分を抽出します。
-     * <p>
-     * 「ID」接頭辞がある場合は除去し、数字部分のみを返します。
-     * 接頭辞がない場合は入力値をそのまま返します。
-     * </p>
-     * 
-     * @param value 対象のID値
-     * @return 数字部分の文字列
-     */
-    private String extractNumericPart(String value) {
-        if (value.toUpperCase().startsWith("ID")) {
-            return value.substring(2);
-        }
-        return value;
-    }
-
-    /**
-     * ID値を標準形式に変換します。
-     * <p>
-     * 標準形式は「ID」接頭辞 + 5桁の0埋め数字 です。
-     * 例えば、「123」は「ID00123」に、「12345」は「ID12345」に変換されます。
-     * 既に「ID」接頭辞がある場合でも、数字部分のみが抽出され、
-     * 5桁に正規化されます。
-     * </p>
-     * 
-     * @param value 対象のID値
-     * @return 標準形式に変換されたID
-     * @throws NumberFormatException 数字部分が数値に変換できない場合
-     */
-    private String standardizeId(String value) {
-        // 数字部分を抽出
-        String numericPart = extractNumericPart(value);
-
-        // 数値に変換（数字以外の文字が含まれている場合はNumberFormatExceptionが発生）
-        int numericValue = Integer.parseInt(numericPart);
-
-        // 5桁の0埋め形式に変換
-        String paddedNumeric = String.format("%05d", numericValue);
-
-        // 「ID」接頭辞を付与
-        return "ID" + paddedNumeric;
     }
 
     /**

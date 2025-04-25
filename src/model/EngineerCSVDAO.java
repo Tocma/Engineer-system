@@ -9,6 +9,7 @@ import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
 import java.time.format.DateTimeParseException;
 import java.util.*;
+import util.IDValidator;
 import java.util.logging.Level;
 import java.util.stream.Collectors;
 
@@ -43,8 +44,8 @@ import java.util.stream.Collectors;
  * </p>
  *
  * @author Nagai
- * @version 4.2.0
- * @since 2025-04-24
+ * @version 4.2.1
+ * @since 2025-04-25
  */
 public class EngineerCSVDAO implements EngineerDAO {
 
@@ -585,9 +586,21 @@ public class EngineerCSVDAO implements EngineerDAO {
         try {
             EngineerBuilder builder = new EngineerBuilder();
 
-            // ID
+            // ID - 全角数字を半角に変換し、標準形式（ID00000）に変換
             if (!line[0].isEmpty()) {
-                builder.setId(line[0]);
+                String idValue = IDValidator.convertFullWidthToHalfWidth(line[0]);
+
+                // 禁止ID（ID00000）チェック - CSVデータでも禁止
+                if (IDValidator.isForbiddenId(idValue)) {
+                    int i = 0;
+                    LogHandler.getInstance().log(Level.WARNING, LogType.SYSTEM,
+                            "禁止されている社員ID(ID00000)が含まれています: 行 " + (i + 2));
+                    // 無効なIDとしてマーク（空文字列またはエラーフラグ）
+                    builder.setId("ERROR_FORBIDDEN_ID");
+                } else {
+                    String standardizedId = IDValidator.standardizeId(idValue);
+                    builder.setId(standardizedId);
+                }
             }
 
             // 氏名

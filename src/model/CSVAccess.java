@@ -1,5 +1,6 @@
 package model;
 
+import util.IDValidator;
 import util.LogHandler;
 import util.LogHandler.LogType;
 import java.io.*;
@@ -45,8 +46,8 @@ import java.util.logging.Level;
  * </p>
  *
  * @author Nakano
- * @version 4.0.0
- * @since 2025-04-15
+ * @version 4.2.1
+ * @since 2025-04-25
  */
 public class CSVAccess extends AccessThread {
 
@@ -67,9 +68,9 @@ public class CSVAccess extends AccessThread {
 
     /** CSVのヘッダー行 */
     private static final String[] CSV_HEADERS = {
-            "社員ID(必須)","氏名(必須)","フリガナ(必須)","生年月日(必須)",
-            "入社年月(必須)","エンジニア歴(必須)","扱える言語(必須)","経歴,研修の受講歴",
-            "技術力","受講態度","コミュニケーション能力","リーダーシップ","備考","登録日"
+            "社員ID(必須)", "氏名(必須)", "フリガナ(必須)", "生年月日(必須)",
+            "入社年月(必須)", "エンジニア歴(必須)", "扱える言語(必須)", "経歴,研修の受講歴",
+            "技術力", "受講態度", "コミュニケーション能力", "リーダーシップ", "備考", "登録日"
     };
 
     /** 上書きモードフラグ（追記モードで書き込む場合はtrue） */
@@ -253,14 +254,27 @@ public class CSVAccess extends AccessThread {
                 // IDの重複チェック
                 String id = engineer.getId();
                 if (id != null && !id.isEmpty()) {
+                    // 標準形式に変換
+                    String standardizedId = IDValidator.standardizeId(IDValidator.convertFullWidthToHalfWidth(id));
+
+                    // 禁止ID（ID00000）チェック
+                    if ("ID00000".equals(standardizedId)) {
+                        EngineerDTO errorEngineer = createErrorEngineer(row, "ID00000は使用できません (行 " + lineNumber + ")");
+                        errorData.add(errorEngineer);
+                        continue;
+                    }
+
                     // 既存のIDマップを確認
-                    if (existingIds.containsKey(id)) {
+                    if (existingIds.containsKey(standardizedId)) {
                         // 重複ID発見
-                        duplicateIds.add(id);
+                        duplicateIds.add(standardizedId);
                     } else {
                         // IDを記録
-                        existingIds.put(id, lineNumber);
+                        existingIds.put(standardizedId, lineNumber);
                     }
+
+                    // 標準化したIDをEngineerDTOに設定
+                    engineer.setId(standardizedId);
                 }
 
                 // 成功リストに追加

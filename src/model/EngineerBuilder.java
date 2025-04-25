@@ -2,6 +2,7 @@ package model;
 
 import java.time.LocalDate;
 import java.util.List;
+import util.IDValidator;
 
 /**
  * EngineerDTOオブジェクトを生成するビルダークラス
@@ -90,12 +91,14 @@ public class EngineerBuilder {
 
     /**
      * 社員IDを設定
+     * 入力されたIDを標準形式に変換して設定します
      * 
-     * @param id 社員ID（必須）
-     * @return このビルダーインスタンス
+     * @param id 社員ID
      */
     public EngineerBuilder setId(String id) {
-        engineer.setId(id);
+        // IDを標準形式に変換
+        String standardizedId = IDValidator.standardizeId(IDValidator.convertFullWidthToHalfWidth(id));
+        engineer.setId(standardizedId);
         return this;
     }
 
