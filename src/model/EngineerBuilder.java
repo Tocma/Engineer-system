@@ -32,8 +32,8 @@ import util.IDValidator;
  * </pre>
  * 
  * @author Nakano
- * @version 4.0.0
- * @since 2025-04-15
+ * @version 4.2.2
+ * @since 2025-04-25
  */
 public class EngineerBuilder {
     // 構築中のエンジニアDTOオブジェクト
@@ -197,7 +197,14 @@ public class EngineerBuilder {
      * @return このビルダーインスタンス
      * @throws IllegalArgumentException 値が範囲外の場合
      */
-    public EngineerBuilder setTechnicalSkill(double skill) {
+    public EngineerBuilder setTechnicalSkill(Double skill) {
+        // nullの場合はそのまま設定
+        if (skill == null) {
+            engineer.setTechnicalSkill(null);
+            return this;
+        }
+
+        // 値がある場合は範囲チェック
         if (skill < 1.0 || skill > 5.0) {
             throw new IllegalArgumentException("技術力は1.0から5.0の範囲で設定してください");
         }
@@ -212,7 +219,14 @@ public class EngineerBuilder {
      * @return このビルダーインスタンス
      * @throws IllegalArgumentException 値が範囲外の場合
      */
-    public EngineerBuilder setLearningAttitude(double attitude) {
+    public EngineerBuilder setLearningAttitude(Double attitude) {
+        // nullの場合はそのまま設定
+        if (attitude == null) {
+            engineer.setLearningAttitude(null);
+            return this;
+        }
+
+        // 値がある場合は範囲チェック
         if (attitude < 1.0 || attitude > 5.0) {
             throw new IllegalArgumentException("受講態度は1.0から5.0の範囲で設定してください");
         }
@@ -227,7 +241,14 @@ public class EngineerBuilder {
      * @return このビルダーインスタンス
      * @throws IllegalArgumentException 値が範囲外の場合
      */
-    public EngineerBuilder setCommunicationSkill(double skill) {
+    public EngineerBuilder setCommunicationSkill(Double skill) {
+        // nullの場合はそのまま設定
+        if (skill == null) {
+            engineer.setCommunicationSkill(null);
+            return this;
+        }
+
+        // 値がある場合は範囲チェック
         if (skill < 1.0 || skill > 5.0) {
             throw new IllegalArgumentException("コミュニケーション能力は1.0から5.0の範囲で設定してください");
         }
@@ -242,7 +263,14 @@ public class EngineerBuilder {
      * @return このビルダーインスタンス
      * @throws IllegalArgumentException 値が範囲外の場合
      */
-    public EngineerBuilder setLeadership(double leadership) {
+    public EngineerBuilder setLeadership(Double leadership) {
+        // nullの場合はそのまま設定
+        if (leadership == null) {
+            engineer.setLeadership(null);
+            return this;
+        }
+
+        // 値がある場合は範囲チェック
         if (leadership < 1.0 || leadership > 5.0) {
             throw new IllegalArgumentException("リーダーシップは1.0から5.0の範囲で設定してください");
         }

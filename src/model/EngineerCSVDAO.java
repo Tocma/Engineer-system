@@ -44,7 +44,7 @@ import java.util.stream.Collectors;
  * </p>
  *
  * @author Nagai
- * @version 4.2.1
+ * @version 4.2.2
  * @since 2025-04-25
  */
 public class EngineerCSVDAO implements EngineerDAO {
@@ -547,16 +547,28 @@ public class EngineerCSVDAO implements EngineerDAO {
         sb.append(nullToEmpty(engineer.getTrainingHistory())).append(",");
 
         // technicalSkill
-        sb.append(engineer.getTechnicalSkill()).append(",");
+        if (engineer.getTechnicalSkill() != null) {
+            sb.append(engineer.getTechnicalSkill());
+        }
+        sb.append(",");
 
         // learningAttitude
-        sb.append(engineer.getLearningAttitude()).append(",");
+        if (engineer.getLearningAttitude() != null) {
+            sb.append(engineer.getLearningAttitude());
+        }
+        sb.append(",");
 
         // communicationSkill
-        sb.append(engineer.getCommunicationSkill()).append(",");
+        if (engineer.getCommunicationSkill() != null) {
+            sb.append(engineer.getCommunicationSkill());
+        }
+        sb.append(",");
 
         // leadership
-        sb.append(engineer.getLeadership()).append(",");
+        if (engineer.getLeadership() != null) {
+            sb.append(engineer.getLeadership());
+        }
+        sb.append(",");
 
         // note
         sb.append(nullToEmpty(engineer.getNote())).append(",");
@@ -670,7 +682,12 @@ public class EngineerCSVDAO implements EngineerDAO {
                 } catch (NumberFormatException e) {
                     LogHandler.getInstance().log(Level.WARNING, LogType.SYSTEM,
                             "技術力の解析に失敗しました: " + line[9]);
+                    // nullを設定（未評価）
+                    builder.setTechnicalSkill(null);
                 }
+            } else {
+                // 空の場合もnullを設定
+                builder.setTechnicalSkill(null);
             }
 
             // 受講態度
@@ -681,7 +698,12 @@ public class EngineerCSVDAO implements EngineerDAO {
                 } catch (NumberFormatException e) {
                     LogHandler.getInstance().log(Level.WARNING, LogType.SYSTEM,
                             "受講態度の解析に失敗しました: " + line[10]);
+                    // nullを設定（未評価）
+                    builder.setLearningAttitude(null);
                 }
+            } else {
+                // 空の場合もnullを設定
+                builder.setLearningAttitude(null);
             }
 
             // コミュニケーション能力
@@ -692,7 +714,12 @@ public class EngineerCSVDAO implements EngineerDAO {
                 } catch (NumberFormatException e) {
                     LogHandler.getInstance().log(Level.WARNING, LogType.SYSTEM,
                             "コミュニケーション能力の解析に失敗しました: " + line[11]);
+                    // nullを設定（未評価）
+                    builder.setCommunicationSkill(null);
                 }
+            } else {
+                // 空の場合もnullを設定
+                builder.setCommunicationSkill(null);
             }
 
             // リーダーシップ
@@ -703,7 +730,12 @@ public class EngineerCSVDAO implements EngineerDAO {
                 } catch (NumberFormatException e) {
                     LogHandler.getInstance().log(Level.WARNING, LogType.SYSTEM,
                             "リーダーシップの解析に失敗しました: " + line[12]);
+                    // nullを設定（未評価）
+                    builder.setLeadership(null);
                 }
+            } else {
+                // 空の場合もnullを設定
+                builder.setLeadership(null);
             }
 
             // 備考

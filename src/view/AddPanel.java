@@ -83,7 +83,7 @@ import java.util.logging.Level;
  * </p>
  *
  * @author Nakano
- * @version 4.2.1
+ * @version 4.2.2
  * @since 2025-04-25
  */
 public class AddPanel extends AbstractEngineerPanel {
@@ -973,9 +973,12 @@ public class AddPanel extends AbstractEngineerPanel {
                 double skill = Double.parseDouble(technicalSkill);
                 builder.setTechnicalSkill(skill);
             } catch (NumberFormatException e) {
-                // デフォルト値（3.0）を使用
-                builder.setTechnicalSkill(3.0);
+                // nullを設定（未評価）
+                builder.setTechnicalSkill(null);
             }
+        } else {
+            // 選択なしの場合もnullを設定
+            builder.setTechnicalSkill(null);
         }
 
         // 受講態度
@@ -985,9 +988,12 @@ public class AddPanel extends AbstractEngineerPanel {
                 double attitude = Double.parseDouble(learningAttitude);
                 builder.setLearningAttitude(attitude);
             } catch (NumberFormatException e) {
-                // デフォルト値（3.0）を使用
-                builder.setLearningAttitude(3.0);
+                // nullを設定（未評価）
+                builder.setLearningAttitude(null);
             }
+        } else {
+            // 選択なしの場合もnullを設定
+            builder.setLearningAttitude(null);
         }
 
         // コミュニケーション能力
@@ -997,9 +1003,12 @@ public class AddPanel extends AbstractEngineerPanel {
                 double skill = Double.parseDouble(communicationSkill);
                 builder.setCommunicationSkill(skill);
             } catch (NumberFormatException e) {
-                // デフォルト値（3.0）を使用
-                builder.setCommunicationSkill(3.0);
+                // nullを設定（未評価）
+                builder.setCommunicationSkill(null);
             }
+        } else {
+            // 選択なしの場合もnullを設定
+            builder.setCommunicationSkill(null);
         }
 
         // リーダーシップ
@@ -1009,9 +1018,12 @@ public class AddPanel extends AbstractEngineerPanel {
                 double lead = Double.parseDouble(leadership);
                 builder.setLeadership(lead);
             } catch (NumberFormatException e) {
-                // デフォルト値（3.0）を使用
-                builder.setLeadership(3.0);
+                // nullを設定（未評価）
+                builder.setLeadership(null);
             }
+        } else {
+            // 選択なしの場合もnullを設定
+            builder.setLeadership(null);
         }
     }
 

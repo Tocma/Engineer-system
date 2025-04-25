@@ -30,8 +30,8 @@ import java.util.Objects;
  * </p>
  * 
  * @author Nakano
- * @version 4.0.0
- * @since 2025-04-15
+ * @version 4.2.2
+ * @since 2025-04-25
  */
 public class EngineerDTO {
     // 必須フィールド
@@ -46,10 +46,10 @@ public class EngineerDTO {
     // 任意フィールド
     private String careerHistory; // 経歴
     private String trainingHistory; // 研修の受講歴
-    private double technicalSkill; // 技術力
-    private double learningAttitude; // 受講態度
-    private double communicationSkill; // コミュニケーション能力
-    private double leadership; // リーダーシップ
+    private Double technicalSkill; // 技術力
+    private Double learningAttitude; // 受講態度
+    private Double communicationSkill; // コミュニケーション能力
+    private Double leadership; // リーダーシップ
     private String note; // 備考
 
     // システム管理用フィールド
@@ -234,7 +234,7 @@ public class EngineerDTO {
      * 
      * @return 技術力（1.0-5.0の評価）
      */
-    public double getTechnicalSkill() {
+    public Double getTechnicalSkill() {
         return technicalSkill;
     }
 
@@ -243,7 +243,7 @@ public class EngineerDTO {
      * 
      * @param technicalSkill 技術力（1.0-5.0の評価）
      */
-    public void setTechnicalSkill(double technicalSkill) {
+    public void setTechnicalSkill(Double technicalSkill) {
         this.technicalSkill = technicalSkill;
     }
 
@@ -252,7 +252,7 @@ public class EngineerDTO {
      * 
      * @return 受講態度（1.0-5.0の評価）
      */
-    public double getLearningAttitude() {
+    public Double getLearningAttitude() {
         return learningAttitude;
     }
 
@@ -261,7 +261,7 @@ public class EngineerDTO {
      * 
      * @param learningAttitude 受講態度（1.0-5.0の評価）
      */
-    public void setLearningAttitude(double learningAttitude) {
+    public void setLearningAttitude(Double learningAttitude) {
         this.learningAttitude = learningAttitude;
     }
 
@@ -270,7 +270,7 @@ public class EngineerDTO {
      * 
      * @return コミュニケーション能力（1.0-5.0の評価）
      */
-    public double getCommunicationSkill() {
+    public Double getCommunicationSkill() {
         return communicationSkill;
     }
 
@@ -279,7 +279,7 @@ public class EngineerDTO {
      * 
      * @param communicationSkill コミュニケーション能力（1.0-5.0の評価）
      */
-    public void setCommunicationSkill(double communicationSkill) {
+    public void setCommunicationSkill(Double communicationSkill) {
         this.communicationSkill = communicationSkill;
     }
 
@@ -288,7 +288,7 @@ public class EngineerDTO {
      * 
      * @return リーダーシップ（1.0-5.0の評価）
      */
-    public double getLeadership() {
+    public Double getLeadership() {
         return leadership;
     }
 
@@ -297,7 +297,7 @@ public class EngineerDTO {
      * 
      * @param leadership リーダーシップ（1.0-5.0の評価）
      */
-    public void setLeadership(double leadership) {
+    public void setLeadership(Double leadership) {
         this.leadership = leadership;
     }
 
