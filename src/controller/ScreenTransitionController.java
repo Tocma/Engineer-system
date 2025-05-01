@@ -4,6 +4,7 @@ import util.LogHandler;
 import util.LogHandler.LogType;
 import view.ListPanel;
 import view.AddPanel;
+import view.DetailPanel;
 import view.MainFrame;
 import javax.swing.JPanel;
 import javax.swing.SwingUtilities;
@@ -72,8 +73,8 @@ import java.util.logging.Level;
  * </p>
  *
  * @author Nakano
- * @version 4.0.0
- * @since 2025-04-15
+ * @version 4.2.0
+ * @since 2025-05-01
  */
 public class ScreenTransitionController {
 
@@ -236,9 +237,16 @@ public class ScreenTransitionController {
                 break;
 
             case "DETAIL":
-                // 詳細パネル（未実装の場合は一旦リストパネルを返す）
-                // TODO: 詳細パネル実装時に修正
-                panel = listPanel;
+                /// 詳細パネル
+                DetailPanel detailPanel = new DetailPanel();
+                // コントローラーの設定
+                if (mainController != null) {
+                    detailPanel.setMainController(mainController);
+                }
+                // パネルの初期化
+                detailPanel.initialize();
+                panel = detailPanel;
+                LogHandler.getInstance().log(Level.INFO, LogType.SYSTEM, "DetailPanelを作成しました");
                 break;
 
             case "ADD":

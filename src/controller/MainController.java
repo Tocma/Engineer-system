@@ -6,6 +6,7 @@ import util.LogHandler;
 import util.LogHandler.LogType;
 import util.ResourceManager;
 import view.AddPanel;
+import view.DetailPanel;
 import view.DialogManager;
 import view.ListPanel;
 import view.MainFrame;
@@ -515,27 +516,47 @@ public class MainController {
      * 
      * @param engineerId 表示するエンジニアID
      */
+    /**
+     * 詳細表示処理
+     * エンジニアIDを指定して詳細画面に遷移します
+     * 
+     * @param engineerId 表示するエンジニアID
+     */
     private void handleViewDetail(String engineerId) {
         try {
             // エンジニア情報を取得
             EngineerDTO engineer = engineerController.getEngineerById(engineerId);
 
             if (engineer != null) {
-                // 詳細画面に遷移する前に表示データを設定
-                // DetailPanel（現在は実装されていない）へのデータ設定が必要
-
                 // 詳細画面に遷移
                 screenController.showPanel("DETAIL");
 
-                LogHandler.getInstance().log(Level.INFO, LogType.SYSTEM,
-                        "エンジニア詳細を表示: ID=" + engineerId);
+                // DetailPanelへの参照を取得
+                JPanel currentPanel = screenController.getCurrentPanel();
+                if (currentPanel instanceof DetailPanel) {
+                    // エンジニア情報を設定
+                    ((DetailPanel) currentPanel).setEngineerData(engineer);
+                    LogHandler.getInstance().log(Level.INFO, LogType.SYSTEM,
+                            "エンジニア詳細を表示: ID=" + engineerId);
+                } else {
+                    LogHandler.getInstance().log(Level.WARNING, LogType.SYSTEM,
+                            "DetailPanelへの参照取得に失敗しました");
+                }
             } else {
                 LogHandler.getInstance().log(Level.WARNING, LogType.SYSTEM,
                         "指定されたIDのエンジニアが見つかりません: " + engineerId);
+
+                // エラーダイアログを表示
+                DialogManager.getInstance().showErrorDialog(
+                        "エラー", "指定されたIDのエンジニアが見つかりません: " + engineerId);
             }
         } catch (Exception e) {
             LogHandler.getInstance().logError(LogType.SYSTEM,
                     "エンジニア詳細表示中にエラーが発生しました: ID=" + engineerId, e);
+
+            // エラーダイアログを表示
+            DialogManager.getInstance().showErrorDialog(
+                    "エラー", "エンジニア詳細表示中にエラーが発生しました: " + e.getMessage());
         }
     }
 
