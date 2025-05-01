@@ -22,8 +22,8 @@ import java.util.logging.Level;
  * ページング、ソート、検索、追加、取込、削除機能
  *
  * @author Naagai
- * @version 4.2.0
- * @since 2025-04-24
+ * @version 4.3.0
+ * @since 2025-05-01
  */
 public class ListPanel extends JPanel {
 
@@ -125,6 +125,9 @@ public class ListPanel extends JPanel {
 
         // ソート設定とイベント登録
         configureSorter();
+
+        // テーブルのダブルクリックイベント設定を追加
+        setupTableEvents();
 
         // ロギング
         LogHandler.getInstance().log(Level.INFO, LogType.SYSTEM, "エンジニア一覧画面を初期化しました");
@@ -900,6 +903,46 @@ public class ListPanel extends JPanel {
             // 現在はメッセージのみログに記録
             LogHandler.getInstance().log(Level.INFO, LogType.UI,
                     String.format("%d件の行が削除対象に選択されました", selectedRows.length));
+        }
+    }
+
+    /**
+     * テーブルイベントの設定
+     * ダブルクリックによる詳細画面への遷移などを設定します
+     */
+    private void setupTableEvents() {
+        table.addMouseListener(new java.awt.event.MouseAdapter() {
+            @Override
+            public void mouseClicked(java.awt.event.MouseEvent e) {
+                if (e.getClickCount() == 2) {
+                    // ダブルクリック時の処理
+                    int row = table.rowAtPoint(e.getPoint());
+                    if (row >= 0) {
+                        table.setRowSelectionInterval(row, row);
+                        openDetailView();
+                    }
+                }
+            }
+        });
+
+        LogHandler.getInstance().log(Level.INFO, LogType.UI, "テーブルのダブルクリックイベントを設定しました");
+    }
+
+    /**
+     * 詳細画面を開く
+     * 選択されたエンジニア情報の詳細画面に遷移します
+     */
+    private void openDetailView() {
+        EngineerDTO selectedEngineer = getSelectedEngineer();
+        if (selectedEngineer != null && mainController != null) {
+            // 詳細表示イベントを発行
+            mainController.handleEvent("VIEW_DETAIL", selectedEngineer.getId());
+            LogHandler.getInstance().log(Level.INFO, LogType.UI,
+                    String.format("エンジニア詳細表示: ID=%s, 氏名=%s",
+                            selectedEngineer.getId(), selectedEngineer.getName()));
+        } else {
+            LogHandler.getInstance().log(Level.WARNING, LogType.UI,
+                    "詳細表示に失敗: エンジニアが選択されていないか、コントローラーが設定されていません");
         }
     }
 
