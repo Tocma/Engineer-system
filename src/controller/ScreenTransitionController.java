@@ -73,8 +73,8 @@ import java.util.logging.Level;
  * </p>
  *
  * @author Nakano
- * @version 4.2.0
- * @since 2025-05-01
+ * @version 4.3.0
+ * @since 2025-05-02
  */
 public class ScreenTransitionController {
 
@@ -180,6 +180,60 @@ public class ScreenTransitionController {
 
                         // 現在のパネルタイプを更新
                         currentPanelType = panelType;
+
+                        // ログ記録
+                        LogHandler.getInstance().log(
+                                Level.INFO, LogType.SYSTEM,
+                                String.format("画面を切り替えました: %s", panelType));
+                    } else {
+                        LogHandler.getInstance().log(Level.WARNING, LogType.SYSTEM, "パネルの取得に失敗しました: " + panelType);
+                    }
+                } catch (Exception e) {
+                    LogHandler.getInstance().logError(LogType.SYSTEM, "画面切り替えに失敗しました: " + panelType, e);
+                } finally {
+                    // 遷移中フラグを解除
+                    isTransitioning.set(false);
+                }
+            });
+        } catch (Exception e) {
+            // EDT外での例外発生時の処理
+            isTransitioning.set(false);
+            LogHandler.getInstance().logError(LogType.SYSTEM, "画面切り替え要求の処理に失敗しました", e);
+        }
+    }
+
+    // ScreenTransitionControllerにメソッドを追加
+    public void showPanelWithCallback(String panelType, Runnable callback) {
+        // パネルタイプがnullまたは空の場合は処理しない
+        if (panelType == null || panelType.trim().isEmpty()) {
+            LogHandler.getInstance().log(Level.WARNING, LogType.SYSTEM, "無効なパネルタイプが指定されました: null または空");
+            return;
+        }
+
+        // 既に遷移中の場合は処理をキューイング（本実装では簡易化のため処理をスキップ）
+        if (isTransitioning.getAndSet(true)) {
+            LogHandler.getInstance().log(Level.WARNING, LogType.SYSTEM, "遷移中のため遷移要求をスキップします: " + panelType);
+            return;
+        }
+
+        try {
+            // SwingのEDTで実行
+            SwingUtilities.invokeLater(() -> {
+                try {
+                    // パネルの取得（キャッシュになければ新規作成）
+                    JPanel panel = getOrCreatePanel(panelType);
+
+                    if (panel != null) {
+                        // アニメーションなしで直接表示
+                        mainFrame.showPanel(panel);
+
+                        // 現在のパネルタイプを更新
+                        currentPanelType = panelType;
+
+                        // コールバックを実行
+                        if (callback != null) {
+                            callback.run();
+                        }
 
                         // ログ記録
                         LogHandler.getInstance().log(

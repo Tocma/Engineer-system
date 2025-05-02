@@ -68,8 +68,8 @@ import javax.swing.JPanel;
  * </p>
  *
  * @author Nagai
- * @version 4.2.0
- * @since 2025-04-24
+ * @version 4.3.0
+ * @since 2025-05-02
  */
 public class MainController {
 
@@ -580,20 +580,19 @@ public class MainController {
             EngineerDTO engineer = engineerController.getEngineerById(engineerId);
 
             if (engineer != null) {
-                // 詳細画面に遷移
-                screenController.showPanel("DETAIL");
-
-                // DetailPanelへの参照を取得
-                JPanel currentPanel = screenController.getCurrentPanel();
-                if (currentPanel instanceof DetailPanel) {
-                    // エンジニア情報を設定
-                    ((DetailPanel) currentPanel).setEngineerData(engineer);
-                    LogHandler.getInstance().log(Level.INFO, LogType.SYSTEM,
-                            "エンジニア詳細を表示: ID=" + engineerId);
-                } else {
-                    LogHandler.getInstance().log(Level.WARNING, LogType.SYSTEM,
-                            "DetailPanelへの参照取得に失敗しました");
-                }
+                // 詳細画面に遷移し、完了後にエンジニア情報を設定するコールバックを指定
+                screenController.showPanelWithCallback("DETAIL", () -> {
+                    JPanel currentPanel = screenController.getCurrentPanel();
+                    if (currentPanel instanceof DetailPanel) {
+                        // エンジニア情報を設定
+                        ((DetailPanel) currentPanel).setEngineerData(engineer);
+                        LogHandler.getInstance().log(Level.INFO, LogType.SYSTEM,
+                                "エンジニア詳細を表示: ID=" + engineerId);
+                    } else {
+                        LogHandler.getInstance().log(Level.WARNING, LogType.SYSTEM,
+                                "DetailPanelへの参照取得に失敗しました");
+                    }
+                });
             } else {
                 LogHandler.getInstance().log(Level.WARNING, LogType.SYSTEM,
                         "指定されたIDのエンジニアが見つかりません: " + engineerId);

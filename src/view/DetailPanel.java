@@ -54,7 +54,7 @@ import java.util.logging.Level;
  *
  * @author Nakano
  * @version 4.3.0
- * @since 2025-05-01
+ * @since 2025-05-02
  */
 public class DetailPanel extends AbstractEngineerPanel {
 
