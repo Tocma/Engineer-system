@@ -817,10 +817,10 @@ public class DetailPanel extends AbstractEngineerPanel {
 
             // 保存処理の実行（非同期）
             if (mainController != null) {
-                // 保存イベント発行
+                // 更新イベント発行
                 mainController.handleEvent("SAVE_DATA", updatedEngineer);
-
-                // 注意: 処理中状態の解除は handleUpdateComplete で行うため、ここでは行わない
+                LogHandler.getInstance().log(Level.INFO, LogType.UI,
+                        "エンジニア更新処理を開始: ID=" + updatedEngineer.getId());
             } else {
                 // コントローラー未設定エラー
                 showErrorMessage("システムエラー: コントローラーが設定されていません");

@@ -287,26 +287,46 @@ public class MainController {
                 JPanel sourcePanel = screenController.getCurrentPanel();
                 String sourcePanelType = screenController.getCurrentPanelType();
                 AddPanel addPanel = null;
+                DetailPanel detailPanel = null;
 
-                // 明示的にAddPanelへのキャストを試みる
+                // パネルタイプを判定して適切な参照を取得
                 if (sourcePanel instanceof AddPanel) {
                     addPanel = (AddPanel) sourcePanel;
                     LogHandler.getInstance().log(Level.INFO, LogType.SYSTEM,
                             "保存処理の元パネルを記録: AddPanel");
+                } else if (sourcePanel instanceof DetailPanel) {
+                    detailPanel = (DetailPanel) sourcePanel;
+                    LogHandler.getInstance().log(Level.INFO, LogType.SYSTEM,
+                            "保存処理の元パネルを記録: DetailPanel");
                 } else {
                     LogHandler.getInstance().log(Level.WARNING, LogType.SYSTEM,
-                            "保存処理の元パネルがAddPanelではありません: " +
+                            "保存処理の元パネルが特定できません: " +
                                     (sourcePanel != null ? sourcePanel.getClass().getName() : "null"));
                 }
 
                 // final変数として保持（ラムダ式内で使用するため）
                 final AddPanel finalAddPanel = addPanel;
+                final DetailPanel finalDetailPanel = detailPanel;
 
                 // 非同期タスクとして保存処理を実行
                 startAsyncTask("SaveEngineer", () -> {
                     try {
-                        // エンジニア情報を登録
-                        boolean success = engineerController.addEngineer(engineer);
+                        // エンジニア情報を保存（新規追加または更新）
+                        boolean success;
+
+                        // IDを検証して既存のエンジニアかどうかを判断
+                        EngineerDTO existingEngineer = engineerController.getEngineerById(engineer.getId());
+                        if (existingEngineer != null) {
+                            // 既存エンジニアの場合は更新処理
+                            success = engineerController.updateEngineer(engineer);
+                            LogHandler.getInstance().log(Level.INFO, LogType.SYSTEM,
+                                    "エンジニア情報の更新処理を実行: ID=" + engineer.getId());
+                        } else {
+                            // 新規エンジニアの場合は追加処理
+                            success = engineerController.addEngineer(engineer);
+                            LogHandler.getInstance().log(Level.INFO, LogType.SYSTEM,
+                                    "エンジニア情報の新規追加処理を実行: ID=" + engineer.getId());
+                        }
 
                         if (success) {
                             LogHandler.getInstance().log(Level.INFO, LogType.SYSTEM,
@@ -315,7 +335,7 @@ public class MainController {
                             // UI更新はSwingのEDTで実行
                             javax.swing.SwingUtilities.invokeLater(() -> {
                                 try {
-                                    // ListPanelを取得してデータを追加
+                                    // ListPanelを取得してデータを更新
                                     JPanel currentPanel = screenController.getCurrentPanel();
                                     if (currentPanel instanceof ListPanel) {
                                         ((ListPanel) currentPanel).addEngineerData(engineer);
@@ -323,18 +343,31 @@ public class MainController {
                                                 "ListPanelにエンジニアデータを追加しました: " + engineer.getId());
                                     }
 
-                                    // 保存元のパネルがAddPanelの場合は完了処理を直接呼び出す
-                                    if (finalAddPanel != null) {
+                                    // 保存元のパネルタイプに応じた完了処理を呼び出し
+                                    if (finalDetailPanel != null) {
+                                        // DetailPanelからの保存（更新）の場合
                                         LogHandler.getInstance().log(Level.INFO, LogType.SYSTEM,
-                                                "AddPanelの完了処理を呼び出します（直接参照）: " + engineer.getId());
+                                                "DetailPanelの完了処理を呼び出します: " + engineer.getId());
+                                        finalDetailPanel.handleUpdateComplete(engineer);
+                                    } else if (finalAddPanel != null) {
+                                        // AddPanelからの保存（新規追加）の場合
+                                        LogHandler.getInstance().log(Level.INFO, LogType.SYSTEM,
+                                                "AddPanelの完了処理を呼び出します: " + engineer.getId());
                                         finalAddPanel.handleSaveComplete(engineer);
+                                    } else if (sourcePanel instanceof DetailPanel && "DETAIL".equals(sourcePanelType)) {
+                                        // 元パネルがDetailPanelだが直接参照が取得できなかった場合
+                                        LogHandler.getInstance().log(Level.INFO, LogType.SYSTEM,
+                                                "DetailPanelの完了処理を呼び出します（間接参照）: " + engineer.getId());
+                                        ((DetailPanel) sourcePanel).handleUpdateComplete(engineer);
                                     } else if (sourcePanel instanceof AddPanel && "ADD".equals(sourcePanelType)) {
+                                        // 元パネルがAddPanelだが直接参照が取得できなかった場合
                                         LogHandler.getInstance().log(Level.INFO, LogType.SYSTEM,
                                                 "AddPanelの完了処理を呼び出します（間接参照）: " + engineer.getId());
                                         ((AddPanel) sourcePanel).handleSaveComplete(engineer);
                                     } else {
+                                        // 対応するパネルが見つからない場合
                                         LogHandler.getInstance().log(Level.WARNING, LogType.SYSTEM,
-                                                "AddPanelが見つからないため完了処理をスキップします: " +
+                                                "対応するパネルが見つからないため完了処理をスキップします: " +
                                                         "sourcePanel="
                                                         + (sourcePanel != null ? sourcePanel.getClass().getName()
                                                                 : "null")
@@ -345,8 +378,8 @@ public class MainController {
                                         LogHandler.getInstance().log(Level.INFO, LogType.SYSTEM,
                                                 "代替手段としてダイアログを直接表示します");
                                         DialogManager.getInstance().showCompletionDialog(
-                                                "登録完了",
-                                                "エンジニア情報を登録しました: ID=" + engineer.getId() + ", 名前="
+                                                "処理完了",
+                                                "エンジニア情報を保存しました: ID=" + engineer.getId() + ", 名前="
                                                         + engineer.getName());
                                     }
 
@@ -356,10 +389,13 @@ public class MainController {
                                     LogHandler.getInstance().logError(LogType.SYSTEM,
                                             "保存完了後の処理中にエラーが発生しました: " + engineer.getId(), e);
 
-                                    // エラー時もAddPanelの処理中状態は解除する
+                                    // エラー時もパネルの処理中状態は解除
                                     try {
                                         if (finalAddPanel != null) {
                                             finalAddPanel.setProcessing(false);
+                                        }
+                                        if (finalDetailPanel != null) {
+                                            finalDetailPanel.setProcessing(false);
                                         }
                                     } catch (Exception ex) {
                                         LogHandler.getInstance().logError(LogType.SYSTEM,
@@ -378,6 +414,11 @@ public class MainController {
                                     DialogManager.getInstance().showErrorDialog(
                                             "保存エラー", "エンジニア情報の保存に失敗しました");
                                 }
+                                if (finalDetailPanel != null) {
+                                    finalDetailPanel.setProcessing(false);
+                                    DialogManager.getInstance().showErrorDialog(
+                                            "更新エラー", "エンジニア情報の更新に失敗しました");
+                                }
                             });
                         }
                     } catch (Exception e) {
@@ -391,6 +432,11 @@ public class MainController {
                                 DialogManager.getInstance().showErrorDialog(
                                         "保存エラー", "エンジニア情報の保存中にエラーが発生しました: " + e.getMessage());
                             }
+                            if (finalDetailPanel != null) {
+                                finalDetailPanel.setProcessing(false);
+                                DialogManager.getInstance().showErrorDialog(
+                                        "更新エラー", "エンジニア情報の更新中にエラーが発生しました: " + e.getMessage());
+                            }
                         });
                     } finally {
                         // 最終的に処理中状態を解除する追加の保険
@@ -401,6 +447,12 @@ public class MainController {
                                     finalAddPanel.setProcessing(false);
                                     LogHandler.getInstance().log(Level.INFO, LogType.SYSTEM,
                                             "AddPanelの処理状態をリセットしました");
+                                }
+                                if (finalDetailPanel != null) {
+                                    // 処理状態の強制リセット（念のため）
+                                    finalDetailPanel.setProcessing(false);
+                                    LogHandler.getInstance().log(Level.INFO, LogType.SYSTEM,
+                                            "DetailPanelの処理状態をリセットしました");
                                 }
                             } catch (Exception e) {
                                 LogHandler.getInstance().logError(LogType.SYSTEM,
