@@ -67,9 +67,9 @@ import javax.swing.JPanel;
  * </ul>
  * </p>
  *
- * @author Nagai
- * @version 4.3.0
- * @since 2025-05-02
+ * @author Nakano
+ * @version 4.3.1
+ * @since 2025-05-05
  */
 public class MainController {
 
@@ -335,10 +335,10 @@ public class MainController {
                             // UI更新はSwingのEDTで実行
                             javax.swing.SwingUtilities.invokeLater(() -> {
                                 try {
-                                    // ListPanelを取得してデータを更新
-                                    JPanel currentPanel = screenController.getCurrentPanel();
-                                    if (currentPanel instanceof ListPanel) {
-                                        ((ListPanel) currentPanel).addEngineerData(engineer);
+                                    // **重要な変更点**: ListPanelを常に更新（現在表示中かどうかにかかわらず）
+                                    JPanel listPanel = getListPanelFromCache();
+                                    if (listPanel instanceof ListPanel) {
+                                        ((ListPanel) listPanel).addEngineerData(engineer);
                                         LogHandler.getInstance().log(Level.INFO, LogType.SYSTEM,
                                                 "ListPanelにエンジニアデータを追加しました: " + engineer.getId());
                                     }
@@ -705,6 +705,29 @@ public class MainController {
             DialogManager.getInstance().showErrorDialog("出力エラー", "テンプレート出力に失敗しました。");
         }
         return result;
+    }
+
+    // 追加するヘルパーメソッド
+    /**
+     * キャッシュからListPanelを取得するヘルパーメソッド
+     * 
+     * @return ListPanelインスタンス（見つからない場合はnull）
+     */
+    private JPanel getListPanelFromCache() {
+        // ScreenTransitionControllerからパネルを取得
+        if (screenController != null) {
+            // 現在表示中のパネルがListPanelならそれを返す
+            JPanel currentPanel = screenController.getCurrentPanel();
+            if (currentPanel instanceof ListPanel) {
+                return currentPanel;
+            }
+
+            // キャッシュからListPanelを検索
+            if (screenController.hasPanelInCache("LIST")) {
+                return screenController.getPanelFromCache("LIST");
+            }
+        }
+        return null;
     }
 
     /**

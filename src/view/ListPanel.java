@@ -16,14 +16,15 @@ import java.util.Comparator;
 import java.util.List;
 import java.util.Locale;
 import java.util.logging.Level;
+import java.util.stream.Collectors;
 
 /**
  * エンジニア一覧を表示するパネルクラス
  * ページング、ソート、検索、追加、取込、削除機能
  *
- * @author Naagai
- * @version 4.3.0
- * @since 2025-05-02
+ * @author Nakano
+ * @version 4.3.1
+ * @since 2025-05-05
  */
 public class ListPanel extends JPanel {
 
@@ -55,6 +56,16 @@ public class ListPanel extends JPanel {
     /** 全エンジニアデータ */
     private List<EngineerDTO> allData;
 
+    // currentDisplayDataフィールドを削除
+
+    // 追加するフィールド - ソートとフィルタの状態のみ保持
+    private String searchId = "";
+    private String searchName = "";
+    private String searchYear = "";
+    private String searchMonth = "";
+    private String searchDay = "";
+    private String searchCareer = "";
+
     /** 検索用フィールド */
     private JTextField idField;
     private JTextField nameField;
@@ -67,7 +78,6 @@ public class ListPanel extends JPanel {
     private TableRowSorter<DefaultTableModel> sorter; // ← createTable() の sorter をフィールド化
     private boolean isAscending = true;
     private int lastSortedColumn = -1;
-    private List<EngineerDTO> currentDisplayData = new ArrayList<>(); // ソート表示用
 
     /** メインコントローラー参照 */
     private MainController mainController;
@@ -369,30 +379,13 @@ public class ListPanel extends JPanel {
      */
 
     private void sortByColumn(int columnIndex) {
-        Comparator<EngineerDTO> baseComparator;
-
         try {
-            switch (columnIndex) {
-                case 0 -> {
-                    baseComparator = Comparator.comparing(e -> parseNumericId(e.getId()),
-                            Comparator.nullsLast(Integer::compareTo));
-
-                }
-                case 1 ->
-                    baseComparator = Comparator.comparing(
-                            EngineerDTO::getNameKana,
-                            getJapaneseKanaComparator());
-                case 2 -> baseComparator = Comparator.comparing(EngineerDTO::getBirthDate,
-                        Comparator.nullsLast(LocalDate::compareTo));
-                case 3 -> baseComparator = Comparator.comparingDouble(EngineerDTO::getCareer);
-                default -> {
-                    return;
-                }
+            // ソート可能な列かチェック
+            if (columnIndex < 0 || columnIndex >= COLUMN_NAMES.length || columnIndex == 4) {
+                return; // 「扱える言語」(インデックス4)はソート対象外
             }
 
-            Comparator<EngineerDTO> idComparator = Comparator
-                    .comparing((EngineerDTO e) -> Integer.parseInt(e.getId().replaceAll("\\D+", "")));
-
+            // 同じ列の場合は昇順/降順を切り替え、異なる列の場合は昇順に設定
             if (lastSortedColumn == columnIndex) {
                 isAscending = !isAscending;
             } else {
@@ -406,35 +399,29 @@ public class ListPanel extends JPanel {
                     LogType.UI,
                     String.format("ソート実行: 列=%s, 順序=%s", COLUMN_NAMES[columnIndex], isAscending ? "昇順" : "降順"));
 
-            Comparator<EngineerDTO> finalComparator = isAscending
-                    ? baseComparator.thenComparing(idComparator)
-                    : baseComparator.reversed().thenComparing(idComparator);
+            // ソート条件を保存し、表示データを更新
+            List<EngineerDTO> displayData = getDisplayData();
 
-            // 「全件データ」をソートする
-            List<EngineerDTO> sorted = new ArrayList<>(allData);
-            sorted.sort(finalComparator);
-            currentDisplayData = sorted;
-
+            // ページを1ページ目にリセット
             currentPage = 1;
-            updateTableForCurrentPage();
-            updatePageLabel();
-            updatePaginationButtons();
 
-            // 見た目の矢印は設定
+            // テーブルを更新
+            updateTableData(displayData);
+
+            // UIのソートインジケータを設定（見た目の矢印）
             sorter.setSortKeys(List.of(new RowSorter.SortKey(columnIndex,
                     isAscending ? SortOrder.ASCENDING : SortOrder.DESCENDING)));
 
-            // ↓ TableRowSorter による内部ソートを抑制（Comparatorを機能しないものにする）
+            // TableRowSorterによる内部ソートを抑制（Comparatorを機能しないものにする）
             sorter.setComparator(columnIndex, (o1, o2) -> 0);
 
             LogHandler.getInstance().log(
                     Level.INFO,
                     LogType.SYSTEM,
-                    String.format("ソート完了: ", currentDisplayData.size()));
+                    String.format("ソート完了: %d件", displayData.size()));
         } catch (Exception e) {
             LogHandler.getInstance().logError(LogType.SYSTEM, "ソート処理中にエラーが発生しました", e);
         }
-
     }
 
     // IDの数値変換
@@ -471,101 +458,25 @@ public class ListPanel extends JPanel {
      * @param career エンジニア歴
      */
     private void search(String id, String name, String year, String month, String day, String career) {
-        List<EngineerDTO> filteredData = new ArrayList<>();
-
-        for (EngineerDTO engineer : allData) {
-            boolean matches = true;
-
-            // IDと名前での一致をmatchesSearchメソッドを使ってチェック
-            if (!id.isEmpty() && !matchesSearch(engineer, id)) {
-                matches = false;
-            }
-
-            if (!name.isEmpty() && !matchesSearch(engineer, name)) {
-                matches = false;
-            }
-
-            // 生年月日チェック
-            if (engineer.getBirthDate() != null) {
-                String birthDateStr = engineer.getBirthDate().toString();
-
-                if (!year.isEmpty() && !birthDateStr.startsWith(year)) {
-                    matches = false;
-                }
-
-                if (!month.isEmpty()) {
-                    // 月の部分を確認 (YYYY-MM-DD 形式の場合、5-7文字目)
-                    String monthPart = month.length() == 1 ? "0" + month : month;
-                    if (!birthDateStr.substring(5, 7).equals(monthPart)) {
-                        matches = false;
-                    }
-                }
-
-                if (!day.isEmpty()) {
-                    // 日の部分を確認 (YYYY-MM-DD 形式の場合、8-10文字目)
-                    String dayPart = day.length() == 1 ? "0" + day : day;
-                    if (!birthDateStr.substring(8, 10).equals(dayPart)) {
-                        matches = false;
-                    }
-                }
-            } else if (!year.isEmpty() || !month.isEmpty() || !day.isEmpty()) {
-                // 生年月日がnullで、かつ検索条件が指定されている場合
-                matches = false;
-            }
-
-            // エンジニア歴チェック
-            if (!career.isEmpty()) {
-                // intに変更
-                int careerValue = engineer.getCareer();
-                try {
-                    int searchCareer = Integer.parseInt(career);
-                    if (careerValue != searchCareer) {
-                        matches = false;
-                    }
-                } catch (NumberFormatException e) {
-                    // 数値変換エラーは無視
-                }
-            }
-
-            // 条件を満たす場合にリストに追加
-            if (matches) {
-                filteredData.add(engineer);
-            }
-        }
+        // 検索条件を保存
+        this.searchId = id;
+        this.searchName = name;
+        this.searchYear = year;
+        this.searchMonth = month;
+        this.searchDay = day;
+        this.searchCareer = career;
 
         // 現在のページを1にリセット
         currentPage = 1;
 
+        // 検索条件を適用して表示データを取得
+        List<EngineerDTO> filteredData = getDisplayData();
+
         // テーブルを更新
-        updateTableForData(filteredData);
-        updatePageLabel(filteredData.size());
+        updateTableData(filteredData);
 
         LogHandler.getInstance().log(Level.INFO, LogType.UI,
                 String.format("検索実行: %d件のデータがヒット", filteredData.size()));
-    }
-
-    /**
-     * 検索文字列との一致を確認
-     * 
-     * @param engineer   エンジニア情報
-     * @param searchText 検索文字列
-     * @return 一致する場合はtrue
-     */
-    private boolean matchesSearch(EngineerDTO engineer, String searchText) {
-        if (searchText == null || searchText.isEmpty()) {
-            return true;
-        }
-
-        String searchLower = searchText.toLowerCase();
-
-        // IDと名前での検索
-        boolean idMatch = engineer.getId() != null &&
-                engineer.getId().toLowerCase().contains(searchLower);
-
-        boolean nameMatch = engineer.getName() != null &&
-                engineer.getName().toLowerCase().contains(searchLower);
-
-        return idMatch || nameMatch;
     }
 
     /**
@@ -574,7 +485,8 @@ public class ListPanel extends JPanel {
      * @param delta ページ変化量（前：-1、次：+1）
      */
     private void changePage(int delta) {
-        int totalPages = calculateTotalPages();
+        List<EngineerDTO> displayData = getDisplayData();
+        int totalPages = (int) Math.ceil((double) displayData.size() / pageSize);
         int newPage = currentPage + delta;
 
         // ページ範囲の検証
@@ -583,90 +495,17 @@ public class ListPanel extends JPanel {
         }
 
         currentPage = newPage;
-        updateTableForCurrentPage();
-        updatePageLabel();
-        updatePaginationButtons();
+        updateTableData(displayData);
 
         LogHandler.getInstance().log(Level.INFO, LogType.UI,
                 String.format("ページを切り替えました: %d / %d", currentPage, totalPages));
     }
 
-    /**
-     * 総ページ数を計算
-     *
-     * @return 総ページ数
-     */
-    private int calculateTotalPages() {
-        return (int) Math.ceil((double) allData.size() / pageSize);
-    }
-
-    /**
-     * ページラベルを更新
-     */
-    private void updatePageLabel() {
-        int totalPages = calculateTotalPages();
-        pageLabel.setText(String.format("ページ: %d / %d", currentPage, totalPages));
-    }
-
-    /**
-     * 指定したデータ数のページラベルを更新
-     * 
-     * @param dataSize データ数
-     */
+    // 統合後のメソッド
     private void updatePageLabel(int dataSize) {
         int totalPages = (int) Math.ceil((double) dataSize / pageSize);
-        pageLabel.setText(String.format("ページ: %d / %d", currentPage, Math.max(1, totalPages)));
-    }
-
-    /**
-     * ページネーションボタンの状態を更新
-     */
-    private void updatePaginationButtons() {
-        int totalPages = calculateTotalPages();
-        prevButton.setEnabled(currentPage > 1);
-        nextButton.setEnabled(currentPage < totalPages);
-    }
-
-    /**
-     * 現在のページに対応するテーブルデータを更新
-     */
-    private void updateTableForCurrentPage() {
-        // テーブルデータのクリア
-        tableModel.setRowCount(0);
-        List<EngineerDTO> sourceData = currentDisplayData.isEmpty() ? allData : currentDisplayData;
-
-        // 表示範囲の計算
-        int startIndex = (currentPage - 1) * pageSize;
-        int endIndex = Math.min(startIndex + pageSize, sourceData.size());
-
-        // データの追加
-        for (int i = startIndex; i < endIndex; i++) {
-            addEngineerToTable(sourceData.get(i));
-        }
-    }
-
-    /**
-     * 指定されたデータでテーブルを更新
-     * 
-     * @param data 表示するデータリスト
-     */
-    private void updateTableForData(List<EngineerDTO> data) {
-        // テーブルデータのクリア
-        tableModel.setRowCount(0);
-
-        // 表示範囲の計算
-        int startIndex = (currentPage - 1) * pageSize;
-        int endIndex = Math.min(startIndex + pageSize, data.size());
-
-        // データの追加
-        for (int i = startIndex; i < endIndex; i++) {
-            EngineerDTO engineer = data.get(i);
-            addEngineerToTable(engineer);
-        }
-
-        // ページネーションボタンの更新
-        prevButton.setEnabled(currentPage > 1);
-        nextButton.setEnabled(currentPage < Math.ceil((double) data.size() / pageSize));
+        totalPages = Math.max(1, totalPages);
+        pageLabel.setText(String.format("ページ: %d / %d", currentPage, totalPages));
     }
 
     /**
@@ -705,13 +544,14 @@ public class ListPanel extends JPanel {
         // データの設定
         this.allData = new ArrayList<>(engineers);
 
+        // 現在のソート条件を保持
+        List<EngineerDTO> displayData = getDisplayData();
+
         // ページ情報の初期化
         currentPage = 1;
 
-        // テーブルの更新
-        updateTableForCurrentPage();
-        updatePageLabel();
-        updatePaginationButtons();
+        // テーブルとページネーションを更新
+        updateTableData(displayData);
 
         LogHandler.getInstance().log(Level.INFO, LogType.SYSTEM,
                 String.format("エンジニアデータを更新しました: %d件", allData.size()));
@@ -728,21 +568,149 @@ public class ListPanel extends JPanel {
             return;
         }
 
-        allData.add(engineer);
-
-        // 最終ページ表示中の場合は、テーブルを更新
-        int totalPages = calculateTotalPages();
-        if (currentPage == totalPages || totalPages == 1) {
-            updateTableForCurrentPage();
+        // 既存IDチェック - 同じIDがあれば置き換え
+        boolean replaced = false;
+        for (int i = 0; i < allData.size(); i++) {
+            if (allData.get(i).getId().equals(engineer.getId())) {
+                allData.set(i, engineer);
+                replaced = true;
+                LogHandler.getInstance().log(Level.INFO, LogType.SYSTEM,
+                        String.format("エンジニア情報を更新しました: ID=%s, 氏名=%s",
+                                engineer.getId(), engineer.getName()));
+                break;
+            }
         }
 
-        // ページネーション情報の更新
-        updatePageLabel();
-        updatePaginationButtons();
+        // 新規追加の場合
+        if (!replaced) {
+            allData.add(engineer);
+            LogHandler.getInstance().log(Level.INFO, LogType.SYSTEM,
+                    String.format("エンジニアを追加しました: ID=%s, 氏名=%s",
+                            engineer.getId(), engineer.getName()));
+        }
 
-        LogHandler.getInstance().log(Level.INFO, LogType.SYSTEM,
-                String.format("エンジニアを追加しました: ID=%s, 氏名=%s",
-                        engineer.getId(), engineer.getName()));
+        // 現在のソート・フィルタ条件を適用して表示を更新
+        List<EngineerDTO> displayData = getDisplayData();
+        updateTableData(displayData);
+    }
+
+    // 追加メソッド - 表示用データの取得（ソート・フィルタを適用）
+    private List<EngineerDTO> getDisplayData() {
+        // 基本データのコピーを作成
+        List<EngineerDTO> result = new ArrayList<>(allData);
+
+        // 検索条件が設定されている場合はフィルタリング
+        if (!searchId.isEmpty() || !searchName.isEmpty() || !searchYear.isEmpty() ||
+                !searchMonth.isEmpty() || !searchDay.isEmpty() || !searchCareer.isEmpty()) {
+
+            result = result.stream()
+                    .filter(engineer -> filterEngineer(engineer))
+                    .collect(Collectors.toList());
+        }
+
+        // ソート条件が設定されている場合はソート
+        if (lastSortedColumn >= 0) {
+            result = sortEngineers(result, lastSortedColumn, isAscending);
+        }
+
+        return result;
+    }
+
+    // 追加メソッド - エンジニアがフィルタ条件に一致するかチェック
+    private boolean filterEngineer(EngineerDTO engineer) {
+        // ID検索
+        if (!searchId.isEmpty() && (engineer.getId() == null ||
+                !engineer.getId().toLowerCase().contains(searchId.toLowerCase()))) {
+            return false;
+        }
+
+        // 名前検索
+        if (!searchName.isEmpty() && (engineer.getName() == null ||
+                !engineer.getName().toLowerCase().contains(searchName.toLowerCase()))) {
+            return false;
+        }
+
+        // 生年月日検索
+        if (engineer.getBirthDate() != null) {
+            String birthDateStr = engineer.getBirthDate().toString();
+
+            // 年のチェック
+            if (!searchYear.isEmpty() && !birthDateStr.startsWith(searchYear)) {
+                return false;
+            }
+
+            // 月のチェック
+            if (!searchMonth.isEmpty()) {
+                String monthPart = searchMonth.length() == 1 ? "0" + searchMonth : searchMonth;
+                if (!birthDateStr.substring(5, 7).equals(monthPart)) {
+                    return false;
+                }
+            }
+
+            // 日のチェック
+            if (!searchDay.isEmpty()) {
+                String dayPart = searchDay.length() == 1 ? "0" + searchDay : searchDay;
+                if (!birthDateStr.substring(8, 10).equals(dayPart)) {
+                    return false;
+                }
+            }
+        } else if (!searchYear.isEmpty() || !searchMonth.isEmpty() || !searchDay.isEmpty()) {
+            // 生年月日がnullで検索条件が指定されている場合
+            return false;
+        }
+
+        // エンジニア歴検索
+        if (!searchCareer.isEmpty()) {
+            try {
+                int careerValue = engineer.getCareer();
+                int searchCareerValue = Integer.parseInt(searchCareer);
+                if (careerValue != searchCareerValue) {
+                    return false;
+                }
+            } catch (NumberFormatException e) {
+                // 数値変換エラーは無視
+            }
+        }
+
+        return true;
+    }
+
+    // 追加メソッド - エンジニアリストをソート
+    private List<EngineerDTO> sortEngineers(List<EngineerDTO> engineers, int columnIndex, boolean ascending) {
+        Comparator<EngineerDTO> comparator = null;
+
+        switch (columnIndex) {
+            case 0: // ID
+                comparator = Comparator.comparing(e -> parseNumericId(e.getId()),
+                        Comparator.nullsLast(Integer::compareTo));
+                break;
+            case 1: // 氏名
+                comparator = Comparator.comparing(EngineerDTO::getNameKana,
+                        getJapaneseKanaComparator());
+                break;
+            case 2: // 生年月日
+                comparator = Comparator.comparing(EngineerDTO::getBirthDate,
+                        Comparator.nullsLast(LocalDate::compareTo));
+                break;
+            case 3: // エンジニア歴
+                comparator = Comparator.comparingInt(EngineerDTO::getCareer);
+                break;
+            default:
+                return new ArrayList<>(engineers);
+        }
+
+        // ID順を2次ソートに使用
+        Comparator<EngineerDTO> idComparator = Comparator
+                .comparing((EngineerDTO e) -> parseNumericId(e.getId()));
+
+        Comparator<EngineerDTO> finalComparator = ascending
+                ? comparator.thenComparing(idComparator)
+                : comparator.reversed().thenComparing(idComparator);
+
+        List<EngineerDTO> sorted = new ArrayList<>(engineers);
+        sorted.sort(finalComparator);
+
+        return sorted;
     }
 
     /**
@@ -771,6 +739,32 @@ public class ListPanel extends JPanel {
         }
 
         return null;
+    }
+
+    // 追加メソッド - テーブルデータとページネーションを一括更新
+    private void updateTableData(List<EngineerDTO> data) {
+        // テーブルデータのクリア
+        tableModel.setRowCount(0);
+
+        // 表示範囲の計算
+        int startIndex = (currentPage - 1) * pageSize;
+        int endIndex = Math.min(startIndex + pageSize, data.size());
+
+        // データの追加
+        for (int i = startIndex; i < endIndex; i++) {
+            addEngineerToTable(data.get(i));
+        }
+
+        // ページネーション情報の更新
+        updatePageLabel(data.size());
+        updatePaginationButtons(data.size());
+    }
+
+    // ページネーションボタンの状態を更新（オーバーロード）
+    private void updatePaginationButtons(int dataSize) {
+        int totalPages = (int) Math.ceil((double) dataSize / pageSize);
+        prevButton.setEnabled(currentPage > 1);
+        nextButton.setEnabled(currentPage < totalPages);
     }
 
     /**
@@ -806,13 +800,6 @@ public class ListPanel extends JPanel {
     }
 
     /**
-     * テーブルのデータを更新
-     */
-    public void refreshTable() {
-        updateTableForCurrentPage();
-    }
-
-    /**
      * データ件数を取得
      *
      * @return 読み込まれているエンジニアデータの総数
@@ -828,15 +815,6 @@ public class ListPanel extends JPanel {
      */
     public int getCurrentPage() {
         return currentPage;
-    }
-
-    /**
-     * 総ページ数を取得
-     *
-     * @return 総ページ数
-     */
-    public int getTotalPages() {
-        return calculateTotalPages();
     }
 
     /**

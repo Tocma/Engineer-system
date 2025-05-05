@@ -73,8 +73,8 @@ import java.util.logging.Level;
  * </p>
  *
  * @author Nakano
- * @version 4.3.0
- * @since 2025-05-02
+ * @version 4.3.1
+ * @since 2025-05-05
  */
 public class ScreenTransitionController {
 
@@ -396,5 +396,19 @@ public class ScreenTransitionController {
         }
 
         LogHandler.getInstance().log(Level.INFO, LogType.SYSTEM, "パネルキャッシュをクリアしました");
+    }
+
+    // 追加するメソッド
+    /**
+     * キャッシュから特定タイプのパネルを取得
+     * 
+     * @param panelType パネルタイプ
+     * @return 対応するパネル（存在しない場合はnull）
+     */
+    public JPanel getPanelFromCache(String panelType) {
+        if (panelCache.containsKey(panelType)) {
+            return panelCache.get(panelType);
+        }
+        return null;
     }
 }
