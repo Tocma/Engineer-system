@@ -53,8 +53,8 @@ import java.util.logging.Level;
  * </p>
  *
  * @author Nakano
- * @version 4.3.0
- * @since 2025-05-02
+ * @version 4.3.1
+ * @since 2025-05-06
  */
 public class DetailPanel extends AbstractEngineerPanel {
 
@@ -118,11 +118,11 @@ public class DetailPanel extends AbstractEngineerPanel {
     /** 氏名フィールド */
     private JTextField nameField;
 
+    /** 氏名 (カナ)フィールド */
+    private JTextField nameKanaField;
+
     /** 社員IDフィールド */
     private JTextField idField;
-
-    /** フリガナフィールド */
-    private JTextField nameKanaField;
 
     /** 経歴テキストエリア */
     private JTextArea careerHistoryArea;
@@ -162,8 +162,8 @@ public class DetailPanel extends AbstractEngineerPanel {
      */
     private void initializeFieldDisplayNames() {
         fieldDisplayNames.put("nameField", "氏名");
+        fieldDisplayNames.put("nameKanaField", "氏名 (カナ)");
         fieldDisplayNames.put("idField", "社員ID");
-        fieldDisplayNames.put("nameKanaField", "フリガナ");
         fieldDisplayNames.put("birthDate", "生年月日");
         fieldDisplayNames.put("joinDate", "入社年月");
         fieldDisplayNames.put("careerComboBox", "エンジニア歴");
@@ -258,11 +258,11 @@ public class DetailPanel extends AbstractEngineerPanel {
         // 3. 経歴セクション（左側）
         createCareerHistorySection(leftFormPanel);
 
-        // 4. スキルセクション（右側）
-        createSkillSection(rightFormPanel);
-
-        // 5. 研修の受講歴セクション（右側）
+        // 4. 研修の受講歴セクション（右側）
         createTrainingSection(rightFormPanel);
+
+        // 5. スキルセクション（右側）
+        createSkillSection(rightFormPanel);
 
         // 6. 備考セクション（右側）
         createNoteSection(rightFormPanel);
@@ -289,7 +289,12 @@ public class DetailPanel extends AbstractEngineerPanel {
         nameField = new JTextField(20);
         registerComponent("nameField", nameField);
         container.add(createFormRow(nameLabel, nameField, "nameField"));
-        container.add(createVerticalSpacer(10));
+
+        // 氏名 (カナ)フィールド（必須）
+        JLabel nameKanaLabel = createFieldLabel("氏名 (カナ)", true);
+        nameKanaField = new JTextField(20);
+        registerComponent("nameKanaField", nameKanaField);
+        container.add(createFormRow(nameKanaLabel, nameKanaField, "nameKanaField"));
 
         // 社員IDフィールド（必須）
         JLabel idLabel = createFieldLabel("社員ID", true);
@@ -298,14 +303,6 @@ public class DetailPanel extends AbstractEngineerPanel {
         idField.setBackground(new Color(240, 240, 240)); // 編集不可の視覚的表示
         registerComponent("idField", idField);
         container.add(createFormRow(idLabel, idField, "idField"));
-        container.add(createVerticalSpacer(10));
-
-        // フリガナフィールド（必須）
-        JLabel nameKanaLabel = createFieldLabel("フリガナ", true);
-        nameKanaField = new JTextField(20);
-        registerComponent("nameKanaField", nameKanaField);
-        container.add(createFormRow(nameKanaLabel, nameKanaField, "nameKanaField"));
-        container.add(createVerticalSpacer(10));
 
         // 生年月日（必須）- 年・月・日のコンボボックス
         JLabel birthDateLabel = createFieldLabel("生年月日", true);
@@ -336,7 +333,6 @@ public class DetailPanel extends AbstractEngineerPanel {
         // 生年月日のグループエラー表示用
         createFieldErrorLabel("birthDate");
         container.add(createFormRow(birthDateLabel, birthDatePanel, "birthDate"));
-        container.add(createVerticalSpacer(10));
 
         // 入社年月 - 年・月のコンボボックス
         JLabel joinDateLabel = createFieldLabel("入社年月", true);
@@ -360,7 +356,6 @@ public class DetailPanel extends AbstractEngineerPanel {
         // 入社年月のグループエラー表示用
         createFieldErrorLabel("joinDate");
         container.add(createFormRow(joinDateLabel, joinDatePanel, "joinDate"));
-        container.add(createVerticalSpacer(10));
 
         // エンジニア歴（必須）
         JLabel careerLabel = createFieldLabel("エンジニア歴", true);
@@ -402,7 +397,6 @@ public class DetailPanel extends AbstractEngineerPanel {
         titlePanel.add(errorLabel);
 
         container.add(titlePanel);
-        container.add(createVerticalSpacer(10));
 
         // 利用可能な言語リスト
         String[] availableLanguages = {
@@ -429,7 +423,6 @@ public class DetailPanel extends AbstractEngineerPanel {
         // 既存のチェックボックスリストは初期化しておく（互換性のため）
         languageCheckBoxes = new ArrayList<>();
 
-        container.add(createVerticalSpacer(20));
     }
 
     /**
@@ -445,7 +438,6 @@ public class DetailPanel extends AbstractEngineerPanel {
         titlePanel.setBackground(Color.WHITE);
         titlePanel.add(careerHistoryTitle);
         container.add(titlePanel);
-        container.add(createVerticalSpacer(10));
 
         // 経歴テキストエリア
         careerHistoryArea = new JTextArea(5, 20);
@@ -455,7 +447,32 @@ public class DetailPanel extends AbstractEngineerPanel {
         registerComponent("careerHistoryArea", careerHistoryArea);
 
         container.add(createFormRow(new JLabel(""), careerScrollPane, "careerHistoryArea"));
-        container.add(createVerticalSpacer(20));
+
+    }
+
+    /**
+     * 研修の受講歴セクションの作成
+     * 研修の受講歴を入力するテキストエリアを配置
+     *
+     * @param container 配置先のコンテナ
+     */
+    private void createTrainingSection(JPanel container) {
+        // セクションタイトル - 左寄せ
+        JLabel trainingTitle = createSectionTitle("研修の受講歴");
+        JPanel titlePanel = new JPanel(new FlowLayout(FlowLayout.LEFT, 0, 0));
+        titlePanel.setBackground(Color.WHITE);
+        titlePanel.add(trainingTitle);
+        container.add(titlePanel);
+
+        // 研修の受講歴テキストエリア
+        trainingHistoryArea = new JTextArea(2, 20);
+        trainingHistoryArea.setLineWrap(true);
+        trainingHistoryArea.setWrapStyleWord(true);
+        JScrollPane trainingScrollPane = new JScrollPane(trainingHistoryArea);
+        registerComponent("trainingHistoryArea", trainingHistoryArea);
+
+        container.add(createFormRow(new JLabel(""), trainingScrollPane, "trainingHistoryArea"));
+
     }
 
     /**
@@ -480,7 +497,6 @@ public class DetailPanel extends AbstractEngineerPanel {
 
         registerComponent("technicalSkillComboBox", technicalSkillComboBox);
         container.add(createFormRow(technicalSkillLabel, techSkillComboPanel, "technicalSkillComboBox"));
-        container.add(createVerticalSpacer(10));
 
         // 受講態度
         JLabel learningAttitudeLabel = createFieldLabel("受講態度", false);
@@ -494,7 +510,6 @@ public class DetailPanel extends AbstractEngineerPanel {
 
         registerComponent("learningAttitudeComboBox", learningAttitudeComboBox);
         container.add(createFormRow(learningAttitudeLabel, attitudeComboPanel, "learningAttitudeComboBox"));
-        container.add(createVerticalSpacer(10));
 
         // コミュニケーション能力
         JLabel communicationSkillLabel = createFieldLabel("コミュニケーション能力", false);
@@ -508,7 +523,6 @@ public class DetailPanel extends AbstractEngineerPanel {
 
         registerComponent("communicationSkillComboBox", communicationSkillComboBox);
         container.add(createFormRow(communicationSkillLabel, commSkillComboPanel, "communicationSkillComboBox"));
-        container.add(createVerticalSpacer(10));
 
         // リーダーシップ
         JLabel leadershipLabel = createFieldLabel("リーダーシップ", false);
@@ -526,32 +540,6 @@ public class DetailPanel extends AbstractEngineerPanel {
     }
 
     /**
-     * 研修の受講歴セクションの作成
-     * 研修の受講歴を入力するテキストエリアを配置
-     *
-     * @param container 配置先のコンテナ
-     */
-    private void createTrainingSection(JPanel container) {
-        // セクションタイトル - 左寄せ
-        JLabel trainingTitle = createSectionTitle("研修の受講歴");
-        JPanel titlePanel = new JPanel(new FlowLayout(FlowLayout.LEFT, 0, 0));
-        titlePanel.setBackground(Color.WHITE);
-        titlePanel.add(trainingTitle);
-        container.add(titlePanel);
-        container.add(createVerticalSpacer(10));
-
-        // 研修の受講歴テキストエリア
-        trainingHistoryArea = new JTextArea(5, 20);
-        trainingHistoryArea.setLineWrap(true);
-        trainingHistoryArea.setWrapStyleWord(true);
-        JScrollPane trainingScrollPane = new JScrollPane(trainingHistoryArea);
-        registerComponent("trainingHistoryArea", trainingHistoryArea);
-
-        container.add(createFormRow(new JLabel(""), trainingScrollPane, "trainingHistoryArea"));
-        container.add(createVerticalSpacer(20));
-    }
-
-    /**
      * 備考セクションの作成
      * 備考を入力するテキストエリアを配置
      *
@@ -564,7 +552,6 @@ public class DetailPanel extends AbstractEngineerPanel {
         titlePanel.setBackground(Color.WHITE);
         titlePanel.add(noteTitle);
         container.add(titlePanel);
-        container.add(createVerticalSpacer(10));
 
         // 備考テキストエリア
         noteArea = new JTextArea(5, 20);
@@ -859,7 +846,7 @@ public class DetailPanel extends AbstractEngineerPanel {
             isValid = false;
         }
 
-        // フリガナの検証
+        // 氏名 (カナ)の検証
         Validator kanaValidator = ValidatorEnum.NAME_KANA.getValidator();
         if (!kanaValidator.validate(nameKanaField.getText())) {
             showFieldError("nameKanaField", kanaValidator.getErrorMessage());
