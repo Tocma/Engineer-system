@@ -15,6 +15,7 @@ import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Locale;
+import java.util.Set;
 import java.util.logging.Level;
 import java.util.stream.Collectors;
 
@@ -22,9 +23,9 @@ import java.util.stream.Collectors;
  * エンジニア一覧を表示するパネルクラス
  * ページング、ソート、検索、追加、取込、削除機能
  *
- * @author Nakano
- * @version 4.3.1
- * @since 2025-05-05
+ * @author Bando
+ * @version 4.4.1
+ * @since 2025-05-07
  */
 public class ListPanel extends JPanel {
 
@@ -46,6 +47,20 @@ public class ListPanel extends JPanel {
     private final JLabel pageLabel;
     private final JButton prevButton;
     private final JButton nextButton;
+
+    // ボタンのフィールド化
+    private JButton importButton;
+    private JButton templateButton;
+    private JButton exportButton;
+    private JButton deleteButton;
+
+    // 処理中表示用ラベル
+    private JLabel statusLabel;
+    // 削除中状態フラグ
+    private boolean deleting = false;
+
+    // 一覧画面が次回表示時に再描画すべきかどうかのフラグ
+    private static boolean needsRefresh = false;
 
     /** ページサイズ（1ページあたりの表示件数） */
     private final int pageSize = 100;
@@ -267,21 +282,27 @@ public class ListPanel extends JPanel {
         addButton.addActionListener(e -> addNewEngineer());
         buttonPanel.add(addButton);
 
-        JButton importButton = new JButton("取込");
+        importButton = new JButton("取込");
         importButton.addActionListener(e -> importData());
         buttonPanel.add(importButton);
 
-        JButton templateButton = new JButton("テンプレ");
+        templateButton = new JButton("テンプレ");
         templateButton.addActionListener(e -> loadTemplate());
         buttonPanel.add(templateButton);
 
-        JButton exportButton = new JButton("出力");
+        exportButton = new JButton("出力");
         exportButton.addActionListener(e -> exportData());
         buttonPanel.add(exportButton);
 
-        JButton deleteButton = new JButton("削除");
+        deleteButton = new JButton("削除");
+        deleteButton.setEnabled(false); // 初期状態は無効
         deleteButton.addActionListener(e -> deleteSelectedRow());
         buttonPanel.add(deleteButton);
+
+        // --- 行選択に応じて削除ボタンの有効／無効を制御するリスナー ---
+        table.getSelectionModel().addListSelectionListener(e -> {
+            updateButtonState(); //
+        });
 
         topPanel.add(buttonPanel); // ボタン群を追加
 
@@ -337,15 +358,21 @@ public class ListPanel extends JPanel {
      * @return 下部パネル
      */
     private JPanel createBottomPanel() {
-        JPanel bottomPanel = new JPanel(new FlowLayout(FlowLayout.CENTER));
+        JPanel bottomPanel = new JPanel(new BorderLayout());
+        // 中央にボタン群
+        JPanel navigationPanel = new JPanel(new FlowLayout(FlowLayout.CENTER));
+        navigationPanel.add(prevButton);
+        navigationPanel.add(pageLabel);
+        navigationPanel.add(nextButton);
 
-        // ページ移動ボタン
-        prevButton.setEnabled(false); // 初期状態では無効
-        nextButton.setEnabled(false); // 初期状態では無効
+        // 右にステータスラベル
+        JPanel statusPanel = new JPanel(new FlowLayout(FlowLayout.RIGHT, 10, 5)); // ← 横余白10ピクセル
+        statusLabel = new JLabel(" ");
+        statusLabel.setHorizontalAlignment(SwingConstants.RIGHT);
+        statusPanel.add(statusLabel);
 
-        bottomPanel.add(prevButton);
-        bottomPanel.add(pageLabel);
-        bottomPanel.add(nextButton);
+        bottomPanel.add(navigationPanel, BorderLayout.CENTER);
+        bottomPanel.add(statusPanel, BorderLayout.EAST);
 
         return bottomPanel;
     }
@@ -724,6 +751,9 @@ public class ListPanel extends JPanel {
             return null;
         }
 
+          // 表示用のデータ（検索・ソート反映済み）
+        List<EngineerDTO> displayData = getDisplayData();
+
         // 選択行のモデル上のインデックスに変換
         int modelRow = table.convertRowIndexToModel(selectedRow);
 
@@ -734,8 +764,8 @@ public class ListPanel extends JPanel {
         int dataIndex = startIndex + modelRow;
 
         // インデックスが有効範囲内かチェック
-        if (dataIndex >= 0 && dataIndex < allData.size()) {
-            return allData.get(dataIndex);
+        if (dataIndex >= 0 && dataIndex < displayData.size()) {
+            return displayData.get(dataIndex);
         }
 
         return null;
@@ -779,6 +809,9 @@ public class ListPanel extends JPanel {
         if (selectedRows.length == 0) {
             return selectedEngineers;
         }
+         // 表示用のフィルタ・ソート適用済みデータ
+    List<EngineerDTO> displayData = getDisplayData();
+
 
         // 現在のページの先頭インデックス
         int startIndex = (currentPage - 1) * pageSize;
@@ -791,8 +824,8 @@ public class ListPanel extends JPanel {
             int dataIndex = startIndex + modelRow;
 
             // インデックスが有効範囲内かチェック
-            if (dataIndex >= 0 && dataIndex < allData.size()) {
-                selectedEngineers.add(allData.get(dataIndex));
+            if (dataIndex >= 0 && dataIndex < displayData.size()) {
+                selectedEngineers.add(displayData.get(dataIndex));
             }
         }
 
@@ -868,17 +901,45 @@ public class ListPanel extends JPanel {
         // mainController.handleEvent("EXPORT_CSV", null);
     }
 
+    // 削除中状態フラグ
+    public boolean isDeleting() {
+        return deleting;
+    }
+
     /**
-     * 削除ボタンのイベントハンドラ
+     * テーブルで選択された行を削除対象として確認ダイアログを表示し、
+     * ユーザーが確認すれば削除処理を開始する。
      */
     private void deleteSelectedRow() {
         int[] selectedRows = table.getSelectedRows();
         if (selectedRows.length > 0) {
             // 選択されたエンジニアリストを取得
             List<EngineerDTO> selectedEngineers = getSelectedEngineers();
+            // ボタンをすぐ無効化
+            deleting = true; // 削除中フラグセット
+            updateButtonState();
+            mainController.getScreenController().setRegisterButtonEnabled(false); // 登録ボタンも無効化
 
-            // ここに削除処理を実装する（TODO）
-            // 現在はメッセージのみログに記録
+            // 削除対象のリストを作成
+            List<String> deleteTargets = selectedEngineers.stream()
+                    .map(engineer -> engineer.getId() + " : " + engineer.getName())
+                    .collect(Collectors.toList());
+
+            // 確認ダイアログを表示
+            boolean confirmed = DialogManager.getInstance()
+                    .showScrollableListDialog("削除確認", "以下の情報を削除します。よろしいですか？", deleteTargets);
+
+            if (confirmed) {
+                // 削除実行
+                mainController.handleEvent("DELETE_ENGINEER", selectedEngineers);
+            } else {
+
+                // キャンセルされた場合、ボタンを再度有効化
+                setButtonsEnabled(true);
+                mainController.getScreenController().setRegisterButtonEnabled(true);
+
+            }
+
             LogHandler.getInstance().log(Level.INFO, LogType.UI,
                     String.format("%d件の行が削除対象に選択されました", selectedRows.length));
         }
@@ -922,6 +983,109 @@ public class ListPanel extends JPanel {
             LogHandler.getInstance().log(Level.WARNING, LogType.UI,
                     "詳細表示に失敗: エンジニアが選択されていないか、コントローラーが設定されていません");
         }
+    }
+
+    /**
+     * ステータスラベルにメッセージを表示する。
+     *
+     * @param message 表示するステータスメッセージ
+     */
+    public void setStatus(String message) {
+        if (statusLabel != null) {
+            statusLabel.setText(message);
+        }
+    }
+
+    /**
+     * ステータスラベルをクリアして空にする。
+     */
+    public void clearStatus() {
+        if (statusLabel != null) {
+            statusLabel.setText(""); // ステータスラベルを空にする
+        }
+    }
+
+    /**
+     * 削除やCSV操作に関するボタンを一括で有効／無効にする。
+     *
+     * @param enabled true で有効、false で無効
+     */
+    public void setButtonsEnabled(boolean enabled) {
+        importButton.setEnabled(enabled);
+        templateButton.setEnabled(enabled);
+        exportButton.setEnabled(enabled);
+        deleteButton.setEnabled(enabled);
+    }
+
+    /**
+     * テーブルの選択状態や削除中フラグに応じてボタンの状態を更新する。
+     * 削除中は全ての操作ボタンを無効化する。
+     */
+    public void updateButtonState() {
+        if (deleting) {
+            setButtonsEnabled(false);
+            return;
+        }
+
+        // 通常時だけ判定して制御する
+        boolean hasSelection = table.getSelectedRowCount() > 0;
+        deleteButton.setEnabled(hasSelection);
+        importButton.setEnabled(true);
+        exportButton.setEnabled(true);
+        templateButton.setEnabled(true);
+    }
+
+    /**
+     * 削除処理完了後に呼び出され、削除中フラグを解除しボタン状態をリセットする。
+     */
+    public void onDeleteCompleted() {
+        deleting = false;
+        updateButtonState();
+        mainController.getScreenController().setRegisterButtonEnabled(true);
+    }
+
+    /**
+     * 一覧画面が次回表示されたときにデータを再読み込みする必要があるかを示すフラグを設定。
+     *
+     * @param flag true の場合は再描画が必要、false の場合は不要
+     */
+    public static void setNeedsRefresh(boolean flag) {
+        needsRefresh = flag;
+    }
+
+    /**
+     * 一覧画面の再描画が必要かどうかを返します。
+     *
+     * @return true の場合は再描画が必要、false の場合は不要
+     */
+    public static boolean isRefreshNeeded() {
+        return needsRefresh;
+    }
+
+    /**
+     * 一覧画面が表示されたときに呼び出される処理。
+     * 
+     * <p>
+     * 「再描画が必要」な場合は、最新のデータを Controller 経由で取得し、画面を更新します。<br>
+     * その後、ページ情報やボタン状態もリセットされます。
+     * </p>
+     */
+    public void onScreenShown() {
+        if (needsRefresh && mainController != null) {
+            try {
+                List<EngineerDTO> latestData = mainController.getEngineerList(); // Controller経由で取得
+                setEngineerData(latestData);
+                needsRefresh = false;
+
+                updatePageLabel(latestData.size());
+                updatePaginationButtons(latestData.size());
+                updateButtonState();
+                LogHandler.getInstance().log(Level.INFO, LogType.SYSTEM, "一覧画面を再描画しました（Controller経由）");
+            } catch (Exception e) {
+                LogHandler.getInstance().logError(LogType.SYSTEM, "一覧画面の再描画に失敗しました", e);
+            }
+        }
+
     }
 
     /**

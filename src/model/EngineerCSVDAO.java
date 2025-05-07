@@ -43,9 +43,9 @@ import java.util.stream.Collectors;
  * 備えており、複数のスレッドからの安全なアクセスをサポートします。
  * </p>
  *
- * @author Nagai
- * @version 4.2.2
- * @since 2025-04-25
+ * @author Bando
+ * @version 4.3.2
+ * @since 2025-05-08
  */
 public class EngineerCSVDAO implements EngineerDAO {
 
@@ -231,29 +231,35 @@ public class EngineerCSVDAO implements EngineerDAO {
     }
 
     @Override
-    public void delete(String id) {
-        if (id == null || id.trim().isEmpty()) {
-            throw new IllegalArgumentException("IDがnullまたは空です");
-        }
-
-        try {
-            // 現在のCSVデータを読み込み
-            CSVAccessResult currentData = readCSV();
-            List<EngineerDTO> engineers = new ArrayList<>(currentData.getSuccessData());
-
-            // 削除対象のエンジニアを探して削除
-            engineers.removeIf(engineer -> id.equals(engineer.getId()));
-
-            // CSVに書き込み
-            writeCSV(engineers);
-
-            LogHandler.getInstance().log(Level.INFO, LogType.SYSTEM, "エンジニア情報を削除しました: ID=" + id);
-
-        } catch (Exception e) {
-            LogHandler.getInstance().logError(LogType.SYSTEM, "エンジニア情報の削除に失敗しました: ID=" + id, e);
-            throw new RuntimeException("エンジニア情報の削除に失敗しました", e);
-        }
+public void deleteAll(List<String> ids) {
+    if (ids == null || ids.isEmpty()) {
+        throw new IllegalArgumentException("削除対象のIDリストが空です");
     }
+
+    try {
+        // メモリにあるデータはそのまま、まず削除後のリストを作る
+        CSVAccessResult currentData = readCSV();
+        List<EngineerDTO> original = new ArrayList<>(currentData.getSuccessData());
+
+        // まず「CSVに書き込むための削除済みリスト」を生成
+        List<EngineerDTO> filtered = original.stream()
+                .filter(dto -> !ids.contains(dto.getId()))
+                .toList();
+
+        // CSVに先に書き込み
+        writeCSV(filtered);
+
+        // メモリ上のリスト（currentData）からも除外
+        original.removeIf(dto -> ids.contains(dto.getId()));
+
+        LogHandler.getInstance().log(Level.INFO, LogType.SYSTEM,
+                String.format("CSV削除後、%d件のエンジニアをメモリ上からも削除しました", ids.size()));
+
+    } catch (Exception e) {
+        LogHandler.getInstance().logError(LogType.SYSTEM, "エンジニア情報の一括削除に失敗しました", e);
+        throw new RuntimeException("エンジニア情報の一括削除に失敗しました", e);
+    }
+}
 
     /**
      * エラーリストをCSVファイルにエクスポート

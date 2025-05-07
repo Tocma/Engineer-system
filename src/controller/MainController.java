@@ -12,6 +12,7 @@ import view.ListPanel;
 import view.MainFrame;
 import java.io.File;
 import java.util.List;
+import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -19,6 +20,7 @@ import java.util.logging.Level;
 import javax.swing.JFileChooser;
 import javax.swing.JOptionPane;
 import javax.swing.JPanel;
+import javax.swing.SwingUtilities;
 
 /**
  * アプリケーションのメインコントローラー
@@ -67,9 +69,9 @@ import javax.swing.JPanel;
  * </ul>
  * </p>
  *
- * @author Nakano
- * @version 4.3.1
- * @since 2025-05-05
+ * @author Bando
+ * @version 4.4.1
+ * @since 2025-05-07
  */
 public class MainController {
 
@@ -93,6 +95,9 @@ public class MainController {
 
     /** シャットダウン中フラグ */
     private final AtomicBoolean isShuttingDown;
+
+
+    private final Set<String> deletingIds = ConcurrentHashMap.newKeySet();
 
     /**
      * コンストラクタ
@@ -187,6 +192,11 @@ public class MainController {
                 case "SHUTDOWN":
                     initiateShutdown();
                     break;
+
+                case "DELETE_ENGINEER":
+                    handleDeleteEngineer(data);
+                    break;
+
                 default:
                     handleUnknownEvent(event, data);
                     break;
@@ -235,6 +245,93 @@ public class MainController {
         // スレッドを登録して開始
         mainFrame.registerThread(thread);
         thread.start();
+    }
+
+    /**
+     * エンジニア情報の削除処理を非同期で実行します。
+     * 
+     * @param data 削除対象のエンジニアDTOリスト
+     */
+    @SuppressWarnings("unchecked")
+    private void handleDeleteEngineer(Object data) {
+        List<EngineerDTO> targetList = (List<EngineerDTO>) data;
+        JPanel panel = screenController.getCurrentPanel();
+
+        if (panel instanceof ListPanel listPanel) {
+            listPanel.setStatus("削除中...   ");
+        }
+
+        // 削除中フラグがtrueであれば、登録ボタンを無効化
+        screenController.setRegisterButtonEnabled(false);
+
+        // 削除対象IDを記録
+        targetList.forEach(dto -> deletingIds.add(dto.getId()));
+
+        startAsyncTask("delete_engineers", () -> {
+            EngineerController controller = new EngineerController();
+            controller.deleteEngineers(targetList, () -> {
+                SwingUtilities.invokeLater(() -> {
+                    if (panel instanceof ListPanel listPanel) {
+                        listPanel.clearStatus();
+
+                    }
+
+                    DialogManager.getInstance().showCompletionDialog("削除が完了しました。", () -> {
+                        try {
+                            // 削除完了後に対象IDを解除
+                            targetList.forEach(dto -> deletingIds.remove(dto.getId()));
+                            // CSV から最新データを再取得
+                            List<EngineerDTO> updatedList = engineerController.loadEngineers();
+                            // ListPanel に再設定（再描画される）
+                            JPanel refreshedPanel = screenController.getCurrentPanel();
+                            if (refreshedPanel instanceof ListPanel listPanel) {
+                                listPanel.setEngineerData(updatedList);
+                            }
+                            // 登録ボタン再有効化
+                            screenController.setRegisterButtonEnabled(true);
+                            if (panel instanceof ListPanel listPanel) {
+                                listPanel.onDeleteCompleted(); // ←ここで削除中フラグ解除
+
+                            }
+
+                            ListPanel.setNeedsRefresh(true); // ← 一覧更新フラグON
+
+                            LogHandler.getInstance().log(Level.INFO, LogType.SYSTEM, "削除後のデータを再読み込みしました");
+
+                        } catch (Exception e) {
+                            LogHandler.getInstance().logError(LogType.SYSTEM, "削除後の再読み込みに失敗しました", e);
+                        }
+
+                    });
+
+                });
+            });
+        });
+    }
+
+    /**
+     * 最新のエンジニア一覧を取得します。
+     *
+     * @return エンジニアDTOのリスト
+     */
+    public List<EngineerDTO> getEngineerList() {
+        if (engineerController == null) {
+            engineerController = new EngineerController(); // 念のため
+        }
+        return engineerController.loadEngineers();
+    }
+
+    /**
+     * 最新のエンジニア一覧を取得します。
+     *
+     * @return エンジニアDTOのリスト
+     */
+    public ListPanel getListPanel() {
+        JPanel panel = screenController.getPanelByType("LIST");
+        if (panel instanceof ListPanel lp) {
+            return lp;
+        }
+        return null;
     }
 
     /**
@@ -575,6 +672,20 @@ public class MainController {
      * @param engineerId 表示するエンジニアID
      */
     private void handleViewDetail(String engineerId) {
+        // 削除中のIDは遷移禁止
+        if (deletingIds.contains(engineerId)) {
+            LogHandler.getInstance().log(Level.INFO, LogType.SYSTEM,
+                    "削除中のため詳細画面に遷移しません: ID=" + engineerId);
+            return;
+        }
+        // ★ListPanelから削除中フラグを取得（この行だけ追加）
+        final boolean isCurrentlyDeleting;
+        JPanel listPanelRaw = screenController.getPanelByType("LIST");
+        if (listPanelRaw instanceof ListPanel lp) {
+            isCurrentlyDeleting = lp.isDeleting();
+        } else {
+            isCurrentlyDeleting = false;
+        }
         try {
             // エンジニア情報を取得
             EngineerDTO engineer = engineerController.getEngineerById(engineerId);
@@ -583,9 +694,13 @@ public class MainController {
                 // 詳細画面に遷移し、完了後にエンジニア情報を設定するコールバックを指定
                 screenController.showPanelWithCallback("DETAIL", () -> {
                     JPanel currentPanel = screenController.getCurrentPanel();
-                    if (currentPanel instanceof DetailPanel) {
+                    if (currentPanel instanceof DetailPanel dp) {
                         // エンジニア情報を設定
-                        ((DetailPanel) currentPanel).setEngineerData(engineer);
+                        dp.setEngineerData(engineer);
+
+                      // ★更新ボタンを削除中なら無効化（この行だけ追加）
+                    dp.setUpdateButtonEnabled(!isCurrentlyDeleting);
+
                         LogHandler.getInstance().log(Level.INFO, LogType.SYSTEM,
                                 "エンジニア詳細を表示: ID=" + engineerId);
                     } else {

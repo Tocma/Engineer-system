@@ -5,9 +5,15 @@ import model.EngineerDAO;
 import model.EngineerCSVDAO;
 import util.LogHandler;
 import util.LogHandler.LogType;
+import view.DialogManager;
+
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Set;
 import java.util.logging.Level;
+import java.util.stream.Collectors;
+
+import javax.swing.SwingUtilities;
 
 /**
  * エンジニア情報に関する操作を制御するコントローラークラス
@@ -23,9 +29,9 @@ import java.util.logging.Level;
  * </ul>
  * </p>
  *
- * @author Nakano
- * @version 4.0.0
- * @since 2025-04-15
+ * @author Bando
+ * @version 4.3.0
+ * @since 2025-05-08
  */
 public class EngineerController {
 
@@ -98,6 +104,52 @@ public class EngineerController {
         } catch (Exception e) {
             LogHandler.getInstance().logError(LogType.SYSTEM, "エンジニア情報の更新に失敗しました", e);
             return false;
+        }
+    }
+
+    /**
+     * エンジニア情報を一括削除
+     *
+     * @param targetList 削除対象のエンジニアDTOリスト
+     * @param onFinish   完了後に実行する処理（UI更新など）
+     */
+    // public void deleteEngineers(List<EngineerDTO> targetList, Runnable onFinish)
+    // {
+    // try {
+
+    // Thread.sleep(3000);
+
+    // List<String> ids = targetList.stream()
+    // .map(EngineerDTO::getId)
+    // .collect(Collectors.toList());
+
+    // engineerDAO.deleteAll(ids); // EngineerCSVDAOに実装したdeleteAll()を呼ぶ
+
+    // LogHandler.getInstance().log(Level.INFO, LogType.SYSTEM,
+    // String.format("%d件のエンジニア情報を削除しました。", ids.size()));
+
+    // } catch (Exception e) {
+    // DialogManager.getInstance().showSystemErrorDialog("削除中にエラーが発生しました。", e);
+    // } finally {
+    // SwingUtilities.invokeLater(onFinish); // UIスレッドで後処理
+    // }
+    // }
+
+    public void deleteEngineers(List<EngineerDTO> targetList, Runnable onFinish) {
+        try {
+            Thread.sleep(3000);
+
+            List<String> ids = targetList.stream()
+                    .map(EngineerDTO::getId)
+                    .collect(Collectors.toList());
+
+            engineerDAO.deleteAll(ids); // 削除実行
+            LogHandler.getInstance().log(Level.INFO, LogType.SYSTEM,
+                    String.format("%d件のエンジニア情報を削除しました。", ids.size()));
+        } catch (Exception e) {
+            DialogManager.getInstance().showSystemErrorDialog("削除中にエラーが発生しました。", e);
+        } finally {
+            SwingUtilities.invokeLater(onFinish); // UIスレッドで後処理
         }
     }
 

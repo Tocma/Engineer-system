@@ -52,9 +52,9 @@ import java.util.logging.Level;
  * </ol>
  * </p>
  *
- * @author Nakano
- * @version 4.3.1
- * @since 2025-05-06
+ * @author Bando
+ * @version 4.4.1
+ * @since 2025-05-08
  */
 public class DetailPanel extends AbstractEngineerPanel {
 
@@ -1390,4 +1390,12 @@ public class DetailPanel extends AbstractEngineerPanel {
 
         return ratings;
     }
+
+
+    public void setUpdateButtonEnabled(boolean enabled) {
+        updateButton.setEnabled(enabled);
+    }
+    
+
+
 }

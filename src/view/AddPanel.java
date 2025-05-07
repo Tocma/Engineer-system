@@ -82,9 +82,9 @@ import java.util.logging.Level;
  * </ol>
  * </p>
  *
- * @author Nakano
- * @version 4.3.1
- * @since 2025-05-06
+ * @author Bando
+ * @version 4.4.1
+ * @since 2025-05-07
  */
 public class AddPanel extends AbstractEngineerPanel {
 
@@ -1287,6 +1287,10 @@ public class AddPanel extends AbstractEngineerPanel {
         clearFields();
 
         if (mainController != null) {
+            if (ListPanel.isRefreshNeeded()) {
+                ListPanel.setNeedsRefresh(false); 
+                mainController.getListPanel().setEngineerData(mainController.getEngineerController().loadEngineers()); 
+            }
             mainController.handleEvent("CHANGE_PANEL", "LIST");
             LogHandler.getInstance().log(Level.INFO, LogType.UI, "一覧画面に戻ります");
         } else {
@@ -1500,4 +1504,12 @@ public class AddPanel extends AbstractEngineerPanel {
             return selected;
         }
     }
+
+    // 登録ボタンの有効/無効制御
+    public void setRegisterButtonEnabled(boolean enabled) {
+        if (addButton != null) {
+            addButton.setEnabled(enabled);
+        }
+    }
+
 }

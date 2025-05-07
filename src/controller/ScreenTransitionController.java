@@ -8,7 +8,11 @@ import view.DetailPanel;
 import view.MainFrame;
 import javax.swing.JPanel;
 import javax.swing.SwingUtilities;
+
+import model.EngineerDTO;
+
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.logging.Level;
@@ -72,9 +76,9 @@ import java.util.logging.Level;
  * </pre>
  * </p>
  *
- * @author Nakano
- * @version 4.3.1
- * @since 2025-05-05
+ * @author Bando
+ * @version 4.4.1
+ * @since 2025-05-08
  */
 public class ScreenTransitionController {
 
@@ -144,6 +148,8 @@ public class ScreenTransitionController {
     /**
      * 指定されたパネルタイプの画面を表示
      * パネルを切り替えて表示します
+     * 削除中のフラグがある場合は、
+     * 新規画面への登録ボタンを無効化する処理が含まれます。
      *
      * @param panelType 表示するパネルタイプ("LIST", "DETAIL", "ADD")
      */
@@ -173,14 +179,30 @@ public class ScreenTransitionController {
                     // パネルの取得（キャッシュになければ新規作成）
                     JPanel panel = getOrCreatePanel(panelType);
 
+                    // 遷移前の削除状態を取得
+                    boolean wasDeleting = false;
+                    JPanel previousPanel = mainFrame.getCurrentPanel();
+                    if ("ADD".equals(panelType) && previousPanel instanceof ListPanel listPanel) {
+                        wasDeleting = listPanel.isDeleting();
+                    }
+
                     if (panel != null) {
 
                         // アニメーションなしで直接表示
                         mainFrame.showPanel(panel);
 
+                        // ListPanel遷移後に再描画処理
+                        if ("LIST".equals(panelType) && panel instanceof ListPanel listPanel) {
+                            listPanel.onScreenShown();
+                        }
+
                         // 現在のパネルタイプを更新
                         currentPanelType = panelType;
 
+                        // AddPanelに切り替えた後に、削除中だったら登録ボタンを無効化
+                        if ("ADD".equals(panelType) && panel instanceof AddPanel addPanel) {
+                            addPanel.setRegisterButtonEnabled(!wasDeleting); // ← trueなら有効、falseなら無効
+                        }
                         // ログ記録
                         LogHandler.getInstance().log(
                                 Level.INFO, LogType.SYSTEM,
@@ -253,6 +275,30 @@ public class ScreenTransitionController {
             // EDT外での例外発生時の処理
             isTransitioning.set(false);
             LogHandler.getInstance().logError(LogType.SYSTEM, "画面切り替え要求の処理に失敗しました", e);
+        }
+    }
+
+    /**
+     * 指定されたパネルタイプに対応するパネルをキャッシュから取得します。
+     *
+     * @param panelType パネルの識別子（例: "LIST", "ADD" など）
+     * @return 指定されたパネルに対応する JPanel、存在しない場合は null
+     */
+    public JPanel getPanelByType(String panelType) {
+        return panelCache.get(panelType);
+    }
+
+    /**
+     * 現在表示中のパネルが AddPanel である場合に、登録ボタンの有効／無効を切り替えます。
+     *
+     * @param enabled true で有効化、false で無効化
+     */
+    public void setRegisterButtonEnabled(boolean enabled) {
+        JPanel panel = getCurrentPanel();
+        if (panel instanceof AddPanel addPanel) {
+            addPanel.setRegisterButtonEnabled(enabled);
+        }else if (panel instanceof DetailPanel detailPanel) {
+            detailPanel.setUpdateButtonEnabled(enabled); // ← これを追加
         }
     }
 

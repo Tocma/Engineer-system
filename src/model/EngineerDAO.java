@@ -52,5 +52,8 @@ public interface EngineerDAO {
      *
      * @param id 削除するエンジニアID
      */
-    void delete(String id);
+    void deleteAll(List<String> ids);
+
+
+
 }

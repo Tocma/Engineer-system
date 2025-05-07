@@ -58,9 +58,9 @@ import java.util.stream.Collectors;
  * </pre>
  * </p>
  *
- * @author Nakano
- * @version 4.0.0
- * @since 2025-04-15
+ * @author Bando
+ * @version 4.1.0
+ * @since 2025-05-07
  */
 public class DialogManager {
 
@@ -197,6 +197,66 @@ public class DialogManager {
     }
 
     /**
+     * 完了メッセージを表示するダイアログを表示し、ユーザーが閉じた後に任意の後続処理を実行します。
+     *
+     * @param message  表示する完了メッセージ
+     * @param onClosed ダイアログが閉じられた後に実行される処理（null 可）
+     */
+    public void showCompletionDialog(String message, Runnable onClosed) {
+
+        JOptionPane.showMessageDialog(
+                getActiveFrame(),
+                message,
+                "メッセージ",
+                JOptionPane.INFORMATION_MESSAGE);
+        if (onClosed != null) {
+            onClosed.run(); // ダイアログ閉じたら後続処理実行
+        }
+
+    }
+
+    /**
+     * 大量データをスクロール表示できる確認ダイアログを表示します
+     *
+     * @param title         ダイアログのタイトル
+     * @param headerMessage 上部に表示する簡単なメッセージ（null可）
+     * @param lines         表示する文字列リスト
+     * @return 「はい」が選択された場合はtrue、それ以外はfalse
+     */
+    public boolean showScrollableListDialog(String title, String headerMessage, List<String> lines) {
+        try {
+            StringBuilder sb = new StringBuilder();
+            if (headerMessage != null && !headerMessage.isEmpty()) {
+                sb.append(headerMessage).append("\n\n");
+            }
+            for (String line : lines) {
+                sb.append(line).append("\n");
+            }
+
+            JTextArea textArea = new JTextArea(sb.toString());
+            textArea.setEditable(false);
+            textArea.setLineWrap(true);
+            textArea.setWrapStyleWord(true);
+
+            JScrollPane scrollPane = new JScrollPane(textArea);
+            scrollPane.setPreferredSize(new Dimension(400, 300)); // 必要に応じて調整
+
+            int result = JOptionPane.showConfirmDialog(
+                    getActiveFrame(),
+                    scrollPane,
+                    title,
+                    JOptionPane.YES_NO_OPTION,
+                    JOptionPane.QUESTION_MESSAGE);
+
+            return result == JOptionPane.YES_OPTION;
+
+        } catch (Exception e) {
+            LogHandler.getInstance().logError(LogType.SYSTEM, "スクロール可能リストダイアログの表示中にエラーが発生しました", e);
+            return false;
+        }
+    }
+
+    /**
      * 確認ダイアログを表示します
      * ユーザーの確認が必要な操作の前に、確認を求めるダイアログを表示します
      *
@@ -215,6 +275,16 @@ public class DialogManager {
      * @return 「はい」が選択された場合はtrue、それ以外はfalse
      */
     public boolean showConfirmDialog(String title, String message) {
+        if (SwingUtilities.isEventDispatchThread()) {
+            int result = JOptionPane.showConfirmDialog(
+                    getActiveFrame(),
+                    message,
+                    title,
+                    JOptionPane.YES_NO_OPTION,
+                    JOptionPane.QUESTION_MESSAGE);
+            return result == JOptionPane.YES_OPTION;
+        }
+
         try {
             // 非同期処理でダイアログを表示し、結果を待機
             CompletableFuture<Boolean> future = new CompletableFuture<>();
@@ -239,6 +309,33 @@ public class DialogManager {
             return false;
         }
     }
+
+    // public boolean showConfirmDialog(String title, String message) {
+    // try {
+    // // 非同期処理でダイアログを表示し、結果を待機
+    // CompletableFuture<Boolean> future = new CompletableFuture<>();
+
+    // SwingUtilities.invokeLater(() -> {
+    // int result = JOptionPane.showConfirmDialog(
+    // getActiveFrame(),
+    // message,
+    // title,
+    // JOptionPane.YES_NO_OPTION,
+    // JOptionPane.QUESTION_MESSAGE);
+
+    // future.complete(result == JOptionPane.YES_OPTION);
+    // });
+
+    // // 結果が利用可能になるまで待機
+    // return future.get();
+
+    // } catch (InterruptedException | ExecutionException e) {
+    // LogHandler.getInstance().logError(LogType.SYSTEM, "確認ダイアログの表示中にエラーが発生しました",
+    // e);
+    // Thread.currentThread().interrupt(); // 割り込みステータスを復元
+    // return false;
+    // }
+    // }
 
     /**
      * ID重複確認ダイアログを表示します
