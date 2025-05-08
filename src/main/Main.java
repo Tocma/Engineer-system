@@ -59,8 +59,8 @@ import java.util.logging.Level;
  * </p>
  *
  * @author Nakano
- * @version 4.0.0
- * @since 2025-04-15
+ * @version 4.4.2
+ * @since 2025-05-8
  */
 public class Main {
 
@@ -228,6 +228,7 @@ public class Main {
 
         // 終了処理
         cleanup();
+        //強制終了
         System.exit(1);
     }
 

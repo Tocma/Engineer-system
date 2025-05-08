@@ -13,12 +13,6 @@ import java.util.logging.*;
  * エンジニア情報管理システムのログ管理を行うシングルトンクラス
  * 
  * <p>
- * このクラスは、システム全体のログ出力を一元管理し、日付ベースのログファイル名や
- * ログローテーション、適切なフォーマットなどの機能を提供します。ログTypeとして
- * 「UI」と「SYSTEM」を区別し、ログの分類を明確にします。
- * </p>
- * 
- * <p>
  * 主な特徴：
  * <ul>
  * <li>シングルトンパターンによる一元管理</li>
@@ -43,7 +37,6 @@ import java.util.logging.*;
  * 使用例：
  * 
  * <pre>
- * 
  * // ログシステムの初期化
  * LogHandler.getInstance().initialize();
  * 
@@ -66,8 +59,8 @@ import java.util.logging.*;
  * </p>
  * 
  * @author Nakano
- * @version 4.0.0
- * @since 2025-04-15
+ * @version 4.4.2
+ * @since 2025-05-08
  */
 public class LogHandler {
 
@@ -82,7 +75,6 @@ public class LogHandler {
         SYSTEM("SYSTEM");
 
         private final String code;
-
         LogType(String code) {
             this.code = code;
         }
@@ -94,7 +86,6 @@ public class LogHandler {
 
     /** シングルトンインスタンス */
     private static final LogHandler INSTANCE = new LogHandler();
-
     /** ログ関連の定数定義 */
     private static final String DEFAULT_LOG_DIR = "src/logs";
     private static final String LOG_FILE_FORMAT = "System-%s.log";
@@ -103,7 +94,7 @@ public class LogHandler {
 
     /** ロガー設定 */
     private Logger logger;
-    private boolean initialized;
+    private boolean isinitialized;
     private String logDirectory;
     private FileHandler fileHandler;
 
@@ -146,23 +137,20 @@ public class LogHandler {
             throw new IllegalArgumentException("ログディレクトリパスが指定されていません");
         }
 
-        if (initialized) {
+        if (isinitialized) {
             return;
         }
 
         try {
-            // ログディレクトリのセットアップ
+            // ログディレクトリのセットアップ ロガーの設定
             this.logDirectory = setupLogDirectory(logDir);
-
-            // ロガーの設定
             configureLogger();
-
             // 初期化完了
-            initialized = true;
-
+            isinitialized = true;
+    
             // 初期化完了のログを出力
             log(LogType.SYSTEM, "ログシステムが正常に初期化されました");
-
+            
         } catch (IOException e) {
             System.err.println("ログシステムの初期化に失敗しました: " + e.getMessage());
             throw new IOException("ログシステムの初期化に失敗しました", e);
@@ -314,7 +302,7 @@ public class LogHandler {
      * @throws IllegalStateException 初期化されていない場合
      */
     private void checkInitialized() {
-        if (!initialized) {
+        if (!isinitialized) {
             throw new IllegalStateException("LogHandlerが初期化されていません。initialize()メソッドを先に呼び出してください。");
         }
     }
@@ -335,7 +323,7 @@ public class LogHandler {
      */
     public synchronized void cleanup() {
         if (fileHandler != null) {
-            if (initialized) {
+            if (isinitialized) {
                 log(LogType.SYSTEM, "システムをシャットダウンしています");
             }
             fileHandler.close();
@@ -348,7 +336,7 @@ public class LogHandler {
      * @return 初期化済みの場合true
      */
     public boolean isInitialized() {
-        return initialized;
+        return isinitialized;
     }
 
     /**
