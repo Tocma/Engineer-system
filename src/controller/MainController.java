@@ -69,9 +69,9 @@ import javax.swing.SwingUtilities;
  * </ul>
  * </p>
  *
- * @author Bando
+ * @author Nakano
  * @version 4.4.1
- * @since 2025-05-07
+ * @since 2025-05-08
  */
 public class MainController {
 
@@ -96,8 +96,10 @@ public class MainController {
     /** シャットダウン中フラグ */
     private final AtomicBoolean isShuttingDown;
 
-
     private final Set<String> deletingIds = ConcurrentHashMap.newKeySet();
+
+    // 最大レコード数の定数
+    private static final int MAX_RECORDS = 1000;
 
     /**
      * コンストラクタ
@@ -420,9 +422,33 @@ public class MainController {
                                     "エンジニア情報の更新処理を実行: ID=" + engineer.getId());
                         } else {
                             // 新規エンジニアの場合は追加処理
-                            success = engineerController.addEngineer(engineer);
-                            LogHandler.getInstance().log(Level.INFO, LogType.SYSTEM,
-                                    "エンジニア情報の新規追加処理を実行: ID=" + engineer.getId());
+                            try {
+                                success = engineerController.addEngineer(engineer);
+                                LogHandler.getInstance().log(Level.INFO, LogType.SYSTEM,
+                                        "エンジニア情報の新規追加処理を実行: ID=" + engineer.getId());
+                            } catch (EngineerController.TooManyRecordsException e) {
+                                // 登録上限エラーの処理
+                                LogHandler.getInstance().log(Level.WARNING, LogType.SYSTEM,
+                                        "登録件数の上限に達したため、エンジニア情報の追加に失敗しました: " + e.getMessage());
+
+                                // UI更新はSwingのEDTで実行
+                                javax.swing.SwingUtilities.invokeLater(() -> {
+                                    // エラーダイアログ表示
+                                    DialogManager.getInstance().showErrorDialog(
+                                            "登録制限エラー",
+                                            "登録件数の上限(" + MAX_RECORDS + "件)に達しています。これ以上登録できません。\n" +
+                                                    "不要なデータを削除してから再試行してください。");
+
+                                    // 処理中状態を解除
+                                    if (finalAddPanel != null) {
+                                        finalAddPanel.setProcessing(false);
+                                    }
+                                    if (finalDetailPanel != null) {
+                                        finalDetailPanel.setProcessing(false);
+                                    }
+                                });
+                                return;
+                            }
                         }
 
                         if (success) {
@@ -643,6 +669,26 @@ public class MainController {
             try {
                 List<EngineerDTO> engineers = engineerController.loadEngineers();
 
+                // データ件数が上限を超えているかチェック
+                if (engineers.size() > MAX_RECORDS) {
+                    LogHandler.getInstance().log(Level.SEVERE, LogType.SYSTEM,
+                            "登録されているエンジニアデータが上限(" + MAX_RECORDS + "件)を超えています: " + engineers.size() + "件");
+
+                    // UI更新はSwingのEDTで実行
+                    javax.swing.SwingUtilities.invokeLater(() -> {
+                        // エラーダイアログを表示
+                        DialogManager.getInstance().showErrorDialog(
+                                "データ制限エラー",
+                                "登録されているエンジニアデータが上限(" + MAX_RECORDS + "件)を超えています: " + engineers.size() + "件\n" +
+                                        "アプリケーションを終了します。");
+
+                        // アプリケーションの安全な終了処理を実行
+                        // すでに実装されているinitiateShutdownメソッドを使用
+                        initiateShutdown();
+                    });
+                    return;
+                }
+
                 // UI更新はSwingのEDTで実行
                 javax.swing.SwingUtilities.invokeLater(() -> {
                     // ListPanelを取得してエンジニアデータを設定
@@ -651,10 +697,22 @@ public class MainController {
                         ((ListPanel) currentPanel).setEngineerData(engineers);
                     }
                     screenController.refreshView();
+
+                    // データ件数の表示 (オプション)
+                    if (currentPanel instanceof ListPanel) {
+                        ((ListPanel) currentPanel).setStatus("読込完了: " + engineers.size() + "件");
+                    }
                 });
 
             } catch (Exception e) {
                 LogHandler.getInstance().logError(LogType.SYSTEM, "データ読み込みに失敗しました", e);
+
+                // エラーメッセージ表示
+                javax.swing.SwingUtilities.invokeLater(() -> {
+                    DialogManager.getInstance().showErrorDialog(
+                            "読み込みエラー",
+                            "データ読み込みに失敗しました: " + e.getMessage());
+                });
             }
         });
     }
@@ -698,8 +756,8 @@ public class MainController {
                         // エンジニア情報を設定
                         dp.setEngineerData(engineer);
 
-                      // ★更新ボタンを削除中なら無効化（この行だけ追加）
-                    dp.setUpdateButtonEnabled(!isCurrentlyDeleting);
+                        // ★更新ボタンを削除中なら無効化（この行だけ追加）
+                        dp.setUpdateButtonEnabled(!isCurrentlyDeleting);
 
                         LogHandler.getInstance().log(Level.INFO, LogType.SYSTEM,
                                 "エンジニア詳細を表示: ID=" + engineerId);

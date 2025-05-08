@@ -43,8 +43,8 @@ import java.util.stream.Collectors;
  * 備えており、複数のスレッドからの安全なアクセスをサポートします。
  * </p>
  *
- * @author Bando
- * @version 4.3.2
+ * @author Nakano
+ * @version 4.4.1
  * @since 2025-05-08
  */
 public class EngineerCSVDAO implements EngineerDAO {
@@ -64,6 +64,9 @@ public class EngineerCSVDAO implements EngineerDAO {
 
     /** DialogManagerインスタンス */
     private final DialogManager dialogManager;
+
+    // 最大レコード数の定数
+    private static final int MAX_RECORDS = 1000;
 
     /**
      * コンストラクタ
@@ -132,8 +135,20 @@ public class EngineerCSVDAO implements EngineerDAO {
                 return new ArrayList<>();
             }
 
+            // 読み込んだデータの件数をチェック
+            List<EngineerDTO> successData = result.getSuccessData();
+            if (successData.size() > MAX_RECORDS) {
+                // 1000件を超える場合はエラーログを出力
+                LogHandler.getInstance().log(Level.SEVERE, LogType.SYSTEM,
+                        "登録されているエンジニアデータが上限(" + MAX_RECORDS + "件)を超えています: " + successData.size() + "件");
+
+                // データ件数制限エラーをユーザーに通知する必要があるが、
+                // このタイミングではUIスレッドでの操作ができないため、MainControllerを介して行う
+                return successData; // エラーチェックは呼び出し元で行う
+            }
+
             // 正常に読み込まれたデータを返す
-            return result.getSuccessData();
+            return successData;
 
         } catch (Exception e) {
             LogHandler.getInstance().logError(LogType.SYSTEM, "エンジニアリストの取得に失敗しました", e);
@@ -231,35 +246,35 @@ public class EngineerCSVDAO implements EngineerDAO {
     }
 
     @Override
-public void deleteAll(List<String> ids) {
-    if (ids == null || ids.isEmpty()) {
-        throw new IllegalArgumentException("削除対象のIDリストが空です");
+    public void deleteAll(List<String> ids) {
+        if (ids == null || ids.isEmpty()) {
+            throw new IllegalArgumentException("削除対象のIDリストが空です");
+        }
+
+        try {
+            // メモリにあるデータはそのまま、まず削除後のリストを作る
+            CSVAccessResult currentData = readCSV();
+            List<EngineerDTO> original = new ArrayList<>(currentData.getSuccessData());
+
+            // まず「CSVに書き込むための削除済みリスト」を生成
+            List<EngineerDTO> filtered = original.stream()
+                    .filter(dto -> !ids.contains(dto.getId()))
+                    .toList();
+
+            // CSVに先に書き込み
+            writeCSV(filtered);
+
+            // メモリ上のリスト（currentData）からも除外
+            original.removeIf(dto -> ids.contains(dto.getId()));
+
+            LogHandler.getInstance().log(Level.INFO, LogType.SYSTEM,
+                    String.format("CSV削除後、%d件のエンジニアをメモリ上からも削除しました", ids.size()));
+
+        } catch (Exception e) {
+            LogHandler.getInstance().logError(LogType.SYSTEM, "エンジニア情報の一括削除に失敗しました", e);
+            throw new RuntimeException("エンジニア情報の一括削除に失敗しました", e);
+        }
     }
-
-    try {
-        // メモリにあるデータはそのまま、まず削除後のリストを作る
-        CSVAccessResult currentData = readCSV();
-        List<EngineerDTO> original = new ArrayList<>(currentData.getSuccessData());
-
-        // まず「CSVに書き込むための削除済みリスト」を生成
-        List<EngineerDTO> filtered = original.stream()
-                .filter(dto -> !ids.contains(dto.getId()))
-                .toList();
-
-        // CSVに先に書き込み
-        writeCSV(filtered);
-
-        // メモリ上のリスト（currentData）からも除外
-        original.removeIf(dto -> ids.contains(dto.getId()));
-
-        LogHandler.getInstance().log(Level.INFO, LogType.SYSTEM,
-                String.format("CSV削除後、%d件のエンジニアをメモリ上からも削除しました", ids.size()));
-
-    } catch (Exception e) {
-        LogHandler.getInstance().logError(LogType.SYSTEM, "エンジニア情報の一括削除に失敗しました", e);
-        throw new RuntimeException("エンジニア情報の一括削除に失敗しました", e);
-    }
-}
 
     /**
      * エラーリストをCSVファイルにエクスポート

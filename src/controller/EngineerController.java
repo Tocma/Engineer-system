@@ -9,7 +9,6 @@ import view.DialogManager;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Set;
 import java.util.logging.Level;
 import java.util.stream.Collectors;
 
@@ -29,14 +28,17 @@ import javax.swing.SwingUtilities;
  * </ul>
  * </p>
  *
- * @author Bando
- * @version 4.3.0
+ * @author Nakano
+ * @version 4.4.1
  * @since 2025-05-08
  */
 public class EngineerController {
 
     /** エンジニアデータアクセスオブジェクト */
     private final EngineerDAO engineerDAO;
+
+    // 最大レコード数の定数
+    private static final int MAX_RECORDS = 1000;
 
     /**
      * コンストラクタ
@@ -70,9 +72,29 @@ public class EngineerController {
      *
      * @param engineer 追加するエンジニア情報
      * @return 追加に成功した場合true
+     * @throws TooManyRecordsException 追加後のレコード数が上限を超える場合
      */
-    public boolean addEngineer(EngineerDTO engineer) {
+    public boolean addEngineer(EngineerDTO engineer) throws TooManyRecordsException {
         try {
+            // 現在のエンジニア情報を取得
+            List<EngineerDTO> currentEngineers = loadEngineers();
+
+            // 既存のエンジニアかどうかをチェック
+            boolean isExisting = false;
+            for (EngineerDTO existingEngineer : currentEngineers) {
+                if (existingEngineer.getId().equals(engineer.getId())) {
+                    isExisting = true;
+                    break;
+                }
+            }
+
+            // 新規追加の場合、登録後のレコード数をチェック
+            if (!isExisting && currentEngineers.size() >= MAX_RECORDS) {
+                LogHandler.getInstance().log(Level.WARNING, LogType.SYSTEM,
+                        "登録件数が上限(" + MAX_RECORDS + "件)に達しています。これ以上登録できません。");
+                throw new TooManyRecordsException("登録件数が上限(" + MAX_RECORDS + "件)に達しています。これ以上登録できません。");
+            }
+
             if (validateEngineer(engineer)) {
                 engineerDAO.save(engineer);
                 LogHandler.getInstance().log(LogType.SYSTEM,
@@ -80,9 +102,21 @@ public class EngineerController {
                 return true;
             }
             return false;
+        } catch (TooManyRecordsException e) {
+            // 上限エラーはそのまま再スロー
+            throw e;
         } catch (Exception e) {
             LogHandler.getInstance().logError(LogType.SYSTEM, "エンジニア情報の追加に失敗しました", e);
             return false;
+        }
+    }
+
+    /**
+     * 登録件数が上限を超える場合の例外クラス
+     */
+    public static class TooManyRecordsException extends Exception {
+        public TooManyRecordsException(String message) {
+            super(message);
         }
     }
 
