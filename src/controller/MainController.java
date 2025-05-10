@@ -1,5 +1,6 @@
 package controller;
 
+import model.CSVAccessResult;
 import model.EngineerCSVDAO;
 import model.EngineerDTO;
 import util.LogHandler;
@@ -21,6 +22,7 @@ import javax.swing.JFileChooser;
 import javax.swing.JOptionPane;
 import javax.swing.JPanel;
 import javax.swing.SwingUtilities;
+import javax.swing.filechooser.FileNameExtensionFilter;
 
 /**
  * アプリケーションのメインコントローラー
@@ -70,8 +72,8 @@ import javax.swing.SwingUtilities;
  * </p>
  *
  * @author Nakano
- * @version 4.4.1
- * @since 2025-05-08
+ * @version 4.5.0
+ * @since 2025-05-10
  */
 public class MainController {
 
@@ -191,6 +193,9 @@ public class MainController {
                  * handleExportCSV();
                  * break;
                  */
+                case "IMPORT_CSV":
+                    handleImportData();
+                    break;
                 case "SHUTDOWN":
                     initiateShutdown();
                     break;
@@ -901,6 +906,167 @@ public class MainController {
             }
         }
         return null;
+    }
+
+    /**
+     * CSVファイルのインポート処理
+     * ファイル選択ダイアログを表示し、選択されたCSVファイルからデータをインポート
+     */
+    public void handleImportData() {
+        // シャットダウン中は処理しない
+        if (isShuttingDown.get()) {
+            LogHandler.getInstance().log(Level.WARNING, LogType.SYSTEM,
+                    "シャットダウン中のためインポート処理をスキップします");
+            return;
+        }
+
+        // ファイル選択ダイアログの表示
+        JFileChooser fileChooser = new JFileChooser();
+        fileChooser.setDialogTitle("インポートするCSVファイルを選択");
+        fileChooser.setFileFilter(new FileNameExtensionFilter("CSVファイル (*.csv)", "csv"));
+
+        int result = fileChooser.showOpenDialog(mainFrame.getJFrame());
+        if (result != JFileChooser.APPROVE_OPTION) {
+            return; // キャンセル
+        }
+
+        // 選択されたファイル
+        final File selectedFile = fileChooser.getSelectedFile();
+        if (selectedFile == null || !selectedFile.exists()) {
+            DialogManager.getInstance().showErrorDialog("エラー", "ファイルが見つかりません。");
+            return;
+        }
+
+        // 現在のパネルを取得（ステータス表示用）
+        final JPanel currentPanel = screenController.getCurrentPanel();
+        if (currentPanel instanceof ListPanel) {
+            ((ListPanel) currentPanel).setStatus("インポート中...");
+        }
+
+        // 非同期処理でCSVインポートを実行
+        startAsyncTask("ImportCSV", () -> {
+            try {
+                // 現在のデータを取得
+                List<EngineerDTO> currentEngineers = engineerController.loadEngineers();
+
+                // CSVファイルからデータをインポート
+                EngineerCSVDAO csvDao = new EngineerCSVDAO(selectedFile.getAbsolutePath());
+                CSVAccessResult importResult = csvDao.readCSV();
+
+                // インポート結果の取得
+                List<EngineerDTO> importedEngineers = importResult.getSuccessData();
+                List<EngineerDTO> errorEngineers = importResult.getErrorData();
+
+                // インポート後の総件数が上限を超えるかチェック
+                final int MAX_RECORDS = 1000; // 最大レコード数
+                if (!importResult.isOverwriteConfirmed() &&
+                        importedEngineers.size() + currentEngineers.size() > MAX_RECORDS) {
+
+                    LogHandler.getInstance().log(Level.WARNING, LogType.SYSTEM,
+                            "インポートすると登録件数の上限(" + MAX_RECORDS + "件)を超えます。" +
+                                    "現在: " + currentEngineers.size() + "件, インポート: " + importedEngineers.size() + "件");
+
+                    // UI更新はSwingのEDTで実行
+                    SwingUtilities.invokeLater(() -> {
+                        // エラーダイアログ表示
+                        DialogManager.getInstance().showErrorDialog(
+                                "インポート制限エラー",
+                                "インポートすると登録件数の上限(" + MAX_RECORDS + "件)を超えます。\n" +
+                                        "現在: " + currentEngineers.size() + "件, インポート: " + importedEngineers.size()
+                                        + "件\n" +
+                                        "不要なデータを削除してから再試行してください。");
+
+                        // ステータス表示のクリア
+                        if (currentPanel instanceof ListPanel) {
+                            ((ListPanel) currentPanel).clearStatus();
+                        }
+                    });
+                    return;
+                }
+
+                // 重複IDの処理（ユーザーが上書きを確認済み）
+                if (importResult.hasDuplicateIds() && importResult.isOverwriteConfirmed()) {
+                    // 重複IDのエンジニア情報を上書き
+                    for (EngineerDTO engineer : importedEngineers) {
+                        engineerController.updateEngineer(engineer);
+                    }
+
+                    LogHandler.getInstance().log(Level.INFO, LogType.SYSTEM,
+                            "重複IDのエンジニア情報を上書きしました: " + importResult.getDuplicateIds().size() + "件");
+                } else {
+                    // 新規エンジニア情報のみを追加
+                    for (EngineerDTO engineer : importedEngineers) {
+                        // 既存IDでないものだけを追加
+                        if (!currentEngineers.stream().anyMatch(e -> e.getId().equals(engineer.getId()))) {
+                            engineerController.addEngineer(engineer);
+                        }
+                    }
+                }
+
+                // UI更新はSwingのEDTで実行
+                SwingUtilities.invokeLater(() -> {
+                    try {
+                        // データを再読み込み
+                        List<EngineerDTO> updatedEngineers = engineerController.loadEngineers();
+
+                        // ListPanelを取得してエンジニアデータを更新
+                        if (currentPanel instanceof ListPanel) {
+                            ((ListPanel) currentPanel).setEngineerData(updatedEngineers);
+                            ((ListPanel) currentPanel).clearStatus();
+                        }
+
+                        // 結果ダイアログの表示
+                        StringBuilder message = new StringBuilder();
+                        message.append("CSVファイルのインポートが完了しました：\n");
+                        message.append("・インポート成功：").append(importedEngineers.size()).append("件\n");
+
+                        if (errorEngineers.size() > 0) {
+                            message.append("・エラー：").append(errorEngineers.size()).append("件\n");
+                        }
+
+                        if (importResult.hasDuplicateIds()) {
+                            message.append("・重複ID：").append(importResult.getDuplicateIds().size()).append("件\n");
+                            if (importResult.isOverwriteConfirmed()) {
+                                message.append("  （上書き済み）");
+                            } else {
+                                message.append("  （保持）");
+                            }
+                        }
+
+                        DialogManager.getInstance().showCompletionDialog("インポート完了", message.toString());
+
+                    } catch (Exception e) {
+                        LogHandler.getInstance().logError(LogType.SYSTEM,
+                                "インポート完了後の処理中にエラーが発生しました", e);
+
+                        // エラーダイアログ表示
+                        DialogManager.getInstance().showErrorDialog(
+                                "エラー",
+                                "インポート完了後の処理中にエラーが発生しました：" + e.getMessage());
+
+                        if (currentPanel instanceof ListPanel) {
+                            ((ListPanel) currentPanel).clearStatus();
+                        }
+                    }
+                });
+
+            } catch (Exception e) {
+                LogHandler.getInstance().logError(LogType.SYSTEM,
+                        "CSVファイルのインポート中にエラーが発生しました", e);
+
+                // UI更新はSwingのEDTで実行
+                SwingUtilities.invokeLater(() -> {
+                    // エラーダイアログ表示
+                    DialogManager.getInstance().showErrorDialog(
+                            "インポートエラー",
+                            "CSVファイルのインポート中にエラーが発生しました：" + e.getMessage());
+
+                    if (currentPanel instanceof ListPanel) {
+                        ((ListPanel) currentPanel).clearStatus();
+                    }
+                });
+            }
+        });
     }
 
     /**

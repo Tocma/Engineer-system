@@ -1,0 +1,400 @@
+[2025-05-10 12:32:29] [INFO] [SYSTEM] ログシステムが正常に初期化されました
+[2025-05-10 12:32:29] [INFO] [SYSTEM] ログシステムを初期化します
+[2025-05-10 12:32:29] [INFO] [SYSTEM] シャットダウンフックを登録しました
+[2025-05-10 12:32:29] [INFO] [SYSTEM] リソースマネージャーが正常に初期化されました
+[2025-05-10 12:32:29] [INFO] [SYSTEM] リソースマネージャーを初期化しました
+[2025-05-10 12:32:30] [INFO] [SYSTEM] メインフレームを初期化しました
+[2025-05-10 12:32:30] [INFO] [UI] テーブルのダブルクリックイベントを設定しました
+[2025-05-10 12:32:30] [INFO] [SYSTEM] エンジニア一覧画面を初期化しました
+[2025-05-10 12:32:30] [INFO] [SYSTEM] 画面遷移コントローラーを初期化しました
+[2025-05-10 12:32:30] [INFO] [SYSTEM] メインコントローラーを初期化しました
+[2025-05-10 12:32:30] [INFO] [SYSTEM] エンジニアコントローラーを初期化しました
+[2025-05-10 12:32:30] [INFO] [SYSTEM] アプリケーションを初期化しました
+[2025-05-10 12:32:30] [INFO] [SYSTEM] スレッド 'AsyncTask-LoadData' を管理対象に登録しました
+[2025-05-10 12:32:30] [INFO] [SYSTEM] イベントを処理しました: LOAD_DATA
+[2025-05-10 12:32:30] [INFO] [SYSTEM] 非同期タスクを開始: LoadData
+[2025-05-10 12:32:30] [INFO] [SYSTEM] エンジニアデータの読み込みを開始します
+[2025-05-10 12:32:30] [INFO] [SYSTEM] アクセススレッドを開始しました
+[2025-05-10 12:32:30] [INFO] [SYSTEM] CSVファイル読み込み開始: src\data\engineers.csv
+[2025-05-10 12:32:30] [INFO] [SYSTEM] CSVファイル読み込み完了: src\data\engineers.csv, 1000行
+[2025-05-10 12:32:30] [INFO] [SYSTEM] アプリケーションの初期化が完了しました
+[2025-05-10 12:32:30] [INFO] [SYSTEM] パネルを切り替えました: ListPanel
+[2025-05-10 12:32:30] [INFO] [SYSTEM] 画面を切り替えました: LIST
+[2025-05-10 12:32:30] [INFO] [SYSTEM] Loaded 1000 engineers.
+[2025-05-10 12:32:30] [INFO] [SYSTEM] 非同期タスクが完了: LoadData
+[2025-05-10 12:32:30] [INFO] [SYSTEM] エンジニアデータを更新しました: 1000件
+[2025-05-10 12:32:30] [INFO] [SYSTEM] ビューを更新しました
+[2025-05-10 12:32:30] [INFO] [SYSTEM] ビューを更新しました
+[2025-05-10 12:32:37] [INFO] [UI] 取込ボタンが押されました
+[2025-05-10 12:32:52] [INFO] [SYSTEM] スレッド 'AsyncTask-ImportCSV' を管理対象に登録しました
+[2025-05-10 12:32:52] [INFO] [SYSTEM] 非同期タスクを開始: ImportCSV
+[2025-05-10 12:32:52] [INFO] [SYSTEM] エンジニアデータの読み込みを開始します
+[2025-05-10 12:32:52] [INFO] [SYSTEM] アクセススレッドを開始しました
+[2025-05-10 12:32:52] [INFO] [SYSTEM] CSVファイル読み込み開始: src\data\engineers.csv
+[2025-05-10 12:32:52] [INFO] [SYSTEM] CSVファイル読み込み完了: src\data\engineers.csv, 1000行
+[2025-05-10 12:32:52] [INFO] [SYSTEM] Loaded 1000 engineers.
+[2025-05-10 12:32:52] [INFO] [SYSTEM] アクセススレッドを開始しました
+[2025-05-10 12:32:52] [INFO] [SYSTEM] CSVファイル読み込み開始: C:\Users\astro\OneDrive\デスクトップ\エンジニア情報テンプレート.csv
+[2025-05-10 12:32:52] [INFO] [SYSTEM] CSVファイル読み込み完了: C:\Users\astro\OneDrive\デスクトップ\エンジニア情報テンプレート.csv, 5行
+[2025-05-10 12:32:52] [WARNING] [SYSTEM] インポートすると登録件数の上限(1000件)を超えます。現在: 1000件, インポート: 5件
+[2025-05-10 12:32:52] [INFO] [SYSTEM] 非同期タスクが完了: ImportCSV
+[2025-05-10 12:33:05] [INFO] [SYSTEM] スレッド 'AsyncTask-delete_engineers' を管理対象に登録しました
+[2025-05-10 12:33:05] [INFO] [SYSTEM] イベントを処理しました: DELETE_ENGINEER
+[2025-05-10 12:33:05] [INFO] [UI] 5件の行が削除対象に選択されました
+[2025-05-10 12:33:05] [INFO] [SYSTEM] 非同期タスクを開始: delete_engineers
+[2025-05-10 12:33:05] [INFO] [SYSTEM] エンジニアコントローラーを初期化しました
+[2025-05-10 12:33:08] [INFO] [SYSTEM] アクセススレッドを開始しました
+[2025-05-10 12:33:08] [INFO] [SYSTEM] CSVファイル読み込み開始: src\data\engineers.csv
+[2025-05-10 12:33:08] [INFO] [SYSTEM] CSVファイル読み込み完了: src\data\engineers.csv, 1000行
+[2025-05-10 12:33:08] [INFO] [SYSTEM] アクセススレッドを開始しました
+[2025-05-10 12:33:08] [INFO] [SYSTEM] CSVファイル書き込み開始: src\data\engineers.csv
+[2025-05-10 12:33:08] [INFO] [SYSTEM] CSVファイル書き込み完了: src\data\engineers.csv, 996行
+[2025-05-10 12:33:08] [INFO] [SYSTEM] CSV削除後、5件のエンジニアをメモリ上からも削除しました
+[2025-05-10 12:33:08] [INFO] [SYSTEM] 5件のエンジニア情報を削除しました。
+[2025-05-10 12:33:08] [INFO] [SYSTEM] 非同期タスクが完了: delete_engineers
+[2025-05-10 12:33:11] [INFO] [SYSTEM] エンジニアデータの読み込みを開始します
+[2025-05-10 12:33:11] [INFO] [SYSTEM] アクセススレッドを開始しました
+[2025-05-10 12:33:11] [INFO] [SYSTEM] CSVファイル読み込み開始: src\data\engineers.csv
+[2025-05-10 12:33:11] [INFO] [SYSTEM] CSVファイル読み込み完了: src\data\engineers.csv, 995行
+[2025-05-10 12:33:11] [INFO] [SYSTEM] Loaded 995 engineers.
+[2025-05-10 12:33:11] [INFO] [SYSTEM] エンジニアデータを更新しました: 995件
+[2025-05-10 12:33:11] [INFO] [SYSTEM] 削除後のデータを再読み込みしました
+[2025-05-10 12:33:15] [INFO] [UI] 取込ボタンが押されました
+[2025-05-10 12:33:21] [INFO] [SYSTEM] スレッド 'AsyncTask-ImportCSV' を管理対象に登録しました
+[2025-05-10 12:33:21] [INFO] [SYSTEM] 非同期タスクを開始: ImportCSV
+[2025-05-10 12:33:21] [INFO] [SYSTEM] エンジニアデータの読み込みを開始します
+[2025-05-10 12:33:21] [INFO] [SYSTEM] アクセススレッドを開始しました
+[2025-05-10 12:33:21] [INFO] [SYSTEM] CSVファイル読み込み開始: src\data\engineers.csv
+[2025-05-10 12:33:21] [INFO] [SYSTEM] CSVファイル読み込み完了: src\data\engineers.csv, 995行
+[2025-05-10 12:33:21] [INFO] [SYSTEM] Loaded 995 engineers.
+[2025-05-10 12:33:21] [INFO] [SYSTEM] アクセススレッドを開始しました
+[2025-05-10 12:33:21] [INFO] [SYSTEM] CSVファイル読み込み開始: C:\Users\astro\OneDrive\デスクトップ\エンジニア情報テンプレート.csv
+[2025-05-10 12:33:21] [INFO] [SYSTEM] CSVファイル読み込み完了: C:\Users\astro\OneDrive\デスクトップ\エンジニア情報テンプレート.csv, 5行
+[2025-05-10 12:33:21] [INFO] [SYSTEM] 非同期タスクが完了: ImportCSV
+[2025-05-10 12:33:21] [INFO] [SYSTEM] エンジニアデータの読み込みを開始します
+[2025-05-10 12:33:21] [INFO] [SYSTEM] アクセススレッドを開始しました
+[2025-05-10 12:33:21] [INFO] [SYSTEM] CSVファイル読み込み開始: src\data\engineers.csv
+[2025-05-10 12:33:21] [INFO] [SYSTEM] CSVファイル読み込み完了: src\data\engineers.csv, 995行
+[2025-05-10 12:33:21] [INFO] [SYSTEM] Loaded 995 engineers.
+[2025-05-10 12:33:21] [INFO] [SYSTEM] エンジニアデータを更新しました: 995件
+[2025-05-10 12:33:42] [INFO] [UI] ソート実行: 列=社員ID, 順序=昇順
+[2025-05-10 12:33:42] [INFO] [SYSTEM] ソート完了: 995件
+[2025-05-10 12:33:43] [INFO] [UI] ソート実行: 列=社員ID, 順序=降順
+[2025-05-10 12:33:43] [INFO] [SYSTEM] ソート完了: 995件
+[2025-05-10 12:33:44] [INFO] [UI] ソート実行: 列=社員ID, 順序=昇順
+[2025-05-10 12:33:44] [INFO] [SYSTEM] ソート完了: 995件
+[2025-05-10 12:33:53] [INFO] [UI] 検索実行: 995件のデータがヒット
+[2025-05-10 12:33:55] [INFO] [UI] 検索実行: 80件のデータがヒット
+[2025-05-10 12:34:04] [INFO] [UI] 検索実行: 995件のデータがヒット
+[2025-05-10 12:34:20] [INFO] [UI] ソート実行: 列=社員ID, 順序=降順
+[2025-05-10 12:34:20] [INFO] [SYSTEM] ソート完了: 995件
+[2025-05-10 12:34:23] [INFO] [UI] ページを切り替えました: 2 / 10
+[2025-05-10 12:34:24] [INFO] [UI] ページを切り替えました: 3 / 10
+[2025-05-10 12:34:25] [INFO] [UI] ページを切り替えました: 4 / 10
+[2025-05-10 12:34:36] [INFO] [SYSTEM] スレッド 'AsyncTask-delete_engineers' を管理対象に登録しました
+[2025-05-10 12:34:36] [INFO] [SYSTEM] イベントを処理しました: DELETE_ENGINEER
+[2025-05-10 12:34:36] [INFO] [UI] 1件の行が削除対象に選択されました
+[2025-05-10 12:34:36] [INFO] [SYSTEM] 非同期タスクを開始: delete_engineers
+[2025-05-10 12:34:36] [INFO] [SYSTEM] エンジニアコントローラーを初期化しました
+[2025-05-10 12:34:39] [INFO] [SYSTEM] アクセススレッドを開始しました
+[2025-05-10 12:34:39] [INFO] [SYSTEM] CSVファイル読み込み開始: src\data\engineers.csv
+[2025-05-10 12:34:39] [INFO] [SYSTEM] CSVファイル読み込み完了: src\data\engineers.csv, 995行
+[2025-05-10 12:34:39] [INFO] [SYSTEM] アクセススレッドを開始しました
+[2025-05-10 12:34:39] [INFO] [SYSTEM] CSVファイル書き込み開始: src\data\engineers.csv
+[2025-05-10 12:34:39] [INFO] [SYSTEM] CSVファイル書き込み完了: src\data\engineers.csv, 995行
+[2025-05-10 12:34:39] [INFO] [SYSTEM] CSV削除後、1件のエンジニアをメモリ上からも削除しました
+[2025-05-10 12:34:39] [INFO] [SYSTEM] 1件のエンジニア情報を削除しました。
+[2025-05-10 12:34:39] [INFO] [SYSTEM] 非同期タスクが完了: delete_engineers
+[2025-05-10 12:34:40] [INFO] [SYSTEM] エンジニアデータの読み込みを開始します
+[2025-05-10 12:34:40] [INFO] [SYSTEM] アクセススレッドを開始しました
+[2025-05-10 12:34:40] [INFO] [SYSTEM] CSVファイル読み込み開始: src\data\engineers.csv
+[2025-05-10 12:34:40] [INFO] [SYSTEM] CSVファイル読み込み完了: src\data\engineers.csv, 994行
+[2025-05-10 12:34:40] [INFO] [SYSTEM] Loaded 994 engineers.
+[2025-05-10 12:34:40] [INFO] [SYSTEM] エンジニアデータを更新しました: 994件
+[2025-05-10 12:34:40] [INFO] [SYSTEM] 削除後のデータを再読み込みしました
+[2025-05-10 12:34:45] [INFO] [UI] ページを切り替えました: 2 / 10
+[2025-05-10 12:34:45] [INFO] [UI] ページを切り替えました: 3 / 10
+[2025-05-10 12:34:45] [INFO] [UI] ページを切り替えました: 4 / 10
+[2025-05-10 12:34:46] [INFO] [UI] ページを切り替えました: 5 / 10
+[2025-05-10 12:34:54] [INFO] [SYSTEM] スレッド 'AsyncTask-delete_engineers' を管理対象に登録しました
+[2025-05-10 12:34:54] [INFO] [SYSTEM] イベントを処理しました: DELETE_ENGINEER
+[2025-05-10 12:34:54] [INFO] [UI] 1件の行が削除対象に選択されました
+[2025-05-10 12:34:54] [INFO] [SYSTEM] 非同期タスクを開始: delete_engineers
+[2025-05-10 12:34:54] [INFO] [SYSTEM] エンジニアコントローラーを初期化しました
+[2025-05-10 12:34:57] [INFO] [SYSTEM] アクセススレッドを開始しました
+[2025-05-10 12:34:57] [INFO] [SYSTEM] CSVファイル読み込み開始: src\data\engineers.csv
+[2025-05-10 12:34:57] [INFO] [SYSTEM] CSVファイル読み込み完了: src\data\engineers.csv, 994行
+[2025-05-10 12:34:57] [INFO] [SYSTEM] アクセススレッドを開始しました
+[2025-05-10 12:34:57] [INFO] [SYSTEM] CSVファイル書き込み開始: src\data\engineers.csv
+[2025-05-10 12:34:57] [INFO] [SYSTEM] CSVファイル書き込み完了: src\data\engineers.csv, 994行
+[2025-05-10 12:34:57] [INFO] [SYSTEM] CSV削除後、1件のエンジニアをメモリ上からも削除しました
+[2025-05-10 12:34:57] [INFO] [SYSTEM] 1件のエンジニア情報を削除しました。
+[2025-05-10 12:34:57] [INFO] [SYSTEM] 非同期タスクが完了: delete_engineers
+[2025-05-10 12:34:58] [INFO] [SYSTEM] エンジニアデータの読み込みを開始します
+[2025-05-10 12:34:58] [INFO] [SYSTEM] アクセススレッドを開始しました
+[2025-05-10 12:34:58] [INFO] [SYSTEM] CSVファイル読み込み開始: src\data\engineers.csv
+[2025-05-10 12:34:58] [INFO] [SYSTEM] CSVファイル読み込み完了: src\data\engineers.csv, 993行
+[2025-05-10 12:34:58] [INFO] [SYSTEM] Loaded 993 engineers.
+[2025-05-10 12:34:58] [INFO] [SYSTEM] エンジニアデータを更新しました: 993件
+[2025-05-10 12:34:58] [INFO] [SYSTEM] 削除後のデータを再読み込みしました
+[2025-05-10 12:35:16] [INFO] [SYSTEM] スレッド 'AsyncTask-delete_engineers' を管理対象に登録しました
+[2025-05-10 12:35:16] [INFO] [SYSTEM] イベントを処理しました: DELETE_ENGINEER
+[2025-05-10 12:35:16] [INFO] [UI] 4件の行が削除対象に選択されました
+[2025-05-10 12:35:16] [INFO] [SYSTEM] 非同期タスクを開始: delete_engineers
+[2025-05-10 12:35:16] [INFO] [SYSTEM] エンジニアコントローラーを初期化しました
+[2025-05-10 12:35:19] [INFO] [SYSTEM] アクセススレッドを開始しました
+[2025-05-10 12:35:19] [INFO] [SYSTEM] CSVファイル読み込み開始: src\data\engineers.csv
+[2025-05-10 12:35:19] [INFO] [SYSTEM] CSVファイル読み込み完了: src\data\engineers.csv, 993行
+[2025-05-10 12:35:19] [INFO] [SYSTEM] アクセススレッドを開始しました
+[2025-05-10 12:35:19] [INFO] [SYSTEM] CSVファイル書き込み開始: src\data\engineers.csv
+[2025-05-10 12:35:19] [INFO] [SYSTEM] CSVファイル書き込み完了: src\data\engineers.csv, 990行
+[2025-05-10 12:35:19] [INFO] [SYSTEM] CSV削除後、4件のエンジニアをメモリ上からも削除しました
+[2025-05-10 12:35:19] [INFO] [SYSTEM] 4件のエンジニア情報を削除しました。
+[2025-05-10 12:35:19] [INFO] [SYSTEM] 非同期タスクが完了: delete_engineers
+[2025-05-10 12:35:21] [INFO] [SYSTEM] エンジニアデータの読み込みを開始します
+[2025-05-10 12:35:21] [INFO] [SYSTEM] アクセススレッドを開始しました
+[2025-05-10 12:35:21] [INFO] [SYSTEM] CSVファイル読み込み開始: src\data\engineers.csv
+[2025-05-10 12:35:21] [INFO] [SYSTEM] CSVファイル読み込み完了: src\data\engineers.csv, 989行
+[2025-05-10 12:35:21] [INFO] [SYSTEM] Loaded 989 engineers.
+[2025-05-10 12:35:21] [INFO] [SYSTEM] エンジニアデータを更新しました: 989件
+[2025-05-10 12:35:21] [INFO] [SYSTEM] 削除後のデータを再読み込みしました
+[2025-05-10 12:35:22] [INFO] [UI] 取込ボタンが押されました
+[2025-05-10 12:35:29] [INFO] [SYSTEM] スレッド 'AsyncTask-ImportCSV' を管理対象に登録しました
+[2025-05-10 12:35:29] [INFO] [SYSTEM] 非同期タスクを開始: ImportCSV
+[2025-05-10 12:35:29] [INFO] [SYSTEM] エンジニアデータの読み込みを開始します
+[2025-05-10 12:35:29] [INFO] [SYSTEM] アクセススレッドを開始しました
+[2025-05-10 12:35:29] [INFO] [SYSTEM] CSVファイル読み込み開始: src\data\engineers.csv
+[2025-05-10 12:35:29] [INFO] [SYSTEM] CSVファイル読み込み完了: src\data\engineers.csv, 989行
+[2025-05-10 12:35:29] [INFO] [SYSTEM] Loaded 989 engineers.
+[2025-05-10 12:35:29] [INFO] [SYSTEM] アクセススレッドを開始しました
+[2025-05-10 12:35:29] [INFO] [SYSTEM] CSVファイル読み込み開始: C:\Users\astro\OneDrive\デスクトップ\エンジニア情報テンプレート.csv
+[2025-05-10 12:35:29] [INFO] [SYSTEM] CSVファイル読み込み完了: C:\Users\astro\OneDrive\デスクトップ\エンジニア情報テンプレート.csv, 5行
+[2025-05-10 12:35:29] [INFO] [SYSTEM] エンジニアデータの読み込みを開始します
+[2025-05-10 12:35:29] [INFO] [SYSTEM] アクセススレッドを開始しました
+[2025-05-10 12:35:29] [INFO] [SYSTEM] CSVファイル読み込み開始: src\data\engineers.csv
+[2025-05-10 12:35:29] [INFO] [SYSTEM] CSVファイル読み込み完了: src\data\engineers.csv, 989行
+[2025-05-10 12:35:30] [INFO] [SYSTEM] Loaded 989 engineers.
+[2025-05-10 12:35:30] [INFO] [SYSTEM] アクセススレッドを開始しました
+[2025-05-10 12:35:30] [INFO] [SYSTEM] CSVファイル読み込み開始: src\data\engineers.csv
+[2025-05-10 12:35:30] [INFO] [SYSTEM] CSVファイル読み込み完了: src\data\engineers.csv, 989行
+[2025-05-10 12:35:30] [INFO] [SYSTEM] アクセススレッドを開始しました
+[2025-05-10 12:35:30] [INFO] [SYSTEM] CSVファイル書き込み開始: src\data\engineers.csv
+[2025-05-10 12:35:30] [INFO] [SYSTEM] CSVファイル書き込み完了: src\data\engineers.csv, 991行
+[2025-05-10 12:35:30] [INFO] [SYSTEM] エンジニア情報を保存しました: ID=ID65031, 名前=中村たろう
+[2025-05-10 12:35:30] [INFO] [SYSTEM] Added engineer with ID ID65031 and name 中村たろう
+[2025-05-10 12:35:30] [INFO] [SYSTEM] エンジニアデータの読み込みを開始します
+[2025-05-10 12:35:30] [INFO] [SYSTEM] アクセススレッドを開始しました
+[2025-05-10 12:35:30] [INFO] [SYSTEM] CSVファイル読み込み開始: src\data\engineers.csv
+[2025-05-10 12:35:30] [INFO] [SYSTEM] CSVファイル読み込み完了: src\data\engineers.csv, 990行
+[2025-05-10 12:35:30] [INFO] [SYSTEM] Loaded 990 engineers.
+[2025-05-10 12:35:30] [INFO] [SYSTEM] アクセススレッドを開始しました
+[2025-05-10 12:35:30] [INFO] [SYSTEM] CSVファイル読み込み開始: src\data\engineers.csv
+[2025-05-10 12:35:30] [INFO] [SYSTEM] CSVファイル読み込み完了: src\data\engineers.csv, 990行
+[2025-05-10 12:35:30] [INFO] [SYSTEM] アクセススレッドを開始しました
+[2025-05-10 12:35:30] [INFO] [SYSTEM] CSVファイル書き込み開始: src\data\engineers.csv
+[2025-05-10 12:35:30] [INFO] [SYSTEM] CSVファイル書き込み完了: src\data\engineers.csv, 992行
+[2025-05-10 12:35:30] [INFO] [SYSTEM] エンジニア情報を保存しました: ID=ID54870, 名前=斎藤由美
+[2025-05-10 12:35:30] [INFO] [SYSTEM] Added engineer with ID ID54870 and name 斎藤由美
+[2025-05-10 12:35:30] [INFO] [SYSTEM] 非同期タスクが完了: ImportCSV
+[2025-05-10 12:35:30] [INFO] [SYSTEM] エンジニアデータの読み込みを開始します
+[2025-05-10 12:35:30] [INFO] [SYSTEM] アクセススレッドを開始しました
+[2025-05-10 12:35:30] [INFO] [SYSTEM] CSVファイル読み込み開始: src\data\engineers.csv
+[2025-05-10 12:35:30] [INFO] [SYSTEM] CSVファイル読み込み完了: src\data\engineers.csv, 991行
+[2025-05-10 12:35:30] [INFO] [SYSTEM] Loaded 991 engineers.
+[2025-05-10 12:35:30] [INFO] [SYSTEM] エンジニアデータを更新しました: 991件
+[2025-05-10 12:35:39] [INFO] [SYSTEM] スレッド 'AsyncTask-delete_engineers' を管理対象に登録しました
+[2025-05-10 12:35:39] [INFO] [SYSTEM] イベントを処理しました: DELETE_ENGINEER
+[2025-05-10 12:35:39] [INFO] [UI] 6件の行が削除対象に選択されました
+[2025-05-10 12:35:39] [INFO] [SYSTEM] 非同期タスクを開始: delete_engineers
+[2025-05-10 12:35:39] [INFO] [SYSTEM] エンジニアコントローラーを初期化しました
+[2025-05-10 12:35:42] [INFO] [SYSTEM] アクセススレッドを開始しました
+[2025-05-10 12:35:42] [INFO] [SYSTEM] CSVファイル読み込み開始: src\data\engineers.csv
+[2025-05-10 12:35:42] [INFO] [SYSTEM] CSVファイル読み込み完了: src\data\engineers.csv, 991行
+[2025-05-10 12:35:42] [INFO] [SYSTEM] アクセススレッドを開始しました
+[2025-05-10 12:35:42] [INFO] [SYSTEM] CSVファイル書き込み開始: src\data\engineers.csv
+[2025-05-10 12:35:42] [INFO] [SYSTEM] CSVファイル書き込み完了: src\data\engineers.csv, 986行
+[2025-05-10 12:35:42] [INFO] [SYSTEM] CSV削除後、6件のエンジニアをメモリ上からも削除しました
+[2025-05-10 12:35:42] [INFO] [SYSTEM] 6件のエンジニア情報を削除しました。
+[2025-05-10 12:35:42] [INFO] [SYSTEM] 非同期タスクが完了: delete_engineers
+[2025-05-10 12:35:44] [INFO] [SYSTEM] エンジニアデータの読み込みを開始します
+[2025-05-10 12:35:44] [INFO] [SYSTEM] アクセススレッドを開始しました
+[2025-05-10 12:35:44] [INFO] [SYSTEM] CSVファイル読み込み開始: src\data\engineers.csv
+[2025-05-10 12:35:44] [INFO] [SYSTEM] CSVファイル読み込み完了: src\data\engineers.csv, 985行
+[2025-05-10 12:35:44] [INFO] [SYSTEM] Loaded 985 engineers.
+[2025-05-10 12:35:44] [INFO] [SYSTEM] エンジニアデータを更新しました: 985件
+[2025-05-10 12:35:44] [INFO] [SYSTEM] 削除後のデータを再読み込みしました
+[2025-05-10 12:35:45] [INFO] [UI] 取込ボタンが押されました
+[2025-05-10 12:35:53] [INFO] [SYSTEM] スレッド 'AsyncTask-ImportCSV' を管理対象に登録しました
+[2025-05-10 12:35:53] [INFO] [SYSTEM] 非同期タスクを開始: ImportCSV
+[2025-05-10 12:35:53] [INFO] [SYSTEM] エンジニアデータの読み込みを開始します
+[2025-05-10 12:35:53] [INFO] [SYSTEM] アクセススレッドを開始しました
+[2025-05-10 12:35:53] [INFO] [SYSTEM] CSVファイル読み込み開始: src\data\engineers.csv
+[2025-05-10 12:35:53] [INFO] [SYSTEM] CSVファイル読み込み完了: src\data\engineers.csv, 985行
+[2025-05-10 12:35:53] [INFO] [SYSTEM] Loaded 985 engineers.
+[2025-05-10 12:35:53] [INFO] [SYSTEM] アクセススレッドを開始しました
+[2025-05-10 12:35:53] [INFO] [SYSTEM] CSVファイル読み込み開始: C:\Users\astro\OneDrive\デスクトップ\エンジニア情報テンプレート.csv
+[2025-05-10 12:35:53] [INFO] [SYSTEM] CSVファイル読み込み完了: C:\Users\astro\OneDrive\デスクトップ\エンジニア情報テンプレート.csv, 5行
+[2025-05-10 12:35:53] [INFO] [SYSTEM] 非同期タスクが完了: ImportCSV
+[2025-05-10 12:35:53] [INFO] [SYSTEM] エンジニアデータの読み込みを開始します
+[2025-05-10 12:35:53] [INFO] [SYSTEM] アクセススレッドを開始しました
+[2025-05-10 12:35:53] [INFO] [SYSTEM] CSVファイル読み込み開始: src\data\engineers.csv
+[2025-05-10 12:35:53] [INFO] [SYSTEM] CSVファイル読み込み完了: src\data\engineers.csv, 985行
+[2025-05-10 12:35:53] [INFO] [SYSTEM] Loaded 985 engineers.
+[2025-05-10 12:35:53] [INFO] [SYSTEM] エンジニアデータを更新しました: 985件
+[2025-05-10 12:36:00] [INFO] [UI] ソート実行: 列=社員ID, 順序=昇順
+[2025-05-10 12:36:00] [INFO] [SYSTEM] ソート完了: 985件
+[2025-05-10 12:36:09] [INFO] [UI] ソート実行: 列=社員ID, 順序=降順
+[2025-05-10 12:36:09] [INFO] [SYSTEM] ソート完了: 985件
+[2025-05-10 12:36:11] [INFO] [SYSTEM] アプリケーション終了処理を開始します
+[2025-05-10 12:36:11] [INFO] [SYSTEM] ExecutorServiceを終了しています
+[2025-05-10 12:36:11] [INFO] [SYSTEM] 登録済みスレッドを終了しています
+[2025-05-10 12:36:11] [INFO] [SYSTEM] アプリケーション終了処理が完了しました
+[2025-05-10 12:36:11] [INFO] [SYSTEM] シャットダウンします
+[2025-05-10 13:16:11] [INFO] [SYSTEM] ログシステムが正常に初期化されました
+[2025-05-10 13:16:11] [INFO] [SYSTEM] ログシステムを初期化します
+[2025-05-10 13:16:11] [INFO] [SYSTEM] シャットダウンフックを登録しました
+[2025-05-10 13:16:11] [INFO] [SYSTEM] C:\Users\astro\Documents\Projects\Engineer-system\src\data\engineers.csv
+[2025-05-10 13:16:11] [INFO] [SYSTEM] リソースマネージャーが正常に初期化されました
+[2025-05-10 13:16:11] [INFO] [SYSTEM] リソースマネージャーを初期化しました
+[2025-05-10 13:16:11] [INFO] [SYSTEM] メインフレームを初期化しました
+[2025-05-10 13:16:11] [INFO] [UI] テーブルのダブルクリックイベントを設定しました
+[2025-05-10 13:16:11] [INFO] [SYSTEM] エンジニア一覧画面を初期化しました
+[2025-05-10 13:16:11] [INFO] [SYSTEM] 画面遷移コントローラーを初期化しました
+[2025-05-10 13:16:11] [INFO] [SYSTEM] メインコントローラーを初期化しました
+[2025-05-10 13:16:11] [INFO] [SYSTEM] エンジニアコントローラーを初期化しました
+[2025-05-10 13:16:11] [INFO] [SYSTEM] アプリケーションを初期化しました
+[2025-05-10 13:16:11] [INFO] [SYSTEM] スレッド 'AsyncTask-LoadData' を管理対象に登録しました
+[2025-05-10 13:16:11] [INFO] [SYSTEM] イベントを処理しました: LOAD_DATA
+[2025-05-10 13:16:11] [INFO] [SYSTEM] 非同期タスクを開始: LoadData
+[2025-05-10 13:16:11] [INFO] [SYSTEM] エンジニアデータの読み込みを開始します
+[2025-05-10 13:16:11] [INFO] [SYSTEM] アクセススレッドを開始しました
+[2025-05-10 13:16:11] [INFO] [SYSTEM] CSVファイル読み込み開始: src\data\engineers.csv
+[2025-05-10 13:16:11] [INFO] [SYSTEM] CSVファイル読み込み完了: src\data\engineers.csv, 0行
+[2025-05-10 13:16:11] [INFO] [SYSTEM] Loaded 0 engineers.
+[2025-05-10 13:16:11] [INFO] [SYSTEM] 非同期タスクが完了: LoadData
+[2025-05-10 13:16:11] [INFO] [SYSTEM] アプリケーションの初期化が完了しました
+[2025-05-10 13:16:11] [INFO] [SYSTEM] パネルを切り替えました: ListPanel
+[2025-05-10 13:16:11] [INFO] [SYSTEM] 画面を切り替えました: LIST
+[2025-05-10 13:16:11] [INFO] [SYSTEM] エンジニアデータを更新しました: 0件
+[2025-05-10 13:16:11] [INFO] [SYSTEM] ビューを更新しました
+[2025-05-10 13:16:11] [INFO] [SYSTEM] ビューを更新しました
+[2025-05-10 13:16:19] [INFO] [UI] 取込ボタンが押されました
+[2025-05-10 13:16:24] [INFO] [SYSTEM] スレッド 'AsyncTask-ImportCSV' を管理対象に登録しました
+[2025-05-10 13:16:24] [INFO] [SYSTEM] 非同期タスクを開始: ImportCSV
+[2025-05-10 13:16:24] [INFO] [SYSTEM] エンジニアデータの読み込みを開始します
+[2025-05-10 13:16:24] [INFO] [SYSTEM] アクセススレッドを開始しました
+[2025-05-10 13:16:24] [INFO] [SYSTEM] CSVファイル読み込み開始: src\data\engineers.csv
+[2025-05-10 13:16:24] [INFO] [SYSTEM] CSVファイル読み込み完了: src\data\engineers.csv, 0行
+[2025-05-10 13:16:24] [INFO] [SYSTEM] Loaded 0 engineers.
+[2025-05-10 13:16:24] [INFO] [SYSTEM] アクセススレッドを開始しました
+[2025-05-10 13:16:24] [INFO] [SYSTEM] CSVファイル読み込み開始: C:\Users\astro\OneDrive\デスクトップ\エンジニア情報テンプレート.csv
+[2025-05-10 13:16:24] [INFO] [SYSTEM] CSVファイル読み込み完了: C:\Users\astro\OneDrive\デスクトップ\エンジニア情報テンプレート.csv, 5行
+[2025-05-10 13:16:24] [INFO] [SYSTEM] エンジニアデータの読み込みを開始します
+[2025-05-10 13:16:24] [INFO] [SYSTEM] アクセススレッドを開始しました
+[2025-05-10 13:16:24] [INFO] [SYSTEM] CSVファイル読み込み開始: src\data\engineers.csv
+[2025-05-10 13:16:24] [INFO] [SYSTEM] CSVファイル読み込み完了: src\data\engineers.csv, 0行
+[2025-05-10 13:16:24] [INFO] [SYSTEM] Loaded 0 engineers.
+[2025-05-10 13:16:24] [INFO] [SYSTEM] アクセススレッドを開始しました
+[2025-05-10 13:16:24] [INFO] [SYSTEM] CSVファイル読み込み開始: src\data\engineers.csv
+[2025-05-10 13:16:24] [INFO] [SYSTEM] CSVファイル読み込み完了: src\data\engineers.csv, 0行
+[2025-05-10 13:16:24] [INFO] [SYSTEM] アクセススレッドを開始しました
+[2025-05-10 13:16:24] [INFO] [SYSTEM] CSVファイル書き込み開始: src\data\engineers.csv
+[2025-05-10 13:16:24] [INFO] [SYSTEM] CSVファイル書き込み完了: src\data\engineers.csv, 2行
+[2025-05-10 13:16:24] [INFO] [SYSTEM] エンジニア情報を保存しました: ID=ID65031, 名前=中村たろう
+[2025-05-10 13:16:24] [INFO] [SYSTEM] Added engineer with ID ID65031 and name 中村たろう
+[2025-05-10 13:16:24] [INFO] [SYSTEM] エンジニアデータの読み込みを開始します
+[2025-05-10 13:16:24] [INFO] [SYSTEM] アクセススレッドを開始しました
+[2025-05-10 13:16:24] [INFO] [SYSTEM] CSVファイル読み込み開始: src\data\engineers.csv
+[2025-05-10 13:16:24] [INFO] [SYSTEM] CSVファイル読み込み完了: src\data\engineers.csv, 1行
+[2025-05-10 13:16:24] [INFO] [SYSTEM] Loaded 1 engineers.
+[2025-05-10 13:16:24] [INFO] [SYSTEM] アクセススレッドを開始しました
+[2025-05-10 13:16:24] [INFO] [SYSTEM] CSVファイル読み込み開始: src\data\engineers.csv
+[2025-05-10 13:16:24] [INFO] [SYSTEM] CSVファイル読み込み完了: src\data\engineers.csv, 1行
+[2025-05-10 13:16:24] [INFO] [SYSTEM] アクセススレッドを開始しました
+[2025-05-10 13:16:24] [INFO] [SYSTEM] CSVファイル書き込み開始: src\data\engineers.csv
+[2025-05-10 13:16:24] [INFO] [SYSTEM] CSVファイル書き込み完了: src\data\engineers.csv, 3行
+[2025-05-10 13:16:24] [INFO] [SYSTEM] エンジニア情報を保存しました: ID=ID54870, 名前=斎藤由美
+[2025-05-10 13:16:24] [INFO] [SYSTEM] Added engineer with ID ID54870 and name 斎藤由美
+[2025-05-10 13:16:24] [INFO] [SYSTEM] エンジニアデータの読み込みを開始します
+[2025-05-10 13:16:24] [INFO] [SYSTEM] アクセススレッドを開始しました
+[2025-05-10 13:16:24] [INFO] [SYSTEM] CSVファイル読み込み開始: src\data\engineers.csv
+[2025-05-10 13:16:24] [INFO] [SYSTEM] CSVファイル読み込み完了: src\data\engineers.csv, 2行
+[2025-05-10 13:16:24] [INFO] [SYSTEM] Loaded 2 engineers.
+[2025-05-10 13:16:24] [INFO] [SYSTEM] アクセススレッドを開始しました
+[2025-05-10 13:16:24] [INFO] [SYSTEM] CSVファイル読み込み開始: src\data\engineers.csv
+[2025-05-10 13:16:24] [INFO] [SYSTEM] CSVファイル読み込み完了: src\data\engineers.csv, 2行
+[2025-05-10 13:16:24] [INFO] [SYSTEM] アクセススレッドを開始しました
+[2025-05-10 13:16:24] [INFO] [SYSTEM] CSVファイル書き込み開始: src\data\engineers.csv
+[2025-05-10 13:16:24] [INFO] [SYSTEM] CSVファイル書き込み完了: src\data\engineers.csv, 4行
+[2025-05-10 13:16:24] [INFO] [SYSTEM] エンジニア情報を保存しました: ID=ID87124, 名前=中村彩
+[2025-05-10 13:16:24] [INFO] [SYSTEM] Added engineer with ID ID87124 and name 中村彩
+[2025-05-10 13:16:24] [INFO] [SYSTEM] エンジニアデータの読み込みを開始します
+[2025-05-10 13:16:24] [INFO] [SYSTEM] アクセススレッドを開始しました
+[2025-05-10 13:16:24] [INFO] [SYSTEM] CSVファイル読み込み開始: src\data\engineers.csv
+[2025-05-10 13:16:24] [INFO] [SYSTEM] CSVファイル読み込み完了: src\data\engineers.csv, 3行
+[2025-05-10 13:16:24] [INFO] [SYSTEM] Loaded 3 engineers.
+[2025-05-10 13:16:24] [INFO] [SYSTEM] アクセススレッドを開始しました
+[2025-05-10 13:16:24] [INFO] [SYSTEM] CSVファイル読み込み開始: src\data\engineers.csv
+[2025-05-10 13:16:24] [INFO] [SYSTEM] CSVファイル読み込み完了: src\data\engineers.csv, 3行
+[2025-05-10 13:16:24] [INFO] [SYSTEM] アクセススレッドを開始しました
+[2025-05-10 13:16:24] [INFO] [SYSTEM] CSVファイル書き込み開始: src\data\engineers.csv
+[2025-05-10 13:16:24] [INFO] [SYSTEM] CSVファイル書き込み完了: src\data\engineers.csv, 5行
+[2025-05-10 13:16:24] [INFO] [SYSTEM] エンジニア情報を保存しました: ID=ID21234, 名前=佐藤花子
+[2025-05-10 13:16:24] [INFO] [SYSTEM] Added engineer with ID ID21234 and name 佐藤花子
+[2025-05-10 13:16:24] [INFO] [SYSTEM] エンジニアデータの読み込みを開始します
+[2025-05-10 13:16:24] [INFO] [SYSTEM] アクセススレッドを開始しました
+[2025-05-10 13:16:24] [INFO] [SYSTEM] CSVファイル読み込み開始: src\data\engineers.csv
+[2025-05-10 13:16:24] [INFO] [SYSTEM] CSVファイル読み込み完了: src\data\engineers.csv, 4行
+[2025-05-10 13:16:24] [INFO] [SYSTEM] Loaded 4 engineers.
+[2025-05-10 13:16:24] [INFO] [SYSTEM] アクセススレッドを開始しました
+[2025-05-10 13:16:24] [INFO] [SYSTEM] CSVファイル読み込み開始: src\data\engineers.csv
+[2025-05-10 13:16:24] [INFO] [SYSTEM] CSVファイル読み込み完了: src\data\engineers.csv, 4行
+[2025-05-10 13:16:24] [INFO] [SYSTEM] アクセススレッドを開始しました
+[2025-05-10 13:16:24] [INFO] [SYSTEM] CSVファイル書き込み開始: src\data\engineers.csv
+[2025-05-10 13:16:24] [INFO] [SYSTEM] CSVファイル書き込み完了: src\data\engineers.csv, 6行
+[2025-05-10 13:16:24] [INFO] [SYSTEM] エンジニア情報を保存しました: ID=ID08759, 名前=鈴木一郎
+[2025-05-10 13:16:24] [INFO] [SYSTEM] Added engineer with ID ID08759 and name 鈴木一郎
+[2025-05-10 13:16:24] [INFO] [SYSTEM] 非同期タスクが完了: ImportCSV
+[2025-05-10 13:16:24] [INFO] [SYSTEM] エンジニアデータの読み込みを開始します
+[2025-05-10 13:16:24] [INFO] [SYSTEM] アクセススレッドを開始しました
+[2025-05-10 13:16:24] [INFO] [SYSTEM] CSVファイル読み込み開始: src\data\engineers.csv
+[2025-05-10 13:16:24] [INFO] [SYSTEM] CSVファイル読み込み完了: src\data\engineers.csv, 5行
+[2025-05-10 13:16:24] [INFO] [SYSTEM] Loaded 5 engineers.
+[2025-05-10 13:16:24] [INFO] [SYSTEM] エンジニアデータを更新しました: 5件
+[2025-05-10 13:16:34] [INFO] [SYSTEM] アプリケーション終了処理を開始します
+[2025-05-10 13:16:34] [INFO] [SYSTEM] ExecutorServiceを終了しています
+[2025-05-10 13:16:34] [INFO] [SYSTEM] 登録済みスレッドを終了しています
+[2025-05-10 13:16:34] [INFO] [SYSTEM] アプリケーション終了処理が完了しました
+[2025-05-10 13:16:34] [INFO] [SYSTEM] シャットダウンします
+[2025-05-10 13:21:20] [INFO] [SYSTEM] ログシステムが正常に初期化されました
+[2025-05-10 13:21:20] [INFO] [SYSTEM] ログシステムを初期化します
+[2025-05-10 13:21:20] [INFO] [SYSTEM] シャットダウンフックを登録しました
+[2025-05-10 13:21:20] [INFO] [SYSTEM] リソースマネージャーが正常に初期化されました
+[2025-05-10 13:21:20] [INFO] [SYSTEM] リソースマネージャーを初期化しました
+[2025-05-10 13:21:20] [INFO] [SYSTEM] メインフレームを初期化しました
+[2025-05-10 13:21:20] [INFO] [UI] テーブルのダブルクリックイベントを設定しました
+[2025-05-10 13:21:20] [INFO] [SYSTEM] エンジニア一覧画面を初期化しました
+[2025-05-10 13:21:20] [INFO] [SYSTEM] 画面遷移コントローラーを初期化しました
+[2025-05-10 13:21:20] [INFO] [SYSTEM] メインコントローラーを初期化しました
+[2025-05-10 13:21:20] [INFO] [SYSTEM] エンジニアコントローラーを初期化しました
+[2025-05-10 13:21:20] [INFO] [SYSTEM] アプリケーションを初期化しました
+[2025-05-10 13:21:20] [INFO] [SYSTEM] スレッド 'AsyncTask-LoadData' を管理対象に登録しました
+[2025-05-10 13:21:20] [INFO] [SYSTEM] イベントを処理しました: LOAD_DATA
+[2025-05-10 13:21:20] [INFO] [SYSTEM] 非同期タスクを開始: LoadData
+[2025-05-10 13:21:20] [INFO] [SYSTEM] エンジニアデータの読み込みを開始します
+[2025-05-10 13:21:20] [INFO] [SYSTEM] アクセススレッドを開始しました
+[2025-05-10 13:21:20] [INFO] [SYSTEM] CSVファイル読み込み開始: src\data\engineers.csv
+[2025-05-10 13:21:20] [INFO] [SYSTEM] CSVファイル読み込み完了: src\data\engineers.csv, 5行
+[2025-05-10 13:21:20] [INFO] [SYSTEM] Loaded 5 engineers.
+[2025-05-10 13:21:20] [INFO] [SYSTEM] 非同期タスクが完了: LoadData
+[2025-05-10 13:21:20] [INFO] [SYSTEM] アプリケーションの初期化が完了しました
+[2025-05-10 13:21:20] [INFO] [SYSTEM] パネルを切り替えました: ListPanel
+[2025-05-10 13:21:20] [INFO] [SYSTEM] 画面を切り替えました: LIST
+[2025-05-10 13:21:20] [INFO] [SYSTEM] エンジニアデータを更新しました: 5件
+[2025-05-10 13:21:20] [INFO] [SYSTEM] ビューを更新しました
+[2025-05-10 13:21:20] [INFO] [SYSTEM] ビューを更新しました
+[2025-05-10 13:21:23] [INFO] [SYSTEM] アプリケーション終了処理を開始します
+[2025-05-10 13:21:23] [INFO] [SYSTEM] ExecutorServiceを終了しています
+[2025-05-10 13:21:23] [INFO] [SYSTEM] 登録済みスレッドを終了しています
+[2025-05-10 13:21:23] [INFO] [SYSTEM] アプリケーション終了処理が完了しました
+[2025-05-10 13:21:23] [INFO] [SYSTEM] シャットダウンします

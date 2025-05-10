@@ -15,7 +15,6 @@ import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Locale;
-import java.util.Set;
 import java.util.logging.Level;
 import java.util.stream.Collectors;
 
@@ -23,9 +22,9 @@ import java.util.stream.Collectors;
  * エンジニア一覧を表示するパネルクラス
  * ページング、ソート、検索、追加、取込、削除機能
  *
- * @author Bando
- * @version 4.4.1
- * @since 2025-05-07
+ * @author Nakano
+ * @version 4.5.0
+ * @since 2025-05-10
  */
 public class ListPanel extends JPanel {
 
@@ -751,7 +750,7 @@ public class ListPanel extends JPanel {
             return null;
         }
 
-          // 表示用のデータ（検索・ソート反映済み）
+        // 表示用のデータ（検索・ソート反映済み）
         List<EngineerDTO> displayData = getDisplayData();
 
         // 選択行のモデル上のインデックスに変換
@@ -809,9 +808,8 @@ public class ListPanel extends JPanel {
         if (selectedRows.length == 0) {
             return selectedEngineers;
         }
-         // 表示用のフィルタ・ソート適用済みデータ
-    List<EngineerDTO> displayData = getDisplayData();
-
+        // 表示用のフィルタ・ソート適用済みデータ
+        List<EngineerDTO> displayData = getDisplayData();
 
         // 現在のページの先頭インデックス
         int startIndex = (currentPage - 1) * pageSize;
@@ -877,7 +875,12 @@ public class ListPanel extends JPanel {
      */
     private void importData() {
         LogHandler.getInstance().log(Level.INFO, LogType.UI, "取込ボタンが押されました");
-        // ここにデータ取込処理を実装する（TODO）
+        if (mainController != null) {
+            mainController.handleImportData();
+        } else {
+            LogHandler.getInstance().log(Level.WARNING, LogType.UI,
+                    "MainControllerが設定されていないためCSVインポートできません");
+        }
     }
 
     /**
