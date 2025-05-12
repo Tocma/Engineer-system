@@ -13,10 +13,15 @@ import java.text.DecimalFormat;
 import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.Comparator;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Locale;
+import java.util.Set;
 import java.util.logging.Level;
 import java.util.stream.Collectors;
+
+import java.awt.event.MouseEvent;
+import java.awt.event.InputEvent;
 
 /**
  * エンジニア一覧を表示するパネルクラス
@@ -298,9 +303,30 @@ public class ListPanel extends JPanel {
         deleteButton.addActionListener(e -> deleteSelectedRow());
         buttonPanel.add(deleteButton);
 
-        // --- 行選択に応じて削除ボタンの有効／無効を制御するリスナー ---
-        table.getSelectionModel().addListSelectionListener(e -> {
-            updateButtonState(); //
+        table.addMouseListener(new java.awt.event.MouseAdapter() {
+            @Override
+            public void mousePressed(MouseEvent e) {
+                isCtrlPressed = (e.getModifiersEx() & InputEvent.CTRL_DOWN_MASK) != 0;
+                isShiftPressed = (e.getModifiersEx() & InputEvent.SHIFT_DOWN_MASK) != 0;
+            }
+
+            @Override
+            public void mouseReleased(MouseEvent e) {
+                // ドラッグ完了時に選択状態を更新
+                updateSelectedEngineerIds();
+                updateButtonState();
+            }
+
+            @Override
+            public void mouseClicked(java.awt.event.MouseEvent e) {
+                if (e.getClickCount() == 2) {
+                    int row = table.rowAtPoint(e.getPoint());
+                    if (row >= 0) {
+                        table.setRowSelectionInterval(row, row);
+                        openDetailView();
+                    }
+                }
+            }
         });
 
         topPanel.add(buttonPanel); // ボタン群を追加
@@ -787,6 +813,8 @@ public class ListPanel extends JPanel {
         // ページネーション情報の更新
         updatePageLabel(data.size());
         updatePaginationButtons(data.size());
+
+        restoreRowSelectionById(); // ページまたぎ選択復元
     }
 
     // ページネーションボタンの状態を更新（オーバーロード）
@@ -801,19 +829,69 @@ public class ListPanel extends JPanel {
      *
      * @return 選択されているエンジニアリスト、未選択時は空リスト
      */
-    public List<EngineerDTO> getSelectedEngineers() {
-        int[] selectedRows = table.getSelectedRows();
-        List<EngineerDTO> selectedEngineers = new ArrayList<>();
+    // public List<EngineerDTO> getSelectedEngineers() {
+    // int[] selectedRows = table.getSelectedRows();
+    // List<EngineerDTO> selectedEngineers = new ArrayList<>();
 
-        if (selectedRows.length == 0) {
-            return selectedEngineers;
+    // if (selectedRows.length == 0) {
+    // return selectedEngineers;
+    // }
+    // // 表示用のフィルタ・ソート適用済みデータ
+    // List<EngineerDTO> displayData = getDisplayData();
+
+    // // 現在のページの先頭インデックス
+    // int startIndex = (currentPage - 1) * pageSize;
+
+    // for (int selectedRow : selectedRows) {
+    // // 選択行のモデル上のインデックスに変換
+    // int modelRow = table.convertRowIndexToModel(selectedRow);
+
+    // // データリスト上のインデックス
+    // int dataIndex = startIndex + modelRow;
+
+    // // インデックスが有効範囲内かチェック
+    // if (dataIndex >= 0 && dataIndex < displayData.size()) {
+    // selectedEngineers.add(displayData.get(dataIndex));
+    // }
+    // }
+
+    // return selectedEngineers;
+    // }
+
+    // ページをまたいで選択されたエンジニアIDの集合
+    private final Set<String> selectedEngineerIds = new HashSet<>();
+
+    private boolean isCtrlPressed = false;
+    private boolean isShiftPressed = false;
+
+    private boolean ignoreSelectionEvents = false;
+
+    public List<EngineerDTO> getSelectedEngineers() {
+        List<EngineerDTO> selectedEngineers = new ArrayList<>();
+        Set<String> uniqueIds = new HashSet<>();
+        for (EngineerDTO dto : getDisplayData()) {
+            if (selectedEngineerIds.contains(dto.getId()) && uniqueIds.add(dto.getId())) {
+                selectedEngineers.add(dto);
+            }
         }
-        // 表示用のフィルタ・ソート適用済みデータ
+        return selectedEngineers;
+    }
+
+    /**
+     * 現在表示中ページで選択された行のIDを内部セットに保持する。
+     * - 通常クリック時は1件のみ選択されるようにリセット
+     * - Ctrl/Shiftキー使用時は複数保持を許可
+     * - 行単位での選択を反映する
+     *
+     * @param e MouseEvent（キー入力の状態確認のため）
+     */
+    private void updateSelectedEngineerIds(boolean isCtrlDown, boolean isShiftDown) {
+        int startIndex = (currentPage - 1) * pageSize;
         List<EngineerDTO> displayData = getDisplayData();
 
-        // 現在のページの先頭インデックス
-        int startIndex = (currentPage - 1) * pageSize;
-
+        // 現在ページで選択されたIDを収集
+        Set<String> newlySelectedIds = new HashSet<>();
+        int[] selectedRows = table.getSelectedRows();
         for (int selectedRow : selectedRows) {
             // 選択行のモデル上のインデックスに変換
             int modelRow = table.convertRowIndexToModel(selectedRow);
@@ -823,11 +901,56 @@ public class ListPanel extends JPanel {
 
             // インデックスが有効範囲内かチェック
             if (dataIndex >= 0 && dataIndex < displayData.size()) {
-                selectedEngineers.add(displayData.get(dataIndex));
+                newlySelectedIds.add(displayData.get(dataIndex).getId());
             }
         }
 
-        return selectedEngineers;
+        // 選択状態の判断
+        boolean isSingleClick = !isCtrlDown && !isShiftDown && newlySelectedIds.size() == 1;
+
+        if (isSingleClick) {
+            // 通常の1件クリック時は選択状態をクリアして1件のみ選択
+            selectedEngineerIds.clear();
+        }
+
+        // 新規選択を追加
+        selectedEngineerIds.addAll(newlySelectedIds);
+
+        // 行単位選択を維持
+        table.setRowSelectionAllowed(true);
+        table.setColumnSelectionAllowed(false);
+
+        // 101件以上の選択に対して警告を表示（選択状態は維持）
+        if (selectedEngineerIds.size() > 100) {
+            DialogManager.getInstance().showWarningDialog(
+                    "選択数が上限を超えています",
+                    String.format("%d件選択しています。一度に選択できるのは100件以下です。", selectedEngineerIds.size()));
+        }
+
+    }
+
+    private void updateSelectedEngineerIds() {
+        updateSelectedEngineerIds(isCtrlPressed, isShiftPressed);
+    }
+
+    /**
+     * ページ切り替えやテーブル再描画時に、選択IDに基づいて選択状態（青背景）を復元する
+     */
+    private void restoreRowSelectionById() {
+        ignoreSelectionEvents = true;
+
+        int startIndex = (currentPage - 1) * pageSize;
+        List<EngineerDTO> displayData = getDisplayData();
+
+        for (int i = 0; i < pageSize && (startIndex + i) < displayData.size(); i++) {
+            EngineerDTO dto = displayData.get(startIndex + i);
+            if (selectedEngineerIds.contains(dto.getId())) {
+                table.addRowSelectionInterval(i, i);
+            }
+        }
+
+        ignoreSelectionEvents = false;
+
     }
 
     /**
@@ -981,6 +1104,12 @@ public class ListPanel extends JPanel {
     private void setupTableEvents() {
         table.addMouseListener(new java.awt.event.MouseAdapter() {
             @Override
+            public void mousePressed(MouseEvent e) {
+                isCtrlPressed = (e.getModifiersEx() & InputEvent.CTRL_DOWN_MASK) != 0;
+                isShiftPressed = (e.getModifiersEx() & InputEvent.SHIFT_DOWN_MASK) != 0;
+            }
+
+            @Override
             public void mouseClicked(java.awt.event.MouseEvent e) {
                 if (e.getClickCount() == 2) {
                     // ダブルクリック時の処理
@@ -1056,9 +1185,11 @@ public class ListPanel extends JPanel {
             return;
         }
 
-        // 通常時だけ判定して制御する
-        boolean hasSelection = table.getSelectedRowCount() > 0;
+        // 選択状態を正確に判定
+        boolean hasSelection = !selectedEngineerIds.isEmpty();
         deleteButton.setEnabled(hasSelection);
+
+        // 他のボタンは常に有効
         importButton.setEnabled(true);
         exportButton.setEnabled(true);
         templateButton.setEnabled(true);
