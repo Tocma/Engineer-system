@@ -44,9 +44,9 @@ import java.util.logging.Level;
  * </ol>
  * </p>
  *
- * @author Nakano
- * @version 4.0.0
- * @since 2025-04-15
+ * @author Nagai
+ * @version 4.6.0
+ * @since 2025-05-12
  */
 public class MainFrame extends AbstractFrame {
 
@@ -65,6 +65,9 @@ public class MainFrame extends AbstractFrame {
     /** スレッド終了待機時間5秒（ミリ秒） */
     private static final long THREAD_TERMINATION_TIMEOUT = 5000L;
 
+    /** リストパネル */
+    private ListPanel listPanel;
+
     /**
      * コンストラクタ
      * メインフレームとスレッドプールを初期化
@@ -78,9 +81,18 @@ public class MainFrame extends AbstractFrame {
         this.executor = Executors.newFixedThreadPool(5); // 5スレッドのプール
         this.managedThreads = new ArrayList<>();
 
+        // リストパネルの初期化
+        this.listPanel = new ListPanel();
+
         // ウィンドウ終了イベントのハンドリング
         setupWindowCloseHandler();
     }
+
+    //listpanelにアクセスするためのgetter
+    public ListPanel getListPanel() {
+        return listPanel;
+    }
+
 
     @Override
     protected void customizeFrame() {

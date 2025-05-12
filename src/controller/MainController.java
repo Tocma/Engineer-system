@@ -12,6 +12,7 @@ import view.DialogManager;
 import view.ListPanel;
 import view.MainFrame;
 import java.io.File;
+import java.time.LocalDate;
 import java.util.List;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
@@ -71,9 +72,9 @@ import javax.swing.filechooser.FileNameExtensionFilter;
  * </ul>
  * </p>
  *
- * @author Nakano
- * @version 4.5.0
- * @since 2025-05-10
+ * @author Nagai
+ * @version 4.6.0
+ * @since 2025-05-12
  */
 public class MainController {
 
@@ -88,6 +89,9 @@ public class MainController {
 
     /** メインフレーム */
     private final MainFrame mainFrame;
+
+    /** リストパネル */
+    private final ListPanel listPanel;
 
     /** ダイアログマネージャー */
     private final DialogManager dialogManager;
@@ -111,6 +115,7 @@ public class MainController {
      */
     public MainController(MainFrame mainFrame) {
         this.mainFrame = mainFrame;
+        this.listPanel = mainFrame.getListPanel();
         this.screenController = new ScreenTransitionController(mainFrame);
         this.runningTasks = new ConcurrentHashMap<>();
         this.isShuttingDown = new AtomicBoolean(false);
@@ -187,12 +192,9 @@ public class MainController {
                 case "TEMPLATE":
                     handleTemplateExport();
                     break;
-                /**
-                 * 実装途中です
-                 * case "EXPORT_CSV":
-                 * handleExportCSV();
-                 * break;
-                 */
+                case "EXPORT_CSV":
+                    handleExportCSV(data);
+                    break;
                 case "IMPORT_CSV":
                     handleImportData();
                     break;
@@ -836,43 +838,66 @@ public class MainController {
         }
     }
 
-    /** CSV出力機能 */
     /**
-     * 実装途中です
-     * public void handleExportCSV() {
-     * JFileChooser fileChooser = new JFileChooser();
-     * fileChooser.setDialogTitle("保存先を選択");
-     * fileChooser.setSelectedFile(new File("エンジニア情報一覧.csv"));
+     * エンジニア情報のCSV出力を非同期で実行します。
      * 
-     * while (true) {
-     * int result = fileChooser.showSaveDialog(null);
-     * if (result != JFileChooser.APPROVE_OPTION) return;
-     * 
-     * File file = fileChooser.getSelectedFile();
-     * if (file.exists()) {
-     * int overwrite = JOptionPane.showConfirmDialog(
-     * null,
-     * "既にファイルがあります。上書きしますか？",
-     * "上書き確認",
-     * JOptionPane.YES_NO_OPTION
-     * );
-     * 
-     * if (overwrite != JOptionPane.YES_OPTION) continue;
-     * }
-     * 
-     * List<EngineerDTO> data = mainFrame.getListPanel().getSelectedEngineers();
-     * boolean success = new EngineerCSVDAO().exportCSV(data, file.getPath());
-     * 
-     * if (success) {
-     * DialogManager.getInstance().showInfoDialog("完了", "CSVを出力しました");
-     * } else {
-     * DialogManager.getInstance().showErrorDialog("失敗", "CSV出力に失敗しました");
-     * }
-     * 
-     * break;
-     * }
-     * }
+     * @param data CSV出力対象のエンジニアDTOリスト
      */
+    @SuppressWarnings("unchecked")
+    public void handleExportCSV(Object data) {
+        List<EngineerDTO> targetList = (List<EngineerDTO>) data;
+        JPanel panel = screenController.getCurrentPanel();
+
+        // 非同期でCSV出力処理を開始
+        startAsyncTask("export_engineers", () -> {
+            File file = null;
+
+            while (true) {
+                //ファイル保存場所の選択
+                JFileChooser fileChooser = new JFileChooser();
+                fileChooser.setDialogTitle("CSVファイルの保存先を選択");
+                fileChooser.setSelectedFile(new File("エンジニア情報-" + LocalDate.now() + ".csv"));
+
+                int result = fileChooser.showSaveDialog(listPanel);
+                if (result != JFileChooser.APPROVE_OPTION) {
+                    return; // キャンセルされた場合
+                }
+
+                file = fileChooser.getSelectedFile();
+                if (!file.exists()) {
+                    break; // ファイルが存在しなければOK
+                }
+
+                int overwrite = JOptionPane.showConfirmDialog(
+                    listPanel,
+                    "ファイル " + file.getName() + " は既に存在します。上書きしますか？",
+                    "上書き確認",
+                    JOptionPane.YES_NO_CANCEL_OPTION
+                );
+
+                if (overwrite == JOptionPane.YES_OPTION) {
+                    break; // 上書き許可された場合
+                } else if (overwrite == JOptionPane.CANCEL_OPTION || overwrite == JOptionPane.CLOSED_OPTION) {
+                    return; // キャンセルや×ボタン → 中止
+                }
+            }
+
+            // UIの無効化
+            listPanel.setButtonsEnabled(false);
+
+            if (panel instanceof ListPanel listPanel) {
+                listPanel.setStatus("CSV出力中...   ");
+            }
+            EngineerCSVDAO csvDAO = new EngineerCSVDAO();
+            boolean success = csvDAO.exportCSV(targetList, file.getAbsolutePath());
+
+            if (success) {
+                JOptionPane.showMessageDialog(listPanel, "出力に成功しました。", "完了", JOptionPane.INFORMATION_MESSAGE);
+            } else {
+                JOptionPane.showMessageDialog(listPanel, "出力に失敗しました。", "エラー", JOptionPane.ERROR_MESSAGE);
+            }
+        });
+    };
 
     // ヘルパーメソッド：保存処理を共通化
     private boolean saveTemplate(File file) {

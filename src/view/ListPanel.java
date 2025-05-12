@@ -22,9 +22,9 @@ import java.util.stream.Collectors;
  * エンジニア一覧を表示するパネルクラス
  * ページング、ソート、検索、追加、取込、削除機能
  *
- * @author Nakano
- * @version 4.5.0
- * @since 2025-05-10
+ * @author Nagai
+ * @version 4.6.0
+ * @since 2025-05-12
  */
 public class ListPanel extends JPanel {
 
@@ -898,10 +898,36 @@ public class ListPanel extends JPanel {
      * 出力ボタンのイベントハンドラ
      */
     private void exportData() {
-        LogHandler.getInstance().log(Level.INFO, LogType.UI, "出力ボタンが押されました");
-        // ここにエクスポート処理を実装する（TODO）
-        // if (mainController != null) {
-        // mainController.handleEvent("EXPORT_CSV", null);
+        if (mainController != null) {
+            LogHandler.getInstance().log(Level.INFO, LogType.UI, "出力ボタンが押されました");
+            // ここにエクスポート処理を実装する（TODO）
+            int[] selectedRows = table.getSelectedRows();
+            if (selectedRows.length > 0) {
+                // 選択されたエンジニアリストを取得
+                List<EngineerDTO> selectedEngineers = getSelectedEngineers();
+
+                // 選択対象のリストを作成
+                List<String> selectedTargets = selectedEngineers.stream()
+                .map(engineer -> engineer.getId() + " : " + engineer.getName())
+                .collect(Collectors.toList());
+
+                // 確認ダイアログを表示
+                boolean confirmed = DialogManager.getInstance()
+                    .showScrollableListDialog("CSV出力確認", "以下の項目を出力しますか？", selectedTargets);
+
+                if (confirmed) {
+                    // CSV出力実行
+                    mainController.handleEvent("EXPORT_CSV", selectedEngineers);
+                } else {
+                    // キャンセルされた場合、ボタンを再度有効化
+                    setButtonsEnabled(true);
+                    mainController.getScreenController().setRegisterButtonEnabled(true);
+                }
+
+                LogHandler.getInstance().log(Level.INFO, LogType.UI,
+                String.format("%d件の行が出力対象に選択されました", selectedRows.length));
+            }
+        }
     }
 
     // 削除中状態フラグ
