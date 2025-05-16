@@ -569,12 +569,12 @@ public class DetailPanel extends AbstractEngineerPanel {
      */
     private void createButtonArea() {
         // 処理中表示ラベル
-        progressLabel = new JLabel("更新中...");
+        progressLabel = new JLabel("保存中...");
         progressLabel.setVisible(false);
         addButtonPanelComponent(progressLabel);
 
         // 戻るボタン
-        backButton = new JButton("戻る");
+        backButton = new JButton("一覧へ戻る");
         backButton.addActionListener(e -> {
             if (!processing) {
                 goBack();
@@ -583,7 +583,7 @@ public class DetailPanel extends AbstractEngineerPanel {
         addButton(backButton);
 
         // 更新ボタン
-        updateButton = new JButton("更新");
+        updateButton = new JButton("保存");
         updateButton.addActionListener(e -> {
             if (!processing) {
                 updateEngineer();
