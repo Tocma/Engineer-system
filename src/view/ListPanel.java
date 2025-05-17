@@ -30,8 +30,8 @@ import java.awt.event.InputEvent;
  * ページング、ソート、検索、追加、取込、削除機能
  *
  * @author Bando
- * @version 4.7.1
- * @since 2025-05-14
+ * @version 4.7.2
+ * @since 2025-05-17
  */
 public class ListPanel extends JPanel {
 
@@ -96,7 +96,12 @@ public class ListPanel extends JPanel {
     private JComboBox<String> careerBox;
 
     /** ソート関係 */
-    private TableRowSorter<DefaultTableModel> sorter; 
+    private static final int COLUMN_INDEX_EMPLOYEE_ID = 0;
+    private static final int COLUMN_INDEX_NAME = 1;
+    private static final int COLUMN_INDEX_BIRTHDATE = 2;
+    private static final int COLUMN_INDEX_CAREER = 3;
+    private static final int COLUMN_INDEX_PROGRAMMING_LANGUAGES = 4;
+    private TableRowSorter<DefaultTableModel> sorter;
     private boolean isAscending = true;
     private int lastSortedColumn = -1;
 
@@ -398,14 +403,18 @@ public class ListPanel extends JPanel {
      * 「扱える言語」列（インデックス4）はソート対象外。
      */
     private void configureSorter() {
-        for (int i = 0; i < COLUMN_NAMES.length; i++) {
-            sorter.setSortable(i, i != 4); // 「扱える言語」はソート対象外
+        // ソート可能な列を設定
+        for (int columnNumber = 0; columnNumber < COLUMN_NAMES.length; columnNumber++) {
+            sorter.setSortable(columnNumber, columnNumber != COLUMN_INDEX_PROGRAMMING_LANGUAGES); // 「扱える言語」はソート対象外
         }
 
-        table.getTableHeader().addMouseListener(new java.awt.event.MouseAdapter() {
+        // ソート可能な列のヘッダーにマウスリスナーを追加
+        //// MouseAdapterのAPI仕様により、ここでメソッド（mouseClicked）をオーバーライドして実装しています。
+        // このメソッドはMouseListenerインターフェースのコールバックとして必要です。
+        this.table.getTableHeader().addMouseListener(new java.awt.event.MouseAdapter() {
             @Override
             public void mouseClicked(java.awt.event.MouseEvent e) {
-                int columnIndex = table.columnAtPoint(e.getPoint());
+                int columnIndex = ListPanel.this.table.columnAtPoint(e.getPoint());
                 sortByColumn(columnIndex);
             }
         });
@@ -420,20 +429,21 @@ public class ListPanel extends JPanel {
     private void sortByColumn(int columnIndex) {
         try {
             // ソート可能な列かチェック
-            if (columnIndex < 0 || columnIndex >= COLUMN_NAMES.length || columnIndex == 4) {
+            if (columnIndex < 0 || columnIndex >= COLUMN_NAMES.length
+                    || columnIndex == COLUMN_INDEX_PROGRAMMING_LANGUAGES) {
                 return; // 「扱える言語」(インデックス4)はソート対象外
             }
 
             // 選択状態をクリア
-            selectedEngineerIds.clear(); 
-            table.clearSelection(); 
+            this.selectedEngineerIds.clear();
+            this.table.clearSelection();
 
             // 同じ列の場合は昇順/降順を切り替え、異なる列の場合は昇順に設定
-            if (lastSortedColumn == columnIndex) {
-                isAscending = !isAscending;
+            if (this.lastSortedColumn == columnIndex) {
+                this.isAscending = !this.isAscending;
             } else {
-                isAscending = true;
-                lastSortedColumn = columnIndex;
+                this.isAscending = true;
+                this.lastSortedColumn = columnIndex;
             }
 
             // ログ出力：ソート対象と順序
@@ -442,24 +452,30 @@ public class ListPanel extends JPanel {
                     LogType.UI,
                     String.format("ソート実行: 列=%s, 順序=%s", COLUMN_NAMES[columnIndex], isAscending ? "昇順" : "降順"));
 
-            // ソート条件を保存し、表示データを更新
+            // ソート条件を保存し、表示データを更新 修正
             List<EngineerDTO> displayData = getDisplayData();
+            if (displayData == null || displayData.isEmpty()) {
+                // データがない場合の処理
+                updateTableData(new ArrayList<>()); // 空リストでテーブルをクリア
+                updateButtonState();
+                return;
+            }
 
             // ページを1ページ目にリセット
-            currentPage = 1;
+            this.currentPage = 1;
 
             // テーブルを更新
             updateTableData(displayData);
 
             // ボタンの状態を更新
-            updateButtonState(); 
+            updateButtonState();
 
             // UIのソートインジケータを設定（見た目の矢印）
-            sorter.setSortKeys(List.of(new RowSorter.SortKey(columnIndex,
-                    isAscending ? SortOrder.ASCENDING : SortOrder.DESCENDING)));
+            this.sorter.setSortKeys(List.of(new RowSorter.SortKey(columnIndex,
+                    this.isAscending ? SortOrder.ASCENDING : SortOrder.DESCENDING)));
 
-            // TableRowSorterによる内部ソートを抑制（Comparatorを機能しないものにする）
-            sorter.setComparator(columnIndex, (o1, o2) -> 0);
+            // TableRowSorterによる内部ソートを無効化（Comparatorを常に0にすることで全て同じとみなす）
+            this.sorter.setComparator(columnIndex, (o1, o2) -> 0);
 
             LogHandler.getInstance().log(
                     Level.INFO,
@@ -477,24 +493,25 @@ public class ListPanel extends JPanel {
      * @param columnIndex ソート対象の列インデックス
      * @param ascending   昇順でソートするか
      * @return ソート済みのエンジニアリスト
+     * 
      */
     private List<EngineerDTO> sortEngineers(List<EngineerDTO> engineers, int columnIndex, boolean ascending) {
         Comparator<EngineerDTO> comparator = null;
 
         switch (columnIndex) {
-            case 0: // ID
+            case COLUMN_INDEX_EMPLOYEE_ID: // ID
                 comparator = Comparator.comparing(e -> parseNumericId(e.getId()),
                         Comparator.nullsLast(Integer::compareTo));
                 break;
-            case 1: // 氏名
+            case COLUMN_INDEX_NAME: // 氏名
                 comparator = Comparator.comparing(EngineerDTO::getNameKana,
                         getJapaneseKanaComparator());
                 break;
-            case 2: // 生年月日
+            case COLUMN_INDEX_BIRTHDATE: // 生年月日
                 comparator = Comparator.comparing(EngineerDTO::getBirthDate,
                         Comparator.nullsLast(LocalDate::compareTo));
                 break;
-            case 3: // エンジニア歴
+            case COLUMN_INDEX_CAREER: // エンジニア歴
                 comparator = Comparator.comparingInt(EngineerDTO::getCareer);
                 break;
             default:
@@ -535,9 +552,9 @@ public class ListPanel extends JPanel {
             if (s1 == null && s2 == null)
                 return 0;
             if (s1 == null)
-                return -1;
+                return 1; // nullは後ろ
             if (s2 == null)
-                return 1;
+                return -1; // nullは前
             return collator.compare(s1, s2);
         };
     }
@@ -711,8 +728,8 @@ public class ListPanel extends JPanel {
         }
 
         // ソート条件が設定されている場合はソート
-        if (lastSortedColumn >= 0) {
-            result = sortEngineers(result, lastSortedColumn, isAscending);
+        if (this.lastSortedColumn >= 0) {
+            result = this.sortEngineers(result, this.lastSortedColumn, this.isAscending);
         }
 
         return result;
@@ -776,7 +793,6 @@ public class ListPanel extends JPanel {
 
         return true;
     }
-
 
     /**
      * 現在選択されているエンジニアを取得
@@ -927,9 +943,8 @@ public class ListPanel extends JPanel {
         // DialogManager.getInstance().showSelectionWarningDialog(currentSelectionCount);
         if (currentSelectionCount > 100) {
             DialogManager.getInstance().showWarningDialog(
-                "選択数が上限を超えています",
-                String.format("%d件選択しています。一度に選択できるのは100件以下です。", currentSelectionCount)
-            );
+                    "選択数が上限を超えています",
+                    String.format("%d件選択しています。一度に選択できるのは100件以下です。", currentSelectionCount));
             LogHandler.getInstance().log(
                     Level.WARNING,
                     LogType.UI,
@@ -944,7 +959,6 @@ public class ListPanel extends JPanel {
 
         int startIndex = (currentPage - 1) * pageSize;
         List<EngineerDTO> displayData = getDisplayData();
-
 
         for (int i = 0; i < pageSize && (startIndex + i) < displayData.size(); i++) {
             EngineerDTO dto = displayData.get(startIndex + i);
