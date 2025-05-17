@@ -30,7 +30,7 @@ import java.awt.event.InputEvent;
  * ページング、ソート、検索、追加、取込、削除機能
  *
  * @author Bando
- * @version 4.7.2
+ * @version 4.7.3
  * @since 2025-05-17
  */
 public class ListPanel extends JPanel {
@@ -298,23 +298,23 @@ public class ListPanel extends JPanel {
         addButton.addActionListener(e -> addNewEngineer());
         buttonPanel.add(addButton);
 
-        importButton = new JButton("取込");
-        importButton.addActionListener(e -> importData());
+        this.importButton = new JButton("取込");
+        this.importButton.addActionListener(e -> importData());
         buttonPanel.add(importButton);
 
-        templateButton = new JButton("テンプレ");
-        templateButton.addActionListener(e -> loadTemplate());
+        this.templateButton = new JButton("テンプレ");
+        this.templateButton.addActionListener(e -> loadTemplate());
         buttonPanel.add(templateButton);
 
-        exportButton = new JButton("出力");
-        exportButton.setEnabled(false); // 初期状態は無効
-        exportButton.addActionListener(e -> exportData());
-        buttonPanel.add(exportButton);
+        this.exportButton = new JButton("出力");
+        this.exportButton.setEnabled(false); // 初期状態は無効
+        this.exportButton.addActionListener(e -> exportData());
+        buttonPanel.add(this.exportButton);
 
-        deleteButton = new JButton("削除");
-        deleteButton.setEnabled(false); // 初期状態は無効
-        deleteButton.addActionListener(e -> deleteSelectedRow());
-        buttonPanel.add(deleteButton);
+        this.deleteButton = new JButton("削除");
+        this.deleteButton.setEnabled(false); // 初期状態は無効
+        this.deleteButton.addActionListener(e -> deleteSelectedRow());
+        buttonPanel.add(this.deleteButton);
 
         topPanel.add(buttonPanel); // ボタン群を追加
 
@@ -842,8 +842,8 @@ public class ListPanel extends JPanel {
         // ページネーション情報の更新
         updatePageLabel(data.size());
         updatePaginationButtons(data.size());
-
-        restoreRowSelectionById(); // ページまたぎ選択復元
+        // ページまたぎ選択復元
+        restoreRowSelectionById();
     }
 
     // ページネーションボタンの状態を更新（オーバーロード）
@@ -858,15 +858,19 @@ public class ListPanel extends JPanel {
      *
      * @return 選択されているエンジニアリスト、未選択時は空リスト
      */
-
     public List<EngineerDTO> getSelectedEngineers() {
+        // 選択されたエンジニアを格納するリスト
         List<EngineerDTO> selectedEngineers = new ArrayList<>();
+        // 重複追加防止用のIDセット
         Set<String> uniqueIds = new HashSet<>();
-        for (EngineerDTO dto : getDisplayData()) {
-            if (selectedEngineerIds.contains(dto.getId()) && uniqueIds.add(dto.getId())) {
-                selectedEngineers.add(dto);
+        // 表示中のデータから選択状態のエンジニアのみ抽出
+        for (EngineerDTO engineerDTO : getDisplayData()) {
+            // 選択IDセットに含まれていて、かつまだ追加していないIDのみリストに追加
+            if (this.selectedEngineerIds.contains(engineerDTO.getId()) && uniqueIds.add(engineerDTO.getId())) {
+                selectedEngineers.add(engineerDTO);
             }
         }
+        // 選択されたエンジニアのリストを返す（未選択時は空リスト）
         return selectedEngineers;
     }
 
@@ -885,62 +889,131 @@ public class ListPanel extends JPanel {
      * @param isShiftDown Shiftキーが押されているか
      */
     private void updateSelectedEngineerIds(boolean isCtrlDown, boolean isShiftDown) {
-        int startIndex = (currentPage - 1) * pageSize;
+        int startIndex = (this.currentPage - 1) * this.pageSize;
         List<EngineerDTO> displayData = getDisplayData();
-
-        // 選択前の状態を記録
-        int previousSelectionCount = selectedEngineerIds.size();
-
-        // 現在ページで選択されたIDを収集
-        Set<String> newlySelectedIds = new HashSet<>();
-        int[] selectedRows = table.getSelectedRows();
-        for (int selectedRow : selectedRows) {
-            // 選択行のモデル上のインデックスに変換
-            int modelRow = table.convertRowIndexToModel(selectedRow);
-            // データリスト上のインデックス
-            int dataIndex = startIndex + modelRow;
-            // インデックスが有効範囲内かチェック
-            if (dataIndex >= 0 && dataIndex < displayData.size()) {
-                newlySelectedIds.add(displayData.get(dataIndex).getId());
-            }
+        if (displayData == null || displayData.isEmpty()) {
+            updateTableData(new ArrayList<>());
+            updateButtonState();
+            return;
         }
+        int previousSelectionCount = this.selectedEngineerIds.size();
 
-        // 現在のページに表示されているIDのリストを作成
-        Set<String> currentPageIds = displayData.stream()
-                .skip(startIndex)
-                .limit(pageSize)
-                .map(EngineerDTO::getId)
-                .collect(Collectors.toSet());
+        // 選択された行のIDを収集
+        Set<String> newlySelectedIds = collectSelectedIds(displayData, startIndex, isShiftDown);
+        // 現在ページのIDを収集
+        Set<String> currentPageIds = getCurrentPageIds(displayData, startIndex);
+        // 現在ページで選択解除されたIDを削除
+        removeUnselectedIds(currentPageIds, newlySelectedIds);
 
-        // 現在のページに表示されているIDのみ選択状態を更新
-        Iterator<String> iterator = selectedEngineerIds.iterator();
-        while (iterator.hasNext()) {
-            String id = iterator.next();
-            if (currentPageIds.contains(id) && !newlySelectedIds.contains(id)) {
-                iterator.remove(); // 現在のページで選択解除されたIDのみを削除
-            }
-        }
-        // Ctrl/Shiftキーが押されていない場合は、選択状態をクリアして新規選択を追加
+        // Ctrl/Shiftキーが押されていない場合は、既存の選択をクリア
         if (!isCtrlDown && !isShiftDown) {
-            selectedEngineerIds.clear();
+            clearSelection();
             LogHandler.getInstance().log(
                     Level.INFO,
                     LogType.UI,
                     "通常クリックによる選択: 既存の選択はクリア");
         }
-        // 新しく選択されたIDを追加
-        selectedEngineerIds.addAll(newlySelectedIds);
-        // 選択件数の計算を現在の実際の選択状態で行う
+        // Ctrl/Shiftキーが押されている場合は、選択を追加
+        this.selectedEngineerIds.addAll(newlySelectedIds);
+        // 最後に選択した行を記憶
+        // updateLastSelectedRowIndex();
         int currentSelectionCount = selectedEngineerIds.size();
+        // 選択件数をログ出力
         if (currentSelectionCount != previousSelectionCount) {
             LogHandler.getInstance().log(
                     Level.INFO,
                     LogType.UI,
-                    String.format("選択件数が変更されました: %d → %d件",
-                            previousSelectionCount, currentSelectionCount));
+                    String.format("選択件数が変更されました: %d → %d件", previousSelectionCount, currentSelectionCount));
         }
-        // 101件以上の選択に対して警告を表示
-        // DialogManager.getInstance().showSelectionWarningDialog(currentSelectionCount);
+        // 選択件数が上限を超えた場合の警告
+        checkSelectionLimit(currentSelectionCount);
+    }
+
+    /**
+     * 現在ページで選択された行のIDを収集する。
+     * <p>
+     * Shiftキーが押されている場合は範囲選択、そうでない場合は個別選択となる。
+     * </p>
+     *
+     * @param displayData 表示中のエンジニアデータリスト
+     * @param startIndex  現在ページの先頭インデックス
+     * @param isShiftDown Shiftキーが押されているか（範囲選択の場合true）
+     * @return 選択されたエンジニアIDのセット
+     */
+    private Set<String> collectSelectedIds(List<EngineerDTO> displayData, int startIndex, boolean isShiftDown) {
+        Set<String> newlySelectedIds = new HashSet<>();
+        int[] selectedRows = this.table.getSelectedRows();
+
+        if (isShiftDown && selectedRows.length > 0) {
+            // Shiftキーが押されている場合は、開始行と終了行の範囲をすべて選択対象とする
+            int startRow = this.table.getSelectionModel().getAnchorSelectionIndex(); // 範囲選択の開始行
+            int endRow = this.table.getSelectionModel().getLeadSelectionIndex(); // 範囲選択の終了行
+            int fromRow = Math.min(startRow, endRow);
+            int toRow = Math.max(startRow, endRow);
+            // fromRow～toRow間の全行を選択対象IDに追加
+            for (int viewRowIndex = fromRow; viewRowIndex <= toRow; viewRowIndex++) {
+                int modelRow = this.table.convertRowIndexToModel(viewRowIndex);
+                int dataIndex = startIndex + modelRow;
+                // データ範囲外を除外
+                if (dataIndex >= 0 && dataIndex < displayData.size()) {
+                    newlySelectedIds.add(displayData.get(dataIndex).getId());
+                }
+            }
+        } else {
+            // 通常クリックまたはCtrlキーによる個別選択の場合
+            for (int selectedRow : selectedRows) {
+                int modelRow = this.table.convertRowIndexToModel(selectedRow);
+                int dataIndex = startIndex + modelRow;
+                // データ範囲外を除外
+                if (dataIndex >= 0 && dataIndex < displayData.size()) {
+                    newlySelectedIds.add(displayData.get(dataIndex).getId());
+                }
+            }
+        }
+        return newlySelectedIds;
+    }
+
+    /**
+     * 現在ページに表示されているエンジニアIDのセットを作成する。
+     *
+     * @param displayData 表示中のエンジニアデータリスト
+     * @param startIndex  現在ページの先頭インデックス
+     * @return 現在ページに表示されているエンジニアIDのセット
+     */
+    private Set<String> getCurrentPageIds(List<EngineerDTO> displayData, int startIndex) {
+        return displayData.stream()
+                .skip(startIndex)
+                .limit(this.pageSize)
+                .map(EngineerDTO::getId)
+                .collect(Collectors.toSet());
+    }
+
+    /**
+     * 現在のページで選択解除されたIDのみを選択IDセットから削除する。
+     *
+     * @param currentPageIds   現在ページに表示されているエンジニアIDのセット
+     * @param newlySelectedIds 今回新たに選択されたエンジニアIDのセット
+     */
+    private void removeUnselectedIds(Set<String> currentPageIds, Set<String> newlySelectedIds) {
+        Iterator<String> selectedIditerator = this.selectedEngineerIds.iterator();
+        while (selectedIditerator.hasNext()) {
+            // 選択されたIDを取得
+            String id = selectedIditerator.next();
+            // 現在ページに存在し、かつ新たに選択されていないIDを削除
+            // 選択解除されたIDを削除します。
+            if (currentPageIds.contains(id) && !newlySelectedIds.contains(id)) {
+                selectedIditerator.remove();
+            }
+        }
+    }
+
+    // 選択状態をクリア
+    private void clearSelection() {
+        this.selectedEngineerIds.clear();
+    }
+
+    // 選択件数が上限を超えた場合の警告
+    private void checkSelectionLimit(int currentSelectionCount) {
         if (currentSelectionCount > 100) {
             DialogManager.getInstance().showWarningDialog(
                     "選択数が上限を超えています",
@@ -953,20 +1026,28 @@ public class ListPanel extends JPanel {
     }
 
     /**
-     * ページ切り替えやテーブル再描画時に、選択IDに基づいて選択状態（青背景）を復元する
+     * ページ切り替えやテーブル再描画時に、選択IDに基づいて
+     * テーブルの選択状態（青背景）を復元する。
      */
     private void restoreRowSelectionById() {
-
-        int startIndex = (currentPage - 1) * pageSize;
+        // 現在ページの先頭インデックスを計算
+        // 例: 1ページ目なら0、2ページ目なら100（pageSize=100の場合）となり、
+        // 全体データリストのどこから表示を始めるかを決定する
+        int startIndex = (this.currentPage - 1) * this.pageSize;
+        // 検索・ソート・フィルタ済みの表示用データを取得
         List<EngineerDTO> displayData = getDisplayData();
-
-        for (int i = 0; i < pageSize && (startIndex + i) < displayData.size(); i++) {
-            EngineerDTO dto = displayData.get(startIndex + i);
-            if (selectedEngineerIds.contains(dto.getId())) {
-                table.addRowSelectionInterval(i, i);
+        if (displayData == null || displayData.isEmpty()) {
+            return; // データがない場合は何もしない
+        }
+        // 現在ページに表示されている行を順にチェック
+        for (int rowIndex = 0; rowIndex < this.pageSize && (startIndex + rowIndex) < displayData.size(); rowIndex++) {
+            // ページ内rowIndex番目のエンジニアDTOを取得
+            EngineerDTO engineerDTO = displayData.get(startIndex + rowIndex);
+            // 選択IDセットに含まれていれば、その行を選択状態にする
+            if (this.selectedEngineerIds.contains(engineerDTO.getId())) {
+                this.table.addRowSelectionInterval(rowIndex, rowIndex);
             }
         }
-
     }
 
     /**
