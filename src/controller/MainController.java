@@ -72,9 +72,9 @@ import javax.swing.filechooser.FileNameExtensionFilter;
  * </ul>
  * </p>
  *
- * @author Nagai
- * @version 4.6.0
- * @since 2025-05-12
+ * @author Nakano
+ * @version 4.8.1
+ * @since 2025-05-19
  */
 public class MainController {
 
@@ -134,7 +134,10 @@ public class MainController {
     public void initialize() {
         try {
             // リソースマネージャーの取得
-            resourceManager = new ResourceManager();
+            resourceManager = ResourceManager.getInstance();
+            if (!resourceManager.isInitialized()) {
+                resourceManager.initialize();
+            }
 
             // エンジニアコントローラーの初期化
             engineerController = new EngineerController();
@@ -853,7 +856,7 @@ public class MainController {
             File file = null;
 
             while (true) {
-                //ファイル保存場所の選択
+                // ファイル保存場所の選択
                 JFileChooser fileChooser = new JFileChooser();
                 fileChooser.setDialogTitle("CSVファイルの保存先を選択");
                 fileChooser.setSelectedFile(new File("エンジニア情報-" + LocalDate.now() + ".csv"));
@@ -869,11 +872,10 @@ public class MainController {
                 }
 
                 int overwrite = JOptionPane.showConfirmDialog(
-                    listPanel,
-                    "ファイル " + file.getName() + " は既に存在します。上書きしますか？",
-                    "上書き確認",
-                    JOptionPane.YES_NO_CANCEL_OPTION
-                );
+                        listPanel,
+                        "ファイル " + file.getName() + " は既に存在します。上書きしますか？",
+                        "上書き確認",
+                        JOptionPane.YES_NO_CANCEL_OPTION);
 
                 if (overwrite == JOptionPane.YES_OPTION) {
                     break; // 上書き許可された場合

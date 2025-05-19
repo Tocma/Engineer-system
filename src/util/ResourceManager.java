@@ -9,14 +9,17 @@ import java.util.logging.Level;
 import util.LogHandler.LogType;
 
 /**
- * アプリケーションリソースを総合的に管理するクラス
+ * アプリケーションリソースを総合的に管理するシングルトンクラス
  * プロジェクトのsrcディレクトリ内に絶対パスでリソースを管理
  *
  * @author Nakano
- * @version 4.8.0
+ * @version 4.8.1
  * @since 2025-05-19
  */
 public class ResourceManager {
+
+    /** シングルトンインスタンス */
+    private static final ResourceManager INSTANCE = new ResourceManager();
 
     /**
      * ディレクトリ構造の定義
@@ -47,10 +50,20 @@ public class ResourceManager {
     private Path engineerCsvPath;
 
     /**
-     * コンストラクタ
+     * プライベートコンストラクタ
+     * シングルトンパターンを実現するため、外部からのインスタンス化を防止
      */
-    public ResourceManager() {
+    private ResourceManager() {
         // 初期化はinitializeメソッドで行う
+    }
+
+    /**
+     * シングルトンインスタンスを取得
+     * 
+     * @return ResourceManagerの唯一のインスタンス
+     */
+    public static ResourceManager getInstance() {
+        return INSTANCE;
     }
 
     /**

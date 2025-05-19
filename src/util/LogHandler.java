@@ -11,10 +11,10 @@ import java.util.logging.*;
 
 /**
  * エンジニア情報管理システムのログ管理を行うシングルトンクラス
- * プロジェクトのsrcディレクトリ内に絶対パスでログを出力
+ * 自動初期化機能と強化されたエラーハンドリングを提供
  *
  * @author Nakano
- * @version 4.8.0
+ * @version 4.8.1
  * @since 2025-05-19
  */
 public class LogHandler {
@@ -65,10 +65,21 @@ public class LogHandler {
 
     /**
      * シングルトンインスタンスを取得
+     * 初期化されていない場合は自動的に初期化を試みる
      * 
      * @return LogHandlerの唯一のインスタンス
      */
     public static LogHandler getInstance() {
+        // まだ初期化されていない場合は自動初期化を試みる
+        if (!INSTANCE.isInitialized) {
+            try {
+                INSTANCE.initialize();
+            } catch (IOException e) {
+                // 初期化に失敗した場合は標準出力にフォールバック
+                System.err.println("ログシステムの自動初期化に失敗しました: " + e.getMessage());
+                System.err.println("標準出力へのフォールバックを使用します");
+            }
+        }
         return INSTANCE;
     }
 
@@ -223,25 +234,25 @@ public class LogHandler {
 
     /**
      * 指定されたレベルとタイプでログを記録
+     * 初期化されていない場合は標準出力にフォールバック
      * 
      * @param level   ログレベル
      * @param type    ログタイプ (UI または SYSTEM)
      * @param message ログメッセージ
-     * @throws IllegalStateException    LogHandlerが初期化されていない場合
-     * @throws IllegalArgumentException メッセージがnullの場合
      */
     public synchronized void log(Level level, LogType type, String message) {
         // 初期化前は標準出力にフォールバック
         if (!isInitialized) {
-            System.out.println("[" + level + "][" + type + "] " + message);
+            System.out.println("[" + level + "][" + (type != null ? type : "UNKNOWN") + "] " +
+                    (message != null ? message : "null"));
             return;
         }
 
         if (message == null) {
-            throw new IllegalArgumentException("ログメッセージがnullです");
+            message = "null"; // nullメッセージを許容
         }
         if (type == null) {
-            throw new IllegalArgumentException("ログタイプがnullです");
+            type = LogType.SYSTEM; // デフォルトのタイプを使用
         }
 
         // typeを含めたログ出力のためのカスタムLogRecordを作成
@@ -253,29 +264,34 @@ public class LogHandler {
 
     /**
      * エラーログを記録
-     * エラーメッセージと例外情報を記録
+     * 初期化されていない場合でも動作するよう強化
      * 
      * @param type      ログタイプ (UI または SYSTEM)
      * @param message   エラーメッセージ
      * @param throwable 発生した例外
-     * @throws IllegalStateException    LogHandlerが初期化されていない場合
-     * @throws IllegalArgumentException メッセージまたは例外がnullの場合
      */
     public synchronized void logError(LogType type, String message, Throwable throwable) {
         // 初期化前は標準エラー出力にフォールバック
         if (!isInitialized) {
-            System.err.println("[ERROR][" + type + "] " + message);
+            System.err.println("[ERROR][" + (type != null ? type : "UNKNOWN") + "] " +
+                    (message != null ? message : "エラーが発生しました"));
             if (throwable != null) {
                 throwable.printStackTrace();
             }
             return;
         }
 
-        if (message == null || throwable == null) {
-            throw new IllegalArgumentException("メッセージと例外情報は必須です");
+        // nullチェックを強化
+        if (message == null) {
+            message = "エラーが発生しました";
         }
         if (type == null) {
-            throw new IllegalArgumentException("ログタイプがnullです");
+            type = LogType.SYSTEM;
+        }
+        if (throwable == null) {
+            // 例外情報がない場合は通常のエラーログとして記録
+            log(Level.SEVERE, type, message);
+            return;
         }
 
         // typeを含めたログ出力のためのカスタムLogRecordを作成

@@ -98,8 +98,8 @@ import javax.swing.JTable;
  * </p>
  *
  * @author Nakano
- * @version 4.0.0
- * @since 2025-04-15
+ * @version 4.8.1
+ * @since 2025-05-19
  */
 public class TestCoreSystem {
 
@@ -390,8 +390,10 @@ public class TestCoreSystem {
                     }
 
                     // リソースマネージャーの初期化
-                    resourceManager = new ResourceManager();
-                    resourceManager.initialize();
+                    resourceManager = ResourceManager.getInstance();
+                    if (!resourceManager.isInitialized()) {
+                        resourceManager.initialize();
+                    }
                     logger.log(Level.INFO, LogType.SYSTEM, "テスト用リソースマネージャーを初期化しました");
 
                     // メインフレームの初期化

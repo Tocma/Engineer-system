@@ -15,16 +15,13 @@ import java.util.logging.Level;
  * システムの初期化、実行、リソース管理、終了処理を担当
  *
  * @author Nakano
- * @version 4.8.0
+ * @version 4.8.1
  * @since 2025-05-19
  */
 public class Main {
 
     /** シャットダウンフック登録済みフラグ */
     private static boolean shutdownHookRegistered = false;
-
-    /** リソースマネージャー */
-    private static ResourceManager resourceManager;
 
     /** メインコントローラー */
     private static MainController mainController;
@@ -127,9 +124,13 @@ public class Main {
      */
     private static void initializeLogger() throws IOException {
         try {
-            LogHandler logger = LogHandler.getInstance();
-            logger.initialize(); // プロジェクトルート相対パスを使用
-            logger.log(Level.INFO, LogType.SYSTEM, "ログシステムを初期化しました");
+            // LogHandlerの取得と初期化（getInstance()で自動初期化も試行される）
+            LogHandler logHandler = LogHandler.getInstance();
+            // 明示的に初期化を行う場合はこちら
+            if (!logHandler.isInitialized()) {
+                logHandler.initialize();
+            }
+            logHandler.log(Level.INFO, LogType.SYSTEM, "ログシステムを初期化しました");
         } catch (IOException e) {
             System.err.println("ログシステムの初期化に失敗しました: " + e.getMessage());
             System.err.println("標準出力へのフォールバックを使用します");
@@ -145,8 +146,8 @@ public class Main {
      */
     private static void initializeResourceManager() throws IOException {
         try {
-            resourceManager = new ResourceManager();
-            resourceManager.initialize();
+            // シングルトンインスタンスを取得して初期化
+            ResourceManager.getInstance().initialize();
             LogHandler.getInstance().log(Level.INFO, LogType.SYSTEM, "リソースマネージャーを初期化しました");
         } catch (IOException e) {
             System.err.println("リソースマネージャーの初期化に失敗しました: " + e.getMessage());
@@ -222,8 +223,9 @@ public class Main {
     private static void handleFatalError(Exception e) {
         // エラーログの記録
         try {
-            if (LogHandler.getInstance().isInitialized()) {
-                LogHandler.getInstance().logError(LogType.SYSTEM, "システム起動中に致命的エラーが発生", e);
+            LogHandler logHandler = LogHandler.getInstance();
+            if (logHandler.isInitialized()) {
+                logHandler.logError(LogType.SYSTEM, "システム起動中に致命的エラーが発生", e);
             }
         } catch (Exception logError) {
             // ログ記録に失敗しても処理を続行
@@ -246,17 +248,16 @@ public class Main {
     private static void cleanup() {
         try {
             // リソースマネージャーのクリーンアップ
-            if (resourceManager != null && resourceManager.isInitialized()) {
-                // 一時ファイルのクリーンアップを削除
-                // resourceManager.cleanupTempFiles(); <- この行を削除
-
+            ResourceManager resourceManager = ResourceManager.getInstance();
+            if (resourceManager.isInitialized()) {
                 // すべてのリソースを解放
                 resourceManager.releaseAllResources();
             }
 
             // ログハンドラのクリーンアップ
-            if (LogHandler.getInstance().isInitialized()) {
-                LogHandler.getInstance().cleanup();
+            LogHandler logHandler = LogHandler.getInstance();
+            if (logHandler.isInitialized()) {
+                logHandler.cleanup();
             }
         } catch (Exception e) {
             System.err.println("クリーンアップ処理に失敗しました: " + e.getMessage());
