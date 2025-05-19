@@ -14,58 +14,11 @@ import java.util.logging.Level;
  * エンジニア人材管理システムのエントリーポイント
  * システムの初期化、実行、リソース管理、終了処理を担当
  *
- * <p>
- * このクラスは、アプリケーションのライフサイクル全体を管理します：
- * <ul>
- * <li>ログシステムの初期化と設定</li>
- * <li>リソースマネージャーの初期化</li>
- * <li>UIコンポーネントの初期化と表示</li>
- * <li>コントローラの初期化と実行</li>
- * <li>CSVデータの読み込み開始</li>
- * <li>例外処理とエラーハンドリング</li>
- * <li>シャットダウンフックによる安全な終了処理</li>
- * <li>リソースの適切な解放</li>
- * </ul>
- * </p>
- *
- * <p>
- * アプリケーションの安全な終了を保証するため、このクラスはシャットダウンフックを登録し、
- * 終了前にすべてのリソースが適切に解放されることを確認します。
- * </p>
- *
- * <p>
- * 起動フローの概要：
- * <ol>
- * <li>ログシステムの初期化</li>
- * <li>シャットダウンフックの登録</li>
- * <li>リソースマネージャーの初期化</li>
- * <li>Swing EDT上でのUIコンポーネントとコントローラの初期化</li>
- * <li>メインウィンドウの表示</li>
- * <li>CSVデータの読み込みの開始</li>
- * </ol>
- * </p>
- *
- * <p>
- * 2025-04-03 追加: テストモードの実装
- * コマンドライン引数を使用してテストモードで起動できるようになりました。
- * 例：
- * 
- * <pre>
- * java -cp bin main.Main --test=startup
- * java -cp bin main.Main --test=shutdown
- * java -cp bin main.Main --test=csv
- * java -cp bin main.Main --test=all
- * </pre>
- * </p>
- *
  * @author Nakano
- * @version 4.4.2
- * @since 2025-05-8
+ * @version 4.8.0
+ * @since 2025-05-19
  */
 public class Main {
-
-    /** ログディレクトリパス */
-    private static final String LOG_DIR = "src/logs";
 
     /** シャットダウンフック登録済みフラグ */
     private static boolean shutdownHookRegistered = false;
@@ -83,6 +36,8 @@ public class Main {
      * @param args コマンドライン引数
      */
     public static void main(String[] args) {
+        System.out.println("アプリケーション起動プロセスを開始...");
+
         // テストモードの確認
         if (isTestMode(args)) {
             runTestMode(args);
@@ -91,18 +46,26 @@ public class Main {
 
         try {
             // ログシステムの初期化（最優先）
+            System.out.println("ログシステムの初期化を開始...");
             initializeLogger();
+            System.out.println("ログシステムの初期化が完了しました");
 
             // シャットダウンフックの登録
+            System.out.println("シャットダウンフックの登録...");
             registerShutdownHook();
 
             // リソースマネージャーの初期化
+            System.out.println("リソースマネージャーの初期化を開始...");
             initializeResourceManager();
+            System.out.println("リソースマネージャーの初期化が完了しました");
 
             // SwingのEDT（Event Dispatch Thread）でUIを初期化
+            System.out.println("アプリケーションUIの初期化を開始...");
             SwingUtilities.invokeLater(Main::initializeApplication);
 
         } catch (Exception e) {
+            System.err.println("アプリケーション初期化中に致命的エラーが発生しました:");
+            e.printStackTrace();
             handleFatalError(e);
         }
     }
@@ -136,6 +99,17 @@ public class Main {
         System.out.println("テストモードで起動します...");
 
         try {
+            // ログシステムの初期化を試行（テストでも必要）
+            try {
+                System.out.println("テスト用ログシステムの初期化を試行...");
+                initializeLogger();
+                System.out.println("テスト用ログシステムの初期化に成功しました");
+            } catch (Exception e) {
+                System.err.println("テスト用ログ初期化に失敗: " + e.getMessage());
+                System.err.println("標準出力へのフォールバックを使用します");
+                // テストの実行は続行
+            }
+
             // テストシステムを初期化して実行
             TestCoreSystem.main(args);
         } catch (Exception e) {
@@ -152,9 +126,15 @@ public class Main {
      * @throws IOException 初期化に失敗した場合
      */
     private static void initializeLogger() throws IOException {
-        LogHandler logger = LogHandler.getInstance();
-        logger.initialize(LOG_DIR);
-        logger.log(Level.INFO, LogType.SYSTEM, "ログシステムを初期化します");
+        try {
+            LogHandler logger = LogHandler.getInstance();
+            logger.initialize(); // プロジェクトルート相対パスを使用
+            logger.log(Level.INFO, LogType.SYSTEM, "ログシステムを初期化しました");
+        } catch (IOException e) {
+            System.err.println("ログシステムの初期化に失敗しました: " + e.getMessage());
+            System.err.println("標準出力へのフォールバックを使用します");
+            throw e; // 上位レベルでの処理のために再スロー
+        }
     }
 
     /**
@@ -164,9 +144,15 @@ public class Main {
      * @throws IOException 初期化に失敗した場合
      */
     private static void initializeResourceManager() throws IOException {
-        resourceManager = new ResourceManager();
-        resourceManager.initialize();
-        LogHandler.getInstance().log(Level.INFO, LogType.SYSTEM, "リソースマネージャーを初期化しました");
+        try {
+            resourceManager = new ResourceManager();
+            resourceManager.initialize();
+            LogHandler.getInstance().log(Level.INFO, LogType.SYSTEM, "リソースマネージャーを初期化しました");
+        } catch (IOException e) {
+            System.err.println("リソースマネージャーの初期化に失敗しました: " + e.getMessage());
+            LogHandler.getInstance().logError(LogType.SYSTEM, "リソースマネージャーの初期化に失敗しました", e);
+            throw e; // 上位レベルでの処理のために再スロー
+        }
     }
 
     /**
@@ -176,11 +162,25 @@ public class Main {
     private static void registerShutdownHook() {
         if (!shutdownHookRegistered) {
             Runtime.getRuntime().addShutdownHook(new Thread(() -> {
-                LogHandler.getInstance().log(Level.INFO, LogType.SYSTEM, "シャットダウンします");
+                System.out.println("シャットダウンフックが実行されました");
+
+                try {
+                    LogHandler.getInstance().log(Level.INFO, LogType.SYSTEM, "シャットダウンします");
+                } catch (Exception e) {
+                    // ログ記録に失敗しても処理を続行
+                    System.err.println("シャットダウン時のログ記録に失敗: " + e.getMessage());
+                }
+
                 cleanup();
             }));
             shutdownHookRegistered = true;
-            LogHandler.getInstance().log(Level.INFO, LogType.SYSTEM, "シャットダウンフックを登録しました");
+
+            try {
+                LogHandler.getInstance().log(Level.INFO, LogType.SYSTEM, "シャットダウンフックを登録しました");
+            } catch (Exception e) {
+                // ログ記録に失敗しても処理を続行
+                System.out.println("シャットダウンフックを登録しました");
+            }
         }
     }
 
@@ -207,6 +207,8 @@ public class Main {
             LogHandler.getInstance().log(Level.INFO, LogType.SYSTEM, "アプリケーションの初期化が完了しました");
 
         } catch (Exception e) {
+            System.err.println("GUI初期化中にエラーが発生しました: " + e.getMessage());
+            LogHandler.getInstance().logError(LogType.SYSTEM, "GUI初期化中にエラーが発生しました", e);
             handleFatalError(e);
         }
     }
@@ -219,16 +221,21 @@ public class Main {
      */
     private static void handleFatalError(Exception e) {
         // エラーログの記録
-        if (LogHandler.getInstance().isInitialized()) {
-            LogHandler.getInstance().logError(LogType.SYSTEM, "システム起動中", e);
-        } else {
-            System.err.println("システム起動中にエラーが発生しました: " + e.getMessage());
-            e.printStackTrace();
+        try {
+            if (LogHandler.getInstance().isInitialized()) {
+                LogHandler.getInstance().logError(LogType.SYSTEM, "システム起動中に致命的エラーが発生", e);
+            }
+        } catch (Exception logError) {
+            // ログ記録に失敗しても処理を続行
+            System.err.println("ログ記録に失敗: " + logError.getMessage());
         }
+
+        System.err.println("システム起動中に致命的エラーが発生しました: " + e.getMessage());
+        e.printStackTrace();
 
         // 終了処理
         cleanup();
-        //強制終了
+        // 強制終了
         System.exit(1);
     }
 
@@ -240,6 +247,10 @@ public class Main {
         try {
             // リソースマネージャーのクリーンアップ
             if (resourceManager != null && resourceManager.isInitialized()) {
+                // 一時ファイルのクリーンアップを削除
+                // resourceManager.cleanupTempFiles(); <- この行を削除
+
+                // すべてのリソースを解放
                 resourceManager.releaseAllResources();
             }
 

@@ -11,56 +11,11 @@ import java.util.logging.*;
 
 /**
  * エンジニア情報管理システムのログ管理を行うシングルトンクラス
- * 
- * <p>
- * 主な特徴：
- * <ul>
- * <li>シングルトンパターンによる一元管理</li>
- * <li>ログTypeによる「UI」と「SYSTEM」の明確な区分</li>
- * <li>日単位のログファイル自動生成</li>
- * <li>ログローテーションによる容量管理</li>
- * <li>詳細なエラー情報の記録</li>
- * </ul>
- * </p>
- * 
- * <p>
- * ログファイルは以下の特性を持ちます：
- * <ul>
- * <li>命名規則: System-YYYY-MM-DD.log</li>
- * <li>最大サイズ: 10MB（超過時に自動ローテーション）</li>
- * <li>フォーマット: [日時] [ログレベル] [Type] メッセージ</li>
- * <li>エンコーディング: UTF-8</li>
- * </ul>
- * </p>
- * 
- * <p>
- * 使用例：
- * 
- * <pre>
- * // ログシステムの初期化
- * LogHandler.getInstance().initialize();
- * 
- * // ログTypeを指定したログ出力
- * LogHandler.getInstance().log(LogType.SYSTEM, "システムを起動しました");
- * 
- * // パラメータ付きメッセージ（文字列補間）
- * LogHandler.getInstance().log(LogType.UI, String.format("ユーザー%s（%s）がログインしました", "ID00001", "山田太郎"));
- * 
- * // レベルとTypeを指定したログ出力
- * LogHandler.getInstance().log(Level.WARNING, LogType.SYSTEM, "メモリ使用率が高くなっています");
- * 
- * // エラーログの出力（例外付き）
- * try {
- *     // 処理
- * } catch (Exception e) {
- *     LogHandler.getInstance().logError(LogType.SYSTEM, "処理中にエラーが発生しました", e);
- * }
- * </pre>
- * </p>
- * 
+ * プロジェクトのsrcディレクトリ内に絶対パスでログを出力
+ *
  * @author Nakano
- * @version 4.4.2
- * @since 2025-05-08
+ * @version 4.8.0
+ * @since 2025-05-19
  */
 public class LogHandler {
 
@@ -75,6 +30,7 @@ public class LogHandler {
         SYSTEM("SYSTEM");
 
         private final String code;
+
         LogType(String code) {
             this.code = code;
         }
@@ -86,15 +42,16 @@ public class LogHandler {
 
     /** シングルトンインスタンス */
     private static final LogHandler INSTANCE = new LogHandler();
+
     /** ログ関連の定数定義 */
-    private static final String DEFAULT_LOG_DIR = "src/logs";
+    private static final String LOG_DIR_NAME = "logs";
     private static final String LOG_FILE_FORMAT = "System-%s.log";
     private static final int MAX_LOG_SIZE_BYTES = 10 * 1024 * 1024; // 10MB
     private static final String LOG_FORMAT = "[%1$tY-%1$tm-%1$td %1$tH:%1$tM:%1$tS] [%4$s] [%7$s] %5$s%6$s%n";
 
     /** ロガー設定 */
     private Logger logger;
-    private boolean isinitialized;
+    private boolean isInitialized;
     private String logDirectory;
     private FileHandler fileHandler;
 
@@ -117,11 +74,19 @@ public class LogHandler {
 
     /**
      * デフォルトのログディレクトリでロガーを初期化
+     * プロジェクトのsrcディレクトリ配下の絶対パスを使用
      * 
      * @throws IOException ログディレクトリの作成や設定に失敗した場合
      */
     public synchronized void initialize() throws IOException {
-        initialize(DEFAULT_LOG_DIR);
+        // プロジェクトのベースディレクトリを取得
+        String projectDir = System.getProperty("user.dir");
+
+        // src/logsへの絶対パスを構築
+        Path defaultLogDir = Paths.get(projectDir, "src", LOG_DIR_NAME).toAbsolutePath();
+
+        System.out.println("ログディレクトリの絶対パス: " + defaultLogDir);
+        initialize(defaultLogDir.toString());
     }
 
     /**
@@ -137,22 +102,23 @@ public class LogHandler {
             throw new IllegalArgumentException("ログディレクトリパスが指定されていません");
         }
 
-        if (isinitialized) {
+        if (isInitialized) {
             return;
         }
 
         try {
-            // ログディレクトリのセットアップ ロガーの設定
+            // ログディレクトリのセットアップとロガーの設定
             this.logDirectory = setupLogDirectory(logDir);
             configureLogger();
             // 初期化完了
-            isinitialized = true;
-    
+            isInitialized = true;
+
             // 初期化完了のログを出力
-            log(LogType.SYSTEM, "ログシステムが正常に初期化されました");
-            
+            log(LogType.SYSTEM, "ログシステムが正常に初期化されました: " + this.logDirectory);
+
         } catch (IOException e) {
             System.err.println("ログシステムの初期化に失敗しました: " + e.getMessage());
+            e.printStackTrace();
             throw new IOException("ログシステムの初期化に失敗しました", e);
         }
     }
@@ -167,10 +133,20 @@ public class LogHandler {
      */
     private String setupLogDirectory(String logDir) throws IOException {
         Path logPath = Paths.get(logDir).toAbsolutePath();
+        System.out.println("ログディレクトリを作成します: " + logPath);
+
         if (!Files.exists(logPath)) {
-            Files.createDirectories(logPath);
-            System.out.println("ログディレクトリを作成しました: " + logPath);
+            try {
+                Files.createDirectories(logPath);
+                System.out.println("ログディレクトリを作成しました: " + logPath);
+            } catch (IOException e) {
+                System.err.println("ログディレクトリの作成に失敗しました: " + e.getMessage());
+                throw e;
+            }
+        } else {
+            System.out.println("既存のログディレクトリを使用します: " + logPath);
         }
+
         return logPath.toString();
     }
 
@@ -194,10 +170,11 @@ public class LogHandler {
         // 現在の日付でログファイル名を生成
         String currentDate = LocalDate.now().format(DateTimeFormatter.ISO_LOCAL_DATE);
         String logFileName = String.format(LOG_FILE_FORMAT, currentDate);
-        String logFilePath = logDirectory + File.separator + logFileName;
+        String logFilePath = new File(logDirectory, logFileName).getAbsolutePath();
 
         // FileHandlerの設定
         fileHandler = new FileHandler(logFilePath, MAX_LOG_SIZE_BYTES, 1, true);
+        fileHandler.setEncoding("UTF-8");
         fileHandler.setFormatter(new Formatter() {
             @Override
             public String format(LogRecord record) {
@@ -254,7 +231,12 @@ public class LogHandler {
      * @throws IllegalArgumentException メッセージがnullの場合
      */
     public synchronized void log(Level level, LogType type, String message) {
-        checkInitialized();
+        // 初期化前は標準出力にフォールバック
+        if (!isInitialized) {
+            System.out.println("[" + level + "][" + type + "] " + message);
+            return;
+        }
+
         if (message == null) {
             throw new IllegalArgumentException("ログメッセージがnullです");
         }
@@ -280,7 +262,15 @@ public class LogHandler {
      * @throws IllegalArgumentException メッセージまたは例外がnullの場合
      */
     public synchronized void logError(LogType type, String message, Throwable throwable) {
-        checkInitialized();
+        // 初期化前は標準エラー出力にフォールバック
+        if (!isInitialized) {
+            System.err.println("[ERROR][" + type + "] " + message);
+            if (throwable != null) {
+                throwable.printStackTrace();
+            }
+            return;
+        }
+
         if (message == null || throwable == null) {
             throw new IllegalArgumentException("メッセージと例外情報は必須です");
         }
@@ -297,17 +287,6 @@ public class LogHandler {
     }
 
     /**
-     * 初期化状態をチェック
-     * 
-     * @throws IllegalStateException 初期化されていない場合
-     */
-    private void checkInitialized() {
-        if (!isinitialized) {
-            throw new IllegalStateException("LogHandlerが初期化されていません。initialize()メソッドを先に呼び出してください。");
-        }
-    }
-
-    /**
      * 現在のログファイル名を取得
      * 
      * @return 現在の日付に対応するログファイル名
@@ -318,12 +297,24 @@ public class LogHandler {
     }
 
     /**
+     * 現在のログファイルパスを取得
+     * 
+     * @return 現在のログファイルの絶対パス
+     */
+    public String getCurrentLogFilePath() {
+        if (logDirectory == null) {
+            return null;
+        }
+        return new File(logDirectory, getCurrentLogFileName()).getAbsolutePath();
+    }
+
+    /**
      * ロガーのクリーンアップ
      * アプリケーション終了時に呼び出して、リソースを適切に解放
      */
     public synchronized void cleanup() {
         if (fileHandler != null) {
-            if (isinitialized) {
+            if (isInitialized) {
                 log(LogType.SYSTEM, "システムをシャットダウンしています");
             }
             fileHandler.close();
@@ -336,7 +327,7 @@ public class LogHandler {
      * @return 初期化済みの場合true
      */
     public boolean isInitialized() {
-        return isinitialized;
+        return isInitialized;
     }
 
     /**

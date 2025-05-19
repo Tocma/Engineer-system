@@ -10,58 +10,24 @@ import util.LogHandler.LogType;
 
 /**
  * アプリケーションリソースを総合的に管理するクラス
- * ファイルやディレクトリの作成、リソースの解放などを担当
- *
- * <p>
- * このクラスは以下の主要な責務を持ちます：
- * <ul>
- * <li>アプリケーションに必要なディレクトリの確認と作成</li>
- * <li>CSVファイルの存在確認と初期ファイルの作成</li>
- * <li>シャットダウン時のリソース解放</li>
- * <li>アプリケーション実行中のリソース管理</li>
- * </ul>
- * </p>
- *
- * <p>
- * リソース管理の主要な機能：
- * <ul>
- * <li>ディレクトリ構造の初期化</li>
- * <li>CSVファイルの作成/存在確認</li>
- * <li>オープンしているリソースの追跡</li>
- * <li>全リソースの解放</li>
- * </ul>
- * </p>
- *
- * <p>
- * 使用例：
- * 
- * <pre>
- * // リソースマネージャーの初期化
- * ResourceManager resourceManager = new ResourceManager();
- * resourceManager.initialize();
- *
- * // アプリケーション終了時のリソース解放
- * resourceManager.releaseAllResources();
- * </pre>
- * </p>
+ * プロジェクトのsrcディレクトリ内に絶対パスでリソースを管理
  *
  * @author Nakano
- * @version 4.0.0
- * @since 2025-04-15
+ * @version 4.8.0
+ * @since 2025-05-19
  */
 public class ResourceManager {
 
     /**
-     * デフォルトのCSVディレクトリとファイル名を定義
+     * ディレクトリ構造の定義
      */
-    private static final String DEFAULT_DATA_DIR = "src/data";
+    private static final String DATA_DIR_NAME = "data";
     private static final String DEFAULT_ENGINEER_CSV = "engineers.csv";
 
     /**
      * CSVヘッダー定義
      */
     private static final String DEFAULT_CSV_HEADER = "社員ID(必須),氏名(必須),フリガナ(必須),生年月日(必須),入社年月(必須),エンジニア歴(必須),扱える言語(必須),経歴,研修の受講歴,技術力,受講態度,コミュニケーション能力,リーダーシップ,備考";
-;
 
     /**
      * オープンしているリソースの追跡用マップ
@@ -74,13 +40,10 @@ public class ResourceManager {
     private boolean initialized = false;
 
     /**
-     * データディレクトリパス
+     * ディレクトリパス
      */
+    private Path srcDirectoryPath;
     private Path dataDirectoryPath;
-
-    /**
-     * エンジニアCSVファイルパス
-     */
     private Path engineerCsvPath;
 
     /**
@@ -93,11 +56,6 @@ public class ResourceManager {
     /**
      * リソースマネージャーを初期化
      * 
-     * <p>
-     * アプリケーションの実行に必要なディレクトリ構造を確認・作成し、
-     * 初期ファイルが存在しない場合は作成
-     * </p>
-     *
      * @throws IOException ディレクトリやファイルの作成に失敗した場合
      */
     public void initialize() throws IOException {
@@ -106,7 +64,16 @@ public class ResourceManager {
         }
 
         try {
-            // ディレクトリパスの設定
+            // プロジェクトのベースディレクトリを取得
+            String projectDir = System.getProperty("user.dir");
+
+            // srcディレクトリへの絶対パスを構築
+            this.srcDirectoryPath = Paths.get(projectDir, "src").toAbsolutePath();
+
+            System.out.println("プロジェクトディレクトリ: " + projectDir);
+            System.out.println("SRCディレクトリの絶対パス: " + srcDirectoryPath);
+
+            // 各ディレクトリパスの設定
             setDirectoryPaths();
 
             // ディレクトリの確認と作成
@@ -119,14 +86,11 @@ public class ResourceManager {
             initialized = true;
 
             // ログに記録
-            if (LogHandler.getInstance().isInitialized()) {
-                LogHandler.getInstance().log(Level.INFO, LogType.SYSTEM, "リソースマネージャーが正常に初期化されました");
-            }
+            logInfo("リソースマネージャーが正常に初期化されました");
+            logPaths();
         } catch (IOException e) {
             // ログに記録
-            if (LogHandler.getInstance().isInitialized()) {
-                LogHandler.getInstance().logError(LogType.SYSTEM, "リソースマネージャーの初期化に失敗しました", e);
-            }
+            logError("リソースマネージャーの初期化に失敗しました", e);
             throw new IOException("リソースマネージャーの初期化に失敗しました", e);
         }
     }
@@ -135,8 +99,17 @@ public class ResourceManager {
      * ディレクトリパスを設定
      */
     private void setDirectoryPaths() {
-        dataDirectoryPath = Paths.get(DEFAULT_DATA_DIR).toAbsolutePath();
+        dataDirectoryPath = srcDirectoryPath.resolve(DATA_DIR_NAME);
         engineerCsvPath = dataDirectoryPath.resolve(DEFAULT_ENGINEER_CSV);
+    }
+
+    /**
+     * 作成したパスをログに出力
+     */
+    private void logPaths() {
+        logInfo("SRCディレクトリ: " + srcDirectoryPath.toString());
+        logInfo("データディレクトリ: " + dataDirectoryPath.toString());
+        logInfo("エンジニアCSVファイル: " + engineerCsvPath.toString());
     }
 
     /**
@@ -146,18 +119,33 @@ public class ResourceManager {
      */
     private void checkAndCreateDirectories() throws IOException {
         try {
-            // データディレクトリの確認と作成
-            if (!Files.exists(dataDirectoryPath)) {
-                Files.createDirectories(dataDirectoryPath);
-                if (LogHandler.getInstance().isInitialized()) {
-                    LogHandler.getInstance().log(LogType.SYSTEM, dataDirectoryPath.toString());
-                }
-            }
+            // 各ディレクトリの確認と作成
+            createDirectoryIfNotExists(srcDirectoryPath);
+            createDirectoryIfNotExists(dataDirectoryPath);
         } catch (IOException e) {
-            if (LogHandler.getInstance().isInitialized()) {
-                LogHandler.getInstance().logError(LogType.SYSTEM, "ディレクトリの作成に失敗しました", e);
-            }
+            logError("ディレクトリの作成に失敗しました", e);
             throw new IOException("必要なディレクトリの作成に失敗しました", e);
+        }
+    }
+
+    /**
+     * ディレクトリが存在しない場合に作成
+     * 
+     * @param dirPath 作成するディレクトリのパス
+     * @throws IOException ディレクトリ作成に失敗した場合
+     */
+    private void createDirectoryIfNotExists(Path dirPath) throws IOException {
+        System.out.println("ディレクトリ確認: " + dirPath);
+        if (!Files.exists(dirPath)) {
+            try {
+                Files.createDirectories(dirPath);
+                System.out.println("ディレクトリを作成しました: " + dirPath.toString());
+            } catch (IOException e) {
+                System.err.println("ディレクトリの作成に失敗しました: " + dirPath + ", エラー: " + e.getMessage());
+                throw e;
+            }
+        } else {
+            System.out.println("既存のディレクトリを使用します: " + dirPath);
         }
     }
 
@@ -170,21 +158,51 @@ public class ResourceManager {
     private void checkAndCreateCsvFile() throws IOException {
         try {
             if (!Files.exists(engineerCsvPath)) {
+                // 親ディレクトリが存在することを確認
+                if (!Files.exists(dataDirectoryPath)) {
+                    Files.createDirectories(dataDirectoryPath);
+                }
+
                 // CSVファイルが存在しない場合、新規作成、try-with-resourcesを使用
+                System.out.println("CSVファイルを作成します: " + engineerCsvPath);
                 try (BufferedWriter writer = Files.newBufferedWriter(engineerCsvPath, StandardCharsets.UTF_8)) {
                     writer.write(DEFAULT_CSV_HEADER);
                     writer.newLine();
                 }
 
-                if (LogHandler.getInstance().isInitialized()) {
-                    LogHandler.getInstance().log(LogType.SYSTEM, engineerCsvPath.toString());
-                }
+                logInfo("新しいCSVファイルを作成しました: " + engineerCsvPath.toString());
+            } else {
+                System.out.println("既存のCSVファイルを使用します: " + engineerCsvPath);
             }
         } catch (IOException e) {
-            if (LogHandler.getInstance().isInitialized()) {
-                LogHandler.getInstance().logError(LogType.SYSTEM, "CSVファイルの作成に失敗しました", e);
+            System.err.println("新しいCSVファイルの作成に失敗しました: " + e.getMessage());
+            logError("新しいCSVファイルの作成に失敗しました", e);
+            throw new IOException("新しいCSVファイルの作成に失敗しました", e);
+        }
+    }
+
+    /**
+     * 指定されたパスに新しいディレクトリを作成
+     * 
+     * @param dirName 作成するディレクトリ名
+     * @return 作成されたディレクトリのパス
+     * @throws IOException ディレクトリ作成に失敗した場合
+     */
+    public Path createDirectory(String dirName) throws IOException {
+        if (!initialized) {
+            throw new IllegalStateException("リソースマネージャーが初期化されていません");
+        }
+
+        try {
+            Path newDir = dataDirectoryPath.resolve(dirName);
+            if (!Files.exists(newDir)) {
+                Files.createDirectories(newDir);
+                logInfo("新しいディレクトリを作成しました: " + newDir.toString());
             }
-            throw new IOException("CSVファイルの作成に失敗しました", e);
+            return newDir;
+        } catch (IOException e) {
+            logError("新しいディレクトリの作成に失敗しました: " + dirName, e);
+            throw new IOException("新しいディレクトリの作成に失敗しました", e);
         }
     }
 
@@ -205,10 +223,7 @@ public class ResourceManager {
         }
 
         openResources.put(key, resource);
-
-        if (LogHandler.getInstance().isInitialized()) {
-            LogHandler.getInstance().log(Level.INFO, LogType.SYSTEM, "リソースを登録しました: " + key);
-        }
+        logInfo("リソースを登録しました: " + key);
     }
 
     /**
@@ -226,14 +241,10 @@ public class ResourceManager {
         if (resource != null) {
             try {
                 resource.close();
-                if (LogHandler.getInstance().isInitialized()) {
-                    LogHandler.getInstance().log(Level.INFO, LogType.SYSTEM, "リソースを解放しました: " + key);
-                }
+                logInfo("リソースを解放しました: " + key);
                 return true;
             } catch (IOException e) {
-                if (LogHandler.getInstance().isInitialized()) {
-                    LogHandler.getInstance().logError(LogType.SYSTEM, "リソースの解放に失敗しました: " + key, e);
-                }
+                logError("リソースの解放に失敗しました: " + key, e);
                 return false;
             }
         }
@@ -253,30 +264,22 @@ public class ResourceManager {
         for (Map.Entry<String, Closeable> entry : openResources.entrySet()) {
             try {
                 entry.getValue().close();
-                if (LogHandler.getInstance().isInitialized()) {
-                    LogHandler.getInstance().log(Level.INFO, LogType.SYSTEM, "リソースを解放しました: " + entry.getKey());
-                }
+                logInfo("リソースを解放しました: " + entry.getKey());
             } catch (IOException e) {
                 allSuccess = false;
                 failedResources.add(entry.getKey());
-                if (LogHandler.getInstance().isInitialized()) {
-                    LogHandler.getInstance().logError(LogType.SYSTEM, "リソースの解放に失敗しました: " + entry.getKey(), e);
-                }
+                logError("リソースの解放に失敗しました: " + entry.getKey(), e);
             }
         }
 
         // 失敗したリソースがあればログに記録
-        if (!failedResources.isEmpty() && LogHandler.getInstance().isInitialized()) {
-            LogHandler.getInstance().log(Level.WARNING, LogType.SYSTEM,
-                    "以下のリソースの解放に失敗しました: " + String.join(", ", failedResources));
+        if (!failedResources.isEmpty()) {
+            logWarning("以下のリソースの解放に失敗しました: " + String.join(", ", failedResources));
         }
 
         // マップをクリア
         openResources.clear();
-
-        if (LogHandler.getInstance().isInitialized()) {
-            LogHandler.getInstance().log(Level.INFO, LogType.SYSTEM, "全リソースの解放処理を完了しました");
-        }
+        logInfo("全リソースの解放処理を完了しました");
 
         return allSuccess;
     }
@@ -325,5 +328,59 @@ public class ResourceManager {
      */
     public boolean hasResource(String key) {
         return openResources.containsKey(key);
+    }
+
+    /**
+     * SRCディレクトリパスを取得
+     * 
+     * @return アプリケーションのSRCディレクトリパス
+     */
+    public Path getSrcDirectoryPath() {
+        return srcDirectoryPath;
+    }
+
+    /**
+     * INFOログ出力ヘルパーメソッド
+     * LogHandlerが初期化されていない場合でも安全にログ出力
+     * 
+     * @param message ログメッセージ
+     */
+    private void logInfo(String message) {
+        LogHandler logHandler = LogHandler.getInstance();
+        if (logHandler.isInitialized()) {
+            logHandler.log(Level.INFO, LogType.SYSTEM, message);
+        } else {
+            System.out.println("[INFO][SYSTEM] " + message);
+        }
+    }
+
+    /**
+     * WARNINGログ出力ヘルパーメソッド
+     * 
+     * @param message ログメッセージ
+     */
+    private void logWarning(String message) {
+        LogHandler logHandler = LogHandler.getInstance();
+        if (logHandler.isInitialized()) {
+            logHandler.log(Level.WARNING, LogType.SYSTEM, message);
+        } else {
+            System.out.println("[WARNING][SYSTEM] " + message);
+        }
+    }
+
+    /**
+     * エラーログ出力ヘルパーメソッド
+     * 
+     * @param message ログメッセージ
+     * @param e       例外オブジェクト
+     */
+    private void logError(String message, Exception e) {
+        LogHandler logHandler = LogHandler.getInstance();
+        if (logHandler.isInitialized()) {
+            logHandler.logError(LogType.SYSTEM, message, e);
+        } else {
+            System.err.println("[ERROR][SYSTEM] " + message);
+            e.printStackTrace();
+        }
     }
 }
