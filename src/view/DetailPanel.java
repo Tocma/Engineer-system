@@ -1218,23 +1218,23 @@ public class DetailPanel extends AbstractEngineerPanel {
             LogHandler.getInstance().log(Level.INFO, LogType.SYSTEM,
                     "更新完了ダイアログを表示します: ID=" + engineer.getId());
 
-            // 更新完了ダイアログを表示
+            // 更新完了ダイアログを表示（コールバック付き）
             DialogManager.getInstance().showCompletionDialog(
-                    "更新完了",
-                    "エンジニア情報の更新が完了しました: ID=" + engineer.getId() + ", 名前=" + engineer.getName());
-
-            // 更新後は一覧画面に戻る
-            if (mainController != null) {
-                // データ再読込を実行してから画面遷移
-                mainController.handleEvent("LOAD_DATA", null);
-                // 画面遷移
-                mainController.handleEvent("CHANGE_PANEL", "LIST");
-                LogHandler.getInstance().log(Level.INFO, LogType.SYSTEM,
-                        "一覧画面に遷移します");
-            } else {
-                LogHandler.getInstance().log(Level.WARNING, LogType.SYSTEM,
-                        "MainControllerが設定されていないため画面遷移できません");
-            }
+                    "エンジニア情報の更新が完了しました: ID=" + engineer.getId() + ", 名前=" + engineer.getName(),
+                    () -> {
+                        // ダイアログが閉じられた後の処理
+                        if (mainController != null) {
+                            // データ再読込を実行してから画面遷移
+                            mainController.handleEvent("LOAD_DATA", null);
+                            // 画面遷移
+                            mainController.handleEvent("CHANGE_PANEL", "LIST");
+                            LogHandler.getInstance().log(Level.INFO, LogType.SYSTEM,
+                                    "一覧画面に遷移します");
+                        } else {
+                            LogHandler.getInstance().log(Level.WARNING, LogType.SYSTEM,
+                                    "MainControllerが設定されていないため画面遷移できません");
+                        }
+                    });
 
             // 処理成功フラグを設定
             handleUpdateCompleteSuccess = true;
@@ -1242,7 +1242,7 @@ public class DetailPanel extends AbstractEngineerPanel {
                     "DetailPanel.handleUpdateComplete完了: ID=" + engineer.getId());
 
         } catch (Exception e) {
-            // 例外が発生した場合のエラーハンドリング
+            // エラー処理は変更なし
             LogHandler.getInstance().logError(LogType.SYSTEM,
                     "handleUpdateComplete処理中にエラーが発生しました: " + engineer.getId(), e);
 
@@ -1252,20 +1252,14 @@ public class DetailPanel extends AbstractEngineerPanel {
                         "エラー",
                         "更新完了処理中にエラーが発生しました: " + e.getMessage());
             } catch (Exception dialogError) {
-                // ダイアログ表示自体が失敗した場合
                 LogHandler.getInstance().logError(LogType.SYSTEM,
                         "エラーダイアログの表示にも失敗しました", dialogError);
             }
 
-            // 処理中状態を強制的に解除（重要: UIがブロックされないようにする）
             setProcessing(false);
-
-            // 成功フラグはfalseのまま
             handleUpdateCompleteSuccess = false;
         } finally {
-            // 最終的な状態確認とクリーンアップ処理
             if (processing) {
-                // 万が一まだ処理中状態が解除されていない場合の保険
                 LogHandler.getInstance().log(Level.WARNING, LogType.SYSTEM,
                         "処理中状態が解除されていません - 強制的に解除します");
                 setProcessing(false);
@@ -1391,11 +1385,8 @@ public class DetailPanel extends AbstractEngineerPanel {
         return ratings;
     }
 
-
     public void setUpdateButtonEnabled(boolean enabled) {
         updateButton.setEnabled(enabled);
     }
-    
-
 
 }
