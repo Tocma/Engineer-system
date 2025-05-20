@@ -138,7 +138,7 @@ public class DetailPanel extends AbstractEngineerPanel {
     /** 備考テキストエリア */
     private JTextArea noteArea;
 
-    /** 登録日時表示ラベル */
+    /** 最新登録日表示ラベル */
     private JLabel registeredDateLabel;
 
     /** ダイアログマネージャー */
@@ -246,16 +246,16 @@ public class DetailPanel extends AbstractEngineerPanel {
         rightFormPanel.setLayout(new BoxLayout(rightFormPanel, BoxLayout.Y_AXIS));
         rightFormPanel.setBackground(Color.WHITE);
 
-        // 登録日時表示パネル（右上に配置）
+        // 最新登録日表示パネル（右上に配置）
         JPanel registeredDatePanel = new JPanel(new FlowLayout(FlowLayout.RIGHT));
         registeredDatePanel.setBackground(Color.WHITE);
 
-        // 登録日時ラベル
-        registeredDateLabel = new JLabel("登録日時: ");
+        // 最新登録日ラベル
+        registeredDateLabel = new JLabel("最新登録日: ");
         registeredDateLabel.setFont(registeredDateLabel.getFont().deriveFont(Font.ITALIC));
         registeredDatePanel.add(registeredDateLabel);
 
-        // 右側パネルに登録日時パネルを追加（一番上）
+        // 右側パネルに最新登録日日時パネルを追加（一番上）
         rightFormPanel.add(registeredDatePanel);
         rightFormPanel.add(createVerticalSpacer(10));
 
@@ -905,13 +905,13 @@ public class DetailPanel extends AbstractEngineerPanel {
             // 備考の設定
             noteArea.setText(currentEngineer.getNote());
 
-            // 登録日時の設定
+            // 最新登録日の設定
             if (currentEngineer.getRegisteredDate() != null) {
                 String formattedDate = currentEngineer.getRegisteredDate().format(
                         DateTimeFormatter.ofPattern("yyyy年MM月dd日"));
-                registeredDateLabel.setText("登録日時: " + formattedDate);
+                registeredDateLabel.setText("最新登録日: " + formattedDate);
             } else {
-                registeredDateLabel.setText("登録日時: 不明");
+                registeredDateLabel.setText("最新登録日: 不明");
             }
 
             // エラーメッセージをクリア
@@ -1217,7 +1217,7 @@ public class DetailPanel extends AbstractEngineerPanel {
             builder.setNote(note);
         }
 
-        // 登録日時を現在の日時に更新
+        // 最新登録日を現在の日時に更新
         builder.setRegisteredDate(LocalDate.now());
 
         // DTOの構築と返却
