@@ -604,7 +604,18 @@ public class ListPanel extends JPanel {
      * @param delta ページ変化量（前：-1、次：+1）
      */
     private void changePage(int delta) {
+        // 表示データを取得し、nullまたは空かチェック
         List<EngineerDTO> displayData = getDisplayData();
+        if (displayData == null || displayData.isEmpty()) {
+            // データがない場合はページ切り替えできないため早期リターン
+            LogHandler.getInstance().log(Level.INFO, LogType.UI,
+                    "データがないためページ切り替えをスキップします");
+            updatePageLabel(0); // ページラベルを0件として更新
+            updatePaginationButtons(0); // ページネーションボタンを無効化
+            return;
+        }
+
+        // 総ページ数を計算
         int totalPages = (int) Math.ceil((double) displayData.size() / pageSize);
         int newPage = currentPage + delta;
 
@@ -715,6 +726,13 @@ public class ListPanel extends JPanel {
 
     // 追加メソッド - 表示用データの取得（ソート・フィルタを適用）
     private List<EngineerDTO> getDisplayData() {
+        // allDataがnullの場合は空のリストを返す
+        if (allData == null) {
+            LogHandler.getInstance().log(Level.WARNING, LogType.SYSTEM,
+                    "基本データがnullのため、空のリストを返します");
+            return new ArrayList<>();
+        }
+
         // 基本データのコピーを作成
         List<EngineerDTO> result = new ArrayList<>(allData);
 
@@ -732,7 +750,7 @@ public class ListPanel extends JPanel {
             result = this.sortEngineers(result, this.lastSortedColumn, this.isAscending);
         }
 
-        return result;
+        return result; // nullではなく少なくとも空のリストを返す
     }
 
     // 追加メソッド - エンジニアがフィルタ条件に一致するかチェック
@@ -808,6 +826,13 @@ public class ListPanel extends JPanel {
         // 表示用のデータ（検索・ソート反映済み）
         List<EngineerDTO> displayData = getDisplayData();
 
+        // データがnullまたは空の場合は早期リターン
+        if (displayData == null || displayData.isEmpty()) {
+            LogHandler.getInstance().log(Level.WARNING, LogType.UI,
+                    "表示データがないため選択エンジニアを取得できません");
+            return null;
+        }
+
         // 選択行のモデル上のインデックスに変換
         int modelRow = table.convertRowIndexToModel(selectedRow);
 
@@ -861,15 +886,28 @@ public class ListPanel extends JPanel {
     public List<EngineerDTO> getSelectedEngineers() {
         // 選択されたエンジニアを格納するリスト
         List<EngineerDTO> selectedEngineers = new ArrayList<>();
+
+        // 表示データを取得
+        List<EngineerDTO> displayData = getDisplayData();
+
+        // データがnullまたは空の場合は空リストを返す
+        if (displayData == null || displayData.isEmpty()) {
+            LogHandler.getInstance().log(Level.INFO, LogType.UI,
+                    "表示データがないため選択エンジニアリストは空です");
+            return selectedEngineers; // 空リスト
+        }
+
         // 重複追加防止用のIDセット
         Set<String> uniqueIds = new HashSet<>();
+
         // 表示中のデータから選択状態のエンジニアのみ抽出
-        for (EngineerDTO engineerDTO : getDisplayData()) {
+        for (EngineerDTO engineerDTO : displayData) {
             // 選択IDセットに含まれていて、かつまだ追加していないIDのみリストに追加
             if (this.selectedEngineerIds.contains(engineerDTO.getId()) && uniqueIds.add(engineerDTO.getId())) {
                 selectedEngineers.add(engineerDTO);
             }
         }
+
         // 選択されたエンジニアのリストを返す（未選択時は空リスト）
         return selectedEngineers;
     }
