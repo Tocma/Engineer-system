@@ -82,9 +82,9 @@ import java.util.logging.Level;
  * </ol>
  * </p>
  *
- * @author Bando
- * @version 4.4.1
- * @since 2025-05-07
+ * @author Nakano
+ * @version 4.8.4
+ * @since 2025-05-20
  */
 public class AddPanel extends AbstractEngineerPanel {
 
@@ -1375,10 +1375,10 @@ public class AddPanel extends AbstractEngineerPanel {
      * @return エンジニア歴の選択肢配列
      */
     private String[] getCareerOptions() {
-        String[] careers = new String[21]; // 空 + 0-19年
+        String[] careers = new String[52]; // 空 + 0-19年
         careers[0] = "";
 
-        for (int i = 0; i <= 19; i++) {
+        for (int i = 0; i <= 50; i++) {
             careers[i + 1] = String.valueOf(i);
         }
 

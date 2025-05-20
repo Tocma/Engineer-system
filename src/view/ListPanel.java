@@ -7,7 +7,6 @@ import javax.swing.*;
 import javax.swing.table.DefaultTableModel;
 import javax.swing.table.TableRowSorter;
 import java.util.Iterator;
-
 import controller.MainController;
 import java.awt.*;
 import java.text.Collator;
@@ -21,7 +20,6 @@ import java.util.Locale;
 import java.util.Set;
 import java.util.logging.Level;
 import java.util.stream.Collectors;
-
 import java.awt.event.MouseEvent;
 import java.awt.event.InputEvent;
 
@@ -29,9 +27,9 @@ import java.awt.event.InputEvent;
  * エンジニア一覧を表示するパネルクラス
  * ページング、ソート、検索、追加、取込、削除機能
  *
- * @author Bando
- * @version 4.7.3
- * @since 2025-05-17
+ * @author Nakano
+ * @version 4.8.4
+ * @since 2025-05-20
  */
 public class ListPanel extends JPanel {
 
@@ -270,13 +268,13 @@ public class ListPanel extends JPanel {
      */
     private String[] getCareerYears() {
         // 0から20までの整数値（計21要素）
-        String[] careers = new String[22]; // 21要素 + 空の選択肢用の1要素
+        String[] careers = new String[52]; // 21要素 + 空の選択肢用の1要素
         // 最初の要素は空（選択なし）
         careers[0] = "";
         // DecimalFormatを使用して一貫した表示形式を保証
         DecimalFormat df = new DecimalFormat("0");
         // 0から20まで整数値を設定
-        for (int i = 0; i <= 20; i++) {
+        for (int i = 0; i <= 50; i++) {
             careers[i + 1] = df.format(i);
         }
         return careers;

@@ -8,9 +8,14 @@ import util.LogHandler.LogType;
 import util.MessageEnum;
 import util.Validator;
 import util.ValidatorEnum;
-
 import javax.swing.*;
 import javax.swing.border.Border;
+import javax.swing.event.DocumentEvent;
+import javax.swing.event.DocumentListener;
+import javax.swing.text.BadLocationException;
+import javax.swing.text.Document;
+import javax.swing.text.PlainDocument;
+import java.awt.event.ActionListener;
 import java.awt.*;
 import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
@@ -52,9 +57,9 @@ import java.util.logging.Level;
  * </ol>
  * </p>
  *
- * @author Bando
- * @version 4.4.1
- * @since 2025-05-08
+ * @author Nakano
+ * @version 4.8.4
+ * @since 2025-05-20
  */
 public class DetailPanel extends AbstractEngineerPanel {
 
@@ -142,6 +147,8 @@ public class DetailPanel extends AbstractEngineerPanel {
     /** フィールド名と表示名のマッピング */
     private Map<String, String> fieldDisplayNames;
 
+    private boolean formModified = false;
+
     /**
      * コンストラクタ
      * パネルの初期設定とコンポーネントの初期化
@@ -214,6 +221,9 @@ public class DetailPanel extends AbstractEngineerPanel {
 
             // 入力検証の設定
             setupValidation();
+
+            // 変更リスナーの設定（この行を追加）
+            setupChangeListeners();
 
             LogHandler.getInstance().log(Level.INFO, LogType.UI, "DetailPanelの初期化が完了しました");
         } catch (Exception e) {
@@ -584,6 +594,7 @@ public class DetailPanel extends AbstractEngineerPanel {
 
         // 更新ボタン
         updateButton = new JButton("保存");
+        updateButton.setEnabled(false); // 初期状態では無効化
         updateButton.addActionListener(e -> {
             if (!processing) {
                 updateEngineer();
@@ -601,6 +612,212 @@ public class DetailPanel extends AbstractEngineerPanel {
         // この実装ではフォーカス時のバリデーションは行わず、更新ボタン押下時に一括検証を行います
     }
 
+    // フォーム変更リスナー設定用メソッド
+    private void setupChangeListeners() {
+        // テキストフィールドの変更リスナー
+        DocumentListener documentListener = new DocumentListener() {
+            @Override
+            public void insertUpdate(DocumentEvent e) {
+                setFormModified(true);
+            }
+
+            @Override
+            public void removeUpdate(DocumentEvent e) {
+                setFormModified(true);
+            }
+
+            @Override
+            public void changedUpdate(DocumentEvent e) {
+                setFormModified(true);
+            }
+        };
+
+        // リスナー追加前に既存のリスナーを削除（重複防止）
+        removeExistingListeners();
+
+        // テキストフィールドにリスナー追加
+        nameField.getDocument().addDocumentListener(documentListener);
+        nameKanaField.getDocument().addDocumentListener(documentListener);
+        careerHistoryArea.getDocument().addDocumentListener(documentListener);
+        trainingHistoryArea.getDocument().addDocumentListener(documentListener);
+        noteArea.getDocument().addDocumentListener(documentListener);
+
+        // コンボボックスにリスナー追加
+        ActionListener comboListener = e -> setFormModified(true);
+
+        birthYearComboBox.addActionListener(comboListener);
+        birthMonthComboBox.addActionListener(comboListener);
+        birthDayComboBox.addActionListener(comboListener);
+        joinYearComboBox.addActionListener(comboListener);
+        joinMonthComboBox.addActionListener(comboListener);
+        careerComboBox.addActionListener(comboListener);
+        technicalSkillComboBox.addActionListener(comboListener);
+        learningAttitudeComboBox.addActionListener(comboListener);
+        communicationSkillComboBox.addActionListener(comboListener);
+        leadershipComboBox.addActionListener(comboListener);
+
+        // 言語選択コンボボックスのリスナー設定
+        languageComboBox.addActionListener(e -> setFormModified(true));
+
+        LogHandler.getInstance().log(Level.INFO, LogType.UI,
+                "フォーム変更リスナーを設定しました。保存ボタン状態: " + (updateButton.isEnabled() ? "有効" : "無効"));
+    }
+
+    /**
+     * 既存のイベントリスナーを削除するヘルパーメソッド
+     * フォームコンポーネントに登録されているリスナーを削除して重複登録を防止
+     */
+    private void removeExistingListeners() {
+        // テキストフィールド/エリアからDocumentListenerを削除
+        // (Documentから直接リスナーを取得する方法がないため、いったん新しいDocumentに置き換える)
+
+        // nameFieldのリスナー削除
+        if (nameField != null) {
+            Document doc = nameField.getDocument();
+            Document newDoc = new PlainDocument();
+            try {
+                newDoc.insertString(0, doc.getText(0, doc.getLength()), null);
+                nameField.setDocument(newDoc);
+            } catch (BadLocationException e) {
+                LogHandler.getInstance().logError(LogType.UI, "リスナー削除中にエラーが発生しました", e);
+            }
+        }
+
+        // nameKanaFieldのリスナー削除
+        if (nameKanaField != null) {
+            Document doc = nameKanaField.getDocument();
+            Document newDoc = new PlainDocument();
+            try {
+                newDoc.insertString(0, doc.getText(0, doc.getLength()), null);
+                nameKanaField.setDocument(newDoc);
+            } catch (BadLocationException e) {
+                LogHandler.getInstance().logError(LogType.UI, "リスナー削除中にエラーが発生しました", e);
+            }
+        }
+
+        // careerHistoryAreaのリスナー削除
+        if (careerHistoryArea != null) {
+            Document doc = careerHistoryArea.getDocument();
+            Document newDoc = new PlainDocument();
+            try {
+                newDoc.insertString(0, doc.getText(0, doc.getLength()), null);
+                careerHistoryArea.setDocument(newDoc);
+            } catch (BadLocationException e) {
+                LogHandler.getInstance().logError(LogType.UI, "リスナー削除中にエラーが発生しました", e);
+            }
+        }
+
+        // trainingHistoryAreaのリスナー削除
+        if (trainingHistoryArea != null) {
+            Document doc = trainingHistoryArea.getDocument();
+            Document newDoc = new PlainDocument();
+            try {
+                newDoc.insertString(0, doc.getText(0, doc.getLength()), null);
+                trainingHistoryArea.setDocument(newDoc);
+            } catch (BadLocationException e) {
+                LogHandler.getInstance().logError(LogType.UI, "リスナー削除中にエラーが発生しました", e);
+            }
+        }
+
+        // noteAreaのリスナー削除
+        if (noteArea != null) {
+            Document doc = noteArea.getDocument();
+            Document newDoc = new PlainDocument();
+            try {
+                newDoc.insertString(0, doc.getText(0, doc.getLength()), null);
+                noteArea.setDocument(newDoc);
+            } catch (BadLocationException e) {
+                LogHandler.getInstance().logError(LogType.UI, "リスナー削除中にエラーが発生しました", e);
+            }
+        }
+
+        // コンボボックスからActionListenerを削除
+        // 生年月日関連コンボボックス
+        if (birthYearComboBox != null) {
+            for (ActionListener listener : birthYearComboBox.getActionListeners()) {
+                birthYearComboBox.removeActionListener(listener);
+            }
+        }
+
+        if (birthMonthComboBox != null) {
+            for (ActionListener listener : birthMonthComboBox.getActionListeners()) {
+                birthMonthComboBox.removeActionListener(listener);
+            }
+        }
+
+        if (birthDayComboBox != null) {
+            for (ActionListener listener : birthDayComboBox.getActionListeners()) {
+                birthDayComboBox.removeActionListener(listener);
+            }
+        }
+
+        // 入社年月関連コンボボックス
+        if (joinYearComboBox != null) {
+            for (ActionListener listener : joinYearComboBox.getActionListeners()) {
+                joinYearComboBox.removeActionListener(listener);
+            }
+        }
+
+        if (joinMonthComboBox != null) {
+            for (ActionListener listener : joinMonthComboBox.getActionListeners()) {
+                joinMonthComboBox.removeActionListener(listener);
+            }
+        }
+
+        // エンジニア歴コンボボックス
+        if (careerComboBox != null) {
+            for (ActionListener listener : careerComboBox.getActionListeners()) {
+                careerComboBox.removeActionListener(listener);
+            }
+        }
+
+        // スキル評価関連コンボボックス
+        if (technicalSkillComboBox != null) {
+            for (ActionListener listener : technicalSkillComboBox.getActionListeners()) {
+                technicalSkillComboBox.removeActionListener(listener);
+            }
+        }
+
+        if (learningAttitudeComboBox != null) {
+            for (ActionListener listener : learningAttitudeComboBox.getActionListeners()) {
+                learningAttitudeComboBox.removeActionListener(listener);
+            }
+        }
+
+        if (communicationSkillComboBox != null) {
+            for (ActionListener listener : communicationSkillComboBox.getActionListeners()) {
+                communicationSkillComboBox.removeActionListener(listener);
+            }
+        }
+
+        if (leadershipComboBox != null) {
+            for (ActionListener listener : leadershipComboBox.getActionListeners()) {
+                leadershipComboBox.removeActionListener(listener);
+            }
+        }
+
+        // 言語選択コンボボックス（特殊コンポーネント）
+        if (languageComboBox != null) {
+            for (ActionListener listener : languageComboBox.getActionListeners()) {
+                languageComboBox.removeActionListener(listener);
+            }
+        }
+
+        LogHandler.getInstance().log(Level.INFO, LogType.UI, "すべてのフォームコンポーネントから既存のリスナーを削除しました");
+    }
+
+    // フォーム変更状態とボタン状態を連動させるメソッド
+    private void setFormModified(boolean modified) {
+        this.formModified = modified;
+
+        // 明示的にSwingのEDTで実行して確実に反映させる
+        SwingUtilities.invokeLater(() -> {
+            updateButton.setEnabled(modified);
+            LogHandler.getInstance().log(Level.INFO, LogType.UI,
+                    "フォーム変更状態を変更: " + modified + ", 保存ボタン状態: " + (updateButton.isEnabled() ? "有効" : "無効"));
+        });
+    }
+
     /**
      * エンジニア情報を設定
      * 選択されたエンジニア情報を画面に表示します
@@ -614,6 +831,13 @@ public class DetailPanel extends AbstractEngineerPanel {
 
         this.currentEngineer = engineer;
         updateFieldsWithEngineerData();
+
+        // リスナーを設定する前に明示的にボタンを無効化
+        formModified = false;
+        updateButton.setEnabled(false);
+
+        // データロード後にリスナーを設定
+        setupChangeListeners();
 
         LogHandler.getInstance().log(Level.INFO, LogType.UI,
                 String.format("エンジニア情報を表示: ID=%s, 名前=%s", engineer.getId(), engineer.getName()));
@@ -693,6 +917,16 @@ public class DetailPanel extends AbstractEngineerPanel {
             // エラーメッセージをクリア
             clearAllComponentErrors();
 
+        } catch (Exception e) {
+            LogHandler.getInstance().logError(LogType.UI, "エンジニア情報の表示中にエラーが発生しました", e);
+            showErrorMessage("エンジニア情報の表示中にエラーが発生しました: " + e.getMessage());
+        }
+        try {
+            // 変更状態をリセット
+            setFormModified(false);
+
+            // エラーメッセージをクリア
+            clearAllComponentErrors();
         } catch (Exception e) {
             LogHandler.getInstance().logError(LogType.UI, "エンジニア情報の表示中にエラーが発生しました", e);
             showErrorMessage("エンジニア情報の表示中にエラーが発生しました: " + e.getMessage());
@@ -983,10 +1217,8 @@ public class DetailPanel extends AbstractEngineerPanel {
             builder.setNote(note);
         }
 
-        // 元の登録日時を維持
-        if (currentEngineer.getRegisteredDate() != null) {
-            builder.setRegisteredDate(currentEngineer.getRegisteredDate());
-        }
+        // 登録日時を現在の日時に更新
+        builder.setRegisteredDate(LocalDate.now());
 
         // DTOの構築と返却
         return builder.build();
@@ -1357,10 +1589,10 @@ public class DetailPanel extends AbstractEngineerPanel {
      * @return エンジニア歴の選択肢配列
      */
     private String[] getCareerOptions() {
-        String[] careers = new String[21]; // 空 + 0-19年
+        String[] careers = new String[52]; // 空 + 0-19年
         careers[0] = "";
 
-        for (int i = 0; i <= 19; i++) {
+        for (int i = 0; i <= 50; i++) {
             careers[i + 1] = String.valueOf(i);
         }
 
@@ -1386,7 +1618,13 @@ public class DetailPanel extends AbstractEngineerPanel {
     }
 
     public void setUpdateButtonEnabled(boolean enabled) {
+        // 外部から呼ばれた場合は、変更状態と一致させる
+        if (enabled != formModified) {
+            formModified = enabled;
+        }
         updateButton.setEnabled(enabled);
+        LogHandler.getInstance().log(Level.INFO, LogType.UI,
+                "外部から保存ボタン状態を更新: " + enabled);
     }
 
 }
