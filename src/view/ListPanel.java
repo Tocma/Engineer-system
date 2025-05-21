@@ -268,14 +268,14 @@ public class ListPanel extends JPanel {
      */
     private String[] getCareerYears() {
         // 0から20までの整数値（計21要素）
-        String[] careers = new String[52]; // 21要素 + 空の選択肢用の1要素
+        String[] careers = new String[51]; // 21要素 + 空の選択肢用の1要素
         // 最初の要素は空（選択なし）
         careers[0] = "";
         // DecimalFormatを使用して一貫した表示形式を保証
         DecimalFormat df = new DecimalFormat("0");
         // 0から20まで整数値を設定
-        for (int i = 0; i <= 50; i++) {
-            careers[i + 1] = df.format(i);
+        for (int i = 1; i <= 50; i++) {
+            careers[i] = df.format(i);
         }
         return careers;
     }

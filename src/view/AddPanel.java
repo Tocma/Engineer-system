@@ -1375,11 +1375,11 @@ public class AddPanel extends AbstractEngineerPanel {
      * @return エンジニア歴の選択肢配列
      */
     private String[] getCareerOptions() {
-        String[] careers = new String[52]; // 空 + 0-19年
+        String[] careers = new String[51];
         careers[0] = "";
 
-        for (int i = 0; i <= 50; i++) {
-            careers[i + 1] = String.valueOf(i);
+        for (int i = 1; i <= 50; i++) {
+            careers[i] = String.valueOf(i);
         }
 
         return careers;
