@@ -657,7 +657,18 @@ public class DetailPanel extends AbstractEngineerPanel {
         leadershipComboBox.addActionListener(comboListener);
 
         // 言語選択コンボボックスのリスナー設定
-        languageComboBox.addActionListener(e -> setFormModified(true));
+        // 元々のAddPanelのMultiSelectComboBoxの内部リスナーと同等の機能を追加
+        languageComboBox.addActionListener(e -> {
+            // まず選択状態をトグル
+            Object selected = languageComboBox.getSelectedItem();
+            if (selected instanceof AddPanel.CheckableItem item) {
+                item.setSelected(!item.isSelected());
+                languageComboBox.repaint(); // 表示更新
+            }
+
+            // そして変更フラグを設定
+            setFormModified(true);
+        });
 
         LogHandler.getInstance().log(Level.INFO, LogType.UI,
                 "フォーム変更リスナーを設定しました。保存ボタン状態: " + (updateButton.isEnabled() ? "有効" : "無効"));
@@ -796,12 +807,9 @@ public class DetailPanel extends AbstractEngineerPanel {
             }
         }
 
-        // 言語選択コンボボックス（特殊コンポーネント）
-        if (languageComboBox != null) {
-            for (ActionListener listener : languageComboBox.getActionListeners()) {
-                languageComboBox.removeActionListener(listener);
-            }
-        }
+        // 言語選択コンボボックス（特殊コンポーネント）のリスナーは
+        // 内部機能を維持するために削除しない
+        // MultiSelectComboBoxの選択トグル機能を保持するため、リスナー削除のコードを削除
 
         LogHandler.getInstance().log(Level.INFO, LogType.UI, "すべてのフォームコンポーネントから既存のリスナーを削除しました");
     }
