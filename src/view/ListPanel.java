@@ -27,9 +27,9 @@ import java.awt.event.InputEvent;
  * エンジニア一覧を表示するパネルクラス
  * ページング、ソート、検索、追加、取込、削除機能
  *
- * @author Nakano
- * @version 4.8.4
- * @since 2025-05-20
+ * @author Nagai
+ * @version 4.9.2
+ * @since 2025-05-28
  */
 public class ListPanel extends JPanel {
 
@@ -1144,7 +1144,7 @@ public class ListPanel extends JPanel {
      */
     private void loadTemplate() {
         LogHandler.getInstance().log(Level.INFO, LogType.UI, "テンプレートボタンが押されました");
-        // ここにテンプレート読み込み処理を実装する（TODO）
+        // テンプレート出力処理
         if (mainController != null) {
             mainController.handleEvent("TEMPLATE", null); // ← 文字列イベント名で委譲
         }
@@ -1156,32 +1156,42 @@ public class ListPanel extends JPanel {
     private void exportData() {
         if (mainController != null) {
             LogHandler.getInstance().log(Level.INFO, LogType.UI, "出力ボタンが押されました");
-            // ここにエクスポート処理を実装する（TODO）
+            // CSV出力処理
             int[] selectedRows = table.getSelectedRows();
             if (selectedRows.length > 0) {
                 // 選択されたエンジニアリストを取得
                 List<EngineerDTO> selectedEngineers = getSelectedEngineers();
+
+                //ボタンの無効化
+                setButtonsEnabled(false);
+                mainController.getScreenController().setRegisterButtonEnabled(false); // 登録ボタンも無効化
 
                 // 選択対象のリストを作成
                 List<String> selectedTargets = selectedEngineers.stream()
                         .map(engineer -> engineer.getId() + " : " + engineer.getName())
                         .collect(Collectors.toList());
 
+                LogHandler.getInstance().log(Level.INFO, LogType.UI,
+                String.format("%d件の行が出力対象に選択されました", selectedRows.length));
+
                 // 確認ダイアログを表示
                 boolean confirmed = DialogManager.getInstance()
                         .showScrollableListDialog("CSV出力確認", "以下の項目を出力しますか？", selectedTargets);
 
                 if (confirmed) {
+                    //CSV出力項目許可のログ表示
+                    LogHandler.getInstance().log(Level.INFO, LogType.SYSTEM,
+                            "CSV出力確認が承認されました");
                     // CSV出力実行
                     mainController.handleEvent("EXPORT_CSV", selectedEngineers);
                 } else {
+                    //CSV出力確認キャンセルのログ表示
+                    LogHandler.getInstance().log(Level.INFO, LogType.SYSTEM,
+                                "CSV出力確認がキャンセルされました");
                     // キャンセルされた場合、ボタンを再度有効化
                     setButtonsEnabled(true);
                     mainController.getScreenController().setRegisterButtonEnabled(true);
                 }
-
-                LogHandler.getInstance().log(Level.INFO, LogType.UI,
-                        String.format("%d件の行が出力対象に選択されました", selectedRows.length));
             }
         }
     }

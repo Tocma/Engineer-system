@@ -73,8 +73,8 @@ import javax.swing.filechooser.FileNameExtensionFilter;
  * </p>
  *
  * @author Nagai
- * @version 4.9.1
- * @since 2025-05-27
+ * @version 4.9.2
+ * @since 2025-05-28
  */
 public class MainController {
 
@@ -924,46 +924,105 @@ public class MainController {
             while (true) {
                 // ファイル保存場所の選択
                 JFileChooser fileChooser = new JFileChooser();
-                fileChooser.setDialogTitle("CSVファイルの保存先を選択");
+                fileChooser.setDialogTitle("CSVファイルの保存先");
                 fileChooser.setSelectedFile(new File("エンジニア情報-" + LocalDate.now() + ".csv"));
 
                 int result = fileChooser.showSaveDialog(listPanel);
                 if (result != JFileChooser.APPROVE_OPTION) {
+                    LogHandler.getInstance().log(Level.INFO, LogType.SYSTEM,
+                                "CSV出力がキャンセルされました");
                     return; // キャンセルされた場合
                 }
 
+                // デフォルト名または変更名のファイルの取得
                 file = fileChooser.getSelectedFile();
-                if (!file.exists()) {
-                    break; // ファイルが存在しなければOK
+
+                // .csvの拡張子がなければ拡張子自動付加
+                if (!file.getName().toLowerCase().endsWith(".csv")) {
+                    file = new File(file.getAbsolutePath() + ".csv");
                 }
 
-                int overwrite = JOptionPane.showConfirmDialog(
+                // 不正なファイル名の簡易チェック（OSによって異なるので必要に応じて強化）
+                //File selectedFile = fileChooser.getSelectedFile();
+                //　パスを含んているかわかるように(TODO)
+                //String fileName = selectedFile.getName();
+
+                // 不正なファイル名チェック
+                if (file.getName().matches(".*[\\\\/:*?\"<>|].*")) {
+                    DialogManager.getInstance().showErrorDialog(
+                        "エラー",
+                        "ファイル名に使用できない文字が含まれています。\n" +
+                        "使用できない文字: \\ / : * ? \" < > |"
+                    );
+                    continue;
+                }
+
+                // 親ディレクトリの書き込み権限チェック
+                File parentDir = file.getParentFile();
+                if (!parentDir.canWrite()) {
+                    DialogManager.getInstance().showErrorDialog(
+                        "保存エラー",
+                        "指定された保存先に書き込む権限がありません。\n" +
+                        "別の場所を選択してください。"
+                    );
+                    continue;
+                }
+
+                if (!file.exists()) {
+                    break; // 同一名のファイルが存在しなければループを抜ける
+                } else {
+                    //同一名のファイルが存在するときの対応
+                    LogHandler.getInstance().log(Level.INFO, LogType.SYSTEM,
+                                "保存場所に同一名ファイルが存在したため、上書き確認ダイアログを表示しました");
+
+                    int overwrite = JOptionPane.showConfirmDialog(
                         listPanel,
                         "ファイル " + file.getName() + " は既に存在します。上書きしますか？",
                         "上書き確認",
-                        JOptionPane.YES_NO_CANCEL_OPTION);
+                        JOptionPane.YES_NO_OPTION);
 
-                if (overwrite == JOptionPane.YES_OPTION) {
-                    break; // 上書き許可された場合
-                } else if (overwrite == JOptionPane.CANCEL_OPTION || overwrite == JOptionPane.CLOSED_OPTION) {
-                    return; // キャンセルや×ボタン → 中止
+                    if (overwrite == JOptionPane.YES_OPTION) {
+                        LogHandler.getInstance().log(Level.INFO, LogType.SYSTEM,
+                            "CSV出力ファイルの上書きが許可されました");
+                        break; // 上書き許可された場合
+                    } else {
+                        LogHandler.getInstance().log(Level.INFO, LogType.SYSTEM,
+                            "上書き保存が許可されませんでした");
+                        continue; // 別名保存を促す → 再度ループ
+                    }
                 }
             }
 
-            // UIの無効化
-            listPanel.setButtonsEnabled(false);
+            SwingUtilities.invokeLater(() -> {
+                if (panel instanceof ListPanel listPanel) {
+                    listPanel.setStatus("CSV出力中...   ");
+                }
+            });
 
-            if (panel instanceof ListPanel listPanel) {
-                listPanel.setStatus("CSV出力中...   ");
+            try {
+                EngineerCSVDAO csvDAO = new EngineerCSVDAO();
+                boolean success = csvDAO.exportCSV(targetList, file.getAbsolutePath());
+                
+                SwingUtilities.invokeLater(() -> {
+                    if (success) {
+                        JOptionPane.showMessageDialog(listPanel, "出力に成功しました。", "完了", JOptionPane.INFORMATION_MESSAGE);
+                    } else {
+                        JOptionPane.showMessageDialog(listPanel, "出力に失敗しました。アクセス権限などを確認してください。", "エラー", JOptionPane.ERROR_MESSAGE);
+                        //ログエラー
+                    }
+                });
+            } catch (Exception e) {
+                SwingUtilities.invokeLater(() -> {
+                    JOptionPane.showMessageDialog(listPanel,"出力中にエラーが発生しました:\n" + e.getMessage(),"エラー",JOptionPane.ERROR_MESSAGE);
+                });
             }
-            EngineerCSVDAO csvDAO = new EngineerCSVDAO();
-            boolean success = csvDAO.exportCSV(targetList, file.getAbsolutePath());
 
-            if (success) {
-                JOptionPane.showMessageDialog(listPanel, "出力に成功しました。", "完了", JOptionPane.INFORMATION_MESSAGE);
-            } else {
-                JOptionPane.showMessageDialog(listPanel, "出力に失敗しました。", "エラー", JOptionPane.ERROR_MESSAGE);
-            }
+            // ステータスを空にして非表示にする
+            SwingUtilities.invokeLater(() -> {
+                if (panel instanceof ListPanel listPanel) {
+                    listPanel.setStatus("");
+                }
+            });
         });
     };
 
