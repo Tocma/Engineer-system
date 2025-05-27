@@ -11,11 +11,11 @@ import java.util.logging.*;
 
 /**
  * エンジニア情報管理システムのログ管理を行うシングルトンクラス
- * 自動初期化機能と強化されたエラーハンドリングを提供
+ * 自動初期化機能と強化されたエラーハンドリング、詳細な呼び出し元情報を提供
  *
  * @author Nakano
- * @version 4.8.1
- * @since 2025-05-19
+ * @version 4.9.0
+ * @since 2025-05-26
  */
 public class LogHandler {
 
@@ -47,7 +47,9 @@ public class LogHandler {
     private static final String LOG_DIR_NAME = "logs";
     private static final String LOG_FILE_FORMAT = "System-%s.log";
     private static final int MAX_LOG_SIZE_BYTES = 10 * 1024 * 1024; // 10MB
-    private static final String LOG_FORMAT = "[%1$tY-%1$tm-%1$td %1$tH:%1$tM:%1$tS] [%4$s] [%7$s] %5$s%6$s%n";
+
+    /** 拡張されたログフォーマット（クラス・メソッド・行番号を先頭に追加） */
+    private static final String LOG_FORMAT = "[%8$s.%9$s:%10$s] [%1$tY-%1$tm-%1$td %1$tH:%1$tM:%1$tS] [%4$s] [%7$s] %5$s%6$s%n";
 
     /** ロガー設定 */
     private Logger logger;
@@ -186,38 +188,105 @@ public class LogHandler {
         // FileHandlerの設定
         fileHandler = new FileHandler(logFilePath, MAX_LOG_SIZE_BYTES, 1, true);
         fileHandler.setEncoding("UTF-8");
-        fileHandler.setFormatter(new Formatter() {
-            @Override
-            public String format(LogRecord record) {
-                String typeCode = "SYSTEM"; // デフォルト値
-                if (record.getParameters() != null && record.getParameters().length > 0
-                        && record.getParameters()[0] instanceof String) {
-                    typeCode = (String) record.getParameters()[0];
-                }
-
-                return String.format(LOG_FORMAT,
-                        record.getMillis(),
-                        record.getSourceClassName(),
-                        record.getSourceMethodName(),
-                        record.getLevel().getName(),
-                        record.getMessage(),
-                        record.getThrown() == null ? "" : "\n" + formatException(record.getThrown()),
-                        typeCode);
-            }
-
-            private String formatException(Throwable thrown) {
-                StringBuilder sb = new StringBuilder();
-                sb.append(thrown.toString());
-                for (StackTraceElement element : thrown.getStackTrace()) {
-                    sb.append("\n\tat ").append(element.toString());
-                }
-                return sb.toString();
-            }
-        });
+        fileHandler.setFormatter(new DetailedFormatter());
 
         // ハンドラの追加
         logger.addHandler(fileHandler);
         System.out.println("ログファイルを設定しました: " + logFilePath);
+    }
+
+    /**
+     * 詳細な呼び出し元情報を含むカスタムフォーマッター
+     * クラス名（フルパッケージ）、メソッド名、行番号を含む詳細なログフォーマットを提供
+     */
+    private static class DetailedFormatter extends Formatter {
+        @Override
+        public String format(LogRecord record) {
+            String typeCode = "SYSTEM"; // デフォルト値
+            String className = "Unknown";
+            String methodName = "unknown";
+            String lineNumber = "0";
+
+            // パラメータからLogType情報を取得
+            if (record.getParameters() != null && record.getParameters().length > 0) {
+                if (record.getParameters()[0] instanceof String) {
+                    typeCode = (String) record.getParameters()[0];
+                }
+
+                // 呼び出し元情報が設定されている場合は取得
+                if (record.getParameters().length >= 4) {
+                    if (record.getParameters()[1] instanceof String) {
+                        className = (String) record.getParameters()[1];
+                    }
+                    if (record.getParameters()[2] instanceof String) {
+                        methodName = (String) record.getParameters()[2];
+                    }
+                    if (record.getParameters()[3] instanceof String) {
+                        lineNumber = (String) record.getParameters()[3];
+                    }
+                }
+            }
+
+            return String.format(LOG_FORMAT,
+                    record.getMillis(), // %1$ - タイムスタンプ
+                    record.getSourceClassName(), // %2$ - 使用しない（予約）
+                    record.getSourceMethodName(), // %3$ - 使用しない（予約）
+                    record.getLevel().getName(), // %4$ - ログレベル
+                    record.getMessage(), // %5$ - メッセージ
+                    record.getThrown() == null ? "" : "\n" + formatException(record.getThrown()), // %6$ - 例外情報
+                    typeCode, // %7$ - ログタイプ
+                    className, // %8$ - クラス名（フルパッケージ）
+                    methodName, // %9$ - メソッド名
+                    lineNumber); // %10$ - 行番号
+        }
+
+        /**
+         * 例外情報をフォーマット
+         * 
+         * @param thrown フォーマットする例外
+         * @return フォーマット済み例外文字列
+         */
+        private String formatException(Throwable thrown) {
+            StringBuilder sb = new StringBuilder();
+            sb.append(thrown.toString());
+            for (StackTraceElement element : thrown.getStackTrace()) {
+                sb.append("\n\tat ").append(element.toString());
+            }
+            return sb.toString();
+        }
+    }
+
+    /**
+     * 呼び出し元の詳細情報を取得
+     * スタックトレースを解析して、LogHandlerクラス以外の最初の呼び出し元を特定
+     * 
+     * @return 呼び出し元情報の配列 [クラス名, メソッド名, 行番号]
+     */
+    private String[] getCallerInfo() {
+        StackTraceElement[] stackTrace = Thread.currentThread().getStackTrace();
+
+        // スタックトレースを遡って、LogHandlerクラス以外の最初の要素を見つける
+        for (int i = 0; i < stackTrace.length; i++) {
+            StackTraceElement element = stackTrace[i];
+            String className = element.getClassName();
+
+            // LogHandlerクラス、Threadクラス、およびJavaの内部クラスをスキップ
+            if (!className.equals(LogHandler.class.getName()) &&
+                    !className.equals(Thread.class.getName()) &&
+                    !className.startsWith("java.") &&
+                    !className.startsWith("sun.") &&
+                    !element.getMethodName().equals("getStackTrace")) {
+
+                return new String[] {
+                        className,
+                        element.getMethodName(),
+                        String.valueOf(element.getLineNumber())
+                };
+            }
+        }
+
+        // 呼び出し元が特定できない場合のデフォルト値
+        return new String[] { "Unknown", "unknown", "0" };
     }
 
     /**
@@ -255,9 +324,17 @@ public class LogHandler {
             type = LogType.SYSTEM; // デフォルトのタイプを使用
         }
 
-        // typeを含めたログ出力のためのカスタムLogRecordを作成
+        // 呼び出し元情報を取得
+        String[] callerInfo = getCallerInfo();
+
+        // typeと呼び出し元情報を含めたログ出力のためのカスタムLogRecordを作成
         LogRecord record = new LogRecord(level, message);
-        record.setParameters(new Object[] { type.getCode() });
+        record.setParameters(new Object[] {
+                type.getCode(), // ログタイプ
+                callerInfo[0], // クラス名（フルパッケージ）
+                callerInfo[1], // メソッド名
+                callerInfo[2] // 行番号
+        });
 
         logger.log(record);
     }
@@ -294,9 +371,17 @@ public class LogHandler {
             return;
         }
 
-        // typeを含めたログ出力のためのカスタムLogRecordを作成
+        // 呼び出し元情報を取得
+        String[] callerInfo = getCallerInfo();
+
+        // typeと呼び出し元情報を含めたログ出力のためのカスタムLogRecordを作成
         LogRecord record = new LogRecord(Level.SEVERE, message);
-        record.setParameters(new Object[] { type.getCode() });
+        record.setParameters(new Object[] {
+                type.getCode(), // ログタイプ
+                callerInfo[0], // クラス名（フルパッケージ）
+                callerInfo[1], // メソッド名
+                callerInfo[2] // 行番号
+        });
         record.setThrown(throwable);
 
         logger.log(record);
