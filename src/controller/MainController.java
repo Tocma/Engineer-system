@@ -72,9 +72,9 @@ import javax.swing.filechooser.FileNameExtensionFilter;
  * </ul>
  * </p>
  *
- * @author Nakano
- * @version 4.8.1
- * @since 2025-05-19
+ * @author Nagai
+ * @version 4.9.1
+ * @since 2025-05-27
  */
 public class MainController {
 
@@ -796,49 +796,115 @@ public class MainController {
 
     /* テンプレート出力機能 */
     public void handleTemplateExport() {
-        JFileChooser fileChooser = new JFileChooser();
-        fileChooser.setDialogTitle("テンプレートCSVの保存先を選択してください");
-        fileChooser.setSelectedFile(new File("エンジニア情報テンプレート.csv"));
+        // 非同期でテンプレート出力処理を開始
+        startAsyncTask("TemplateCSV", () -> {
+            // ★テンプレート出力の確認ダイアログ（最初に表示）
+            int confirm = JOptionPane.showConfirmDialog(
+                null,
+                "テンプレートを出力しますか？",
+                "テンプレート出力確認",
+                JOptionPane.YES_NO_OPTION);
 
-        boolean fileSaved = false;
-
-        while (!fileSaved) {
-            int userSelection = fileChooser.showSaveDialog(null);
-
-            if (userSelection != JFileChooser.APPROVE_OPTION) {
-                return; // キャンセル → 処理終了
+            if (confirm != JOptionPane.YES_OPTION) {
+                LogHandler.getInstance().log(Level.INFO, LogType.SYSTEM,
+                "テンプレート出力がユーザーによりキャンセルされました");
+            return;
             }
 
-            File fileToSave = fileChooser.getSelectedFile();
+            JFileChooser fileChooser = new JFileChooser();
+            fileChooser.setDialogTitle("テンプレートCSV出力先");
+            fileChooser.setSelectedFile(new File("エンジニア情報テンプレート.csv"));
 
-            if (fileToSave.exists()) {
-                int overwriteConfirm = JOptionPane.showConfirmDialog(
-                        null,
-                        "同じ名前のファイルが既に存在します。上書きしますか？",
-                        "上書き確認",
-                        JOptionPane.YES_NO_CANCEL_OPTION);
+            boolean canFileSaved = false;
 
-                if (overwriteConfirm == JOptionPane.YES_OPTION) {
-                    // 上書きを許可された → 保存してループ終了
-                    if (saveTemplate(fileToSave)) {
-                        fileSaved = true;
+            while (!canFileSaved) {
+                //ファイル保存のダイアログを表示
+                //出力先のダイアログ表示のログ
+                LogHandler.getInstance().log(Level.INFO, LogType.SYSTEM,
+                                "出力先選択画面を表示をしました");
+                int userSelection = fileChooser.showSaveDialog(listPanel);
+
+                //キャンセル時、処理終了
+                if (userSelection != JFileChooser.APPROVE_OPTION) {
+                    LogHandler.getInstance().log(Level.INFO, LogType.SYSTEM,
+                                "テンプレート出力がキャンセルされました");
+                    return;
+                }
+
+                //デフォルト名または、変更名のファイルを取得
+                File fileToSave = fileChooser.getSelectedFile();
+
+                // 拡張子がない場合は「.csv」を自動付加
+                //「.csv定数化」
+                if (!fileToSave.getName().toLowerCase().endsWith(".csv")) {
+                    fileToSave = new File(fileToSave.getAbsolutePath() + ".csv");
+                }
+
+                // 不正なファイル名の簡易チェック（OSによって異なるので必要に応じて強化）
+                //File selectedFile = fileChooser.getSelectedFile();
+                //　パスを含んているかわかるように(TODO)
+                //String fileName = selectedFile.getName();
+
+                // 不正なファイル名チェック
+                if (fileToSave.getName().matches(".*[\\\\/:*?\"<>|].*")) {
+                    DialogManager.getInstance().showErrorDialog(
+                        "エラー",
+                        "ファイル名に使用できない文字が含まれています。\n" +
+                        "使用できない文字: \\ / : * ? \" < > |"
+                    );
+                    continue;
+                }
+
+                // 親ディレクトリの書き込み権限チェック
+                File parentDir = fileToSave.getParentFile();
+                if (!parentDir.canWrite()) {
+                    DialogManager.getInstance().showErrorDialog(
+                        "保存エラー",
+                        "指定された保存先に書き込む権限がありません。\n" +
+                        "別の場所を選択してください。"
+                    );
+                    continue;
+                }
+
+                //保存したいファイル名が既に同一フォルダ内に存在している場合
+                if (fileToSave.exists()) {
+                    LogHandler.getInstance().log(Level.INFO, LogType.SYSTEM,
+                                "保存場所に同一名ファイルが存在したため、上書き確認ダイアログを表示しました");
+                    //上書き確認ダイアログの表示。「はい」「いいえ」選択
+                    int overwriteConfirm = JOptionPane.showConfirmDialog(
+                            null,
+                            "ファイル" + fileToSave.getName() + "は既に存在します。上書きしますか？",
+                            "上書き確認",
+                            JOptionPane.YES_NO_OPTION);
+
+                    if (overwriteConfirm == JOptionPane.YES_OPTION) {
+                        LogHandler.getInstance().log(Level.INFO, LogType.SYSTEM,
+                                "ファイルの上書きが許可されました");
+                        // 上書きを許可された → 保存してループ終了
+                        if (saveTemplate(fileToSave)) {
+                            canFileSaved = true;
+                        } else {
+                            LogHandler.getInstance().log(Level.SEVERE,LogType.SYSTEM,
+                                "テンプレート出力を終了します");
+                            break; // エラー → 終了
+                        }
+                    } else if (overwriteConfirm == JOptionPane.NO_OPTION) {
+                        LogHandler.getInstance().log(Level.INFO, LogType.SYSTEM,
+                                "上書き保存が許可されませんでした");
+                        continue; // 別名保存を促す → 再度ループ
                     } else {
-                        break; // エラー → 終了
+                        // 新規ファイル → 保存
+                        if (saveTemplate(fileToSave)) {
+                        canFileSaved = true;
+                        } else {
+                            LogHandler.getInstance().log(Level.SEVERE,LogType.SYSTEM,
+                                "テンプレート出力を終了します");
+                            break; // エラー → 終了
+                        }
                     }
-                } else if (overwriteConfirm == JOptionPane.NO_OPTION) {
-                    continue; // 別名保存を促す → 再度ループ
-                } else {
-                    return; // キャンセル → 終了
-                }
-            } else {
-                // 新規ファイル → 保存
-                if (saveTemplate(fileToSave)) {
-                    fileSaved = true;
-                } else {
-                    break; // エラー → 終了
                 }
             }
-        }
+        });
     }
 
     /**
@@ -903,13 +969,42 @@ public class MainController {
 
     // ヘルパーメソッド：保存処理を共通化
     private boolean saveTemplate(File file) {
-        boolean result = new EngineerCSVDAO().exportTemplate(file.getPath());
-        if (result) {
-            DialogManager.getInstance().showInfoDialog("出力完了", "CSVテンプレートを保存しました。");
-        } else {
-            DialogManager.getInstance().showErrorDialog("出力エラー", "テンプレート出力に失敗しました。");
+        JPanel panel = screenController.getCurrentPanel();
+        //ステータスラベルのセット
+        SwingUtilities.invokeLater(() -> {
+            if (panel instanceof ListPanel listPanel) {
+                listPanel.setStatus("テンプレート出力中...   ");
+            }
+        });
+
+        try {
+            new EngineerCSVDAO().exportTemplate(file.getPath());
+            DialogManager.getInstance().showInfoDialog(
+                "出力完了",
+                "テンプレートCSVを保存しました。"
+            );
+            //ステータスラベルのリセット
+            SwingUtilities.invokeLater(() -> {
+                if (panel instanceof ListPanel listPanel) {
+                    listPanel.setStatus("");
+                }
+            });
+            return true;
+        } catch (Exception e) {
+            LogHandler.getInstance().logError(LogType.SYSTEM,"テンプレート出力処理中に例外が発生しました",e);
+            DialogManager.getInstance().showErrorDialog(
+                "エラー",
+                "保存先のフォルダにセキュリティ上の理由でアクセスできない可能性があります。\n" +
+                "詳細: " + e.getMessage()
+            );
+            //ステータスラベルのリセット
+            SwingUtilities.invokeLater(() -> {
+                if (panel instanceof ListPanel listPanel) {
+                    listPanel.setStatus("");
+                }
+            });
+            return false;
         }
-        return result;
     }
 
     // 追加するヘルパーメソッド
