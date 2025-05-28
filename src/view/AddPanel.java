@@ -83,8 +83,8 @@ import java.util.logging.Level;
  * </p>
  *
  * @author Nakano
- * @version 4.8.4
- * @since 2025-05-20
+ * @version 4.9.4
+ * @since 2025-05-28
  */
 public class AddPanel extends AbstractEngineerPanel {
 
@@ -409,7 +409,7 @@ public class AddPanel extends AbstractEngineerPanel {
         String[] availableLanguages = {
                 "C++", "C#", "Java", "Python", "JavaScript",
                 "TypeScript", "PHP", "Ruby", "Go", "Swift",
-                "Kotlin", "SQL", "HTML/CSS",
+                "Kotlin", "SQL", "HTML/CSS", "その他",
         };
 
         // CheckableItemの配列を作成
@@ -1266,6 +1266,17 @@ public class AddPanel extends AbstractEngineerPanel {
         communicationSkillComboBox.setSelectedIndex(0);
         leadershipComboBox.setSelectedIndex(0);
 
+        // MultiSelectComboBoxのクリア処理を追加
+        if (languageComboBox != null) {
+            // すべての項目の選択状態をリセット
+            for (int i = 0; i < languageComboBox.getModel().getSize(); i++) {
+                CheckableItem item = languageComboBox.getModel().getElementAt(i);
+                item.setSelected(false);
+            }
+            // コンボボックスの表示を更新
+            languageComboBox.repaint();
+        }
+
         // チェックボックスのクリア
         for (JCheckBox checkBox : languageCheckBoxes) {
             checkBox.setSelected(false);
@@ -1288,8 +1299,8 @@ public class AddPanel extends AbstractEngineerPanel {
 
         if (mainController != null) {
             if (ListPanel.isRefreshNeeded()) {
-                ListPanel.setNeedsRefresh(false); 
-                mainController.getListPanel().setEngineerData(mainController.getEngineerController().loadEngineers()); 
+                ListPanel.setNeedsRefresh(false);
+                mainController.getListPanel().setEngineerData(mainController.getEngineerController().loadEngineers());
             }
             mainController.handleEvent("CHANGE_PANEL", "LIST");
             LogHandler.getInstance().log(Level.INFO, LogType.UI, "一覧画面に戻ります");

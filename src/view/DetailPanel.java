@@ -58,8 +58,8 @@ import java.util.logging.Level;
  * </p>
  *
  * @author Nakano
- * @version 4.8.4
- * @since 2025-05-20
+ * @version 4.9.4
+ * @since 2025-05-28
  */
 public class DetailPanel extends AbstractEngineerPanel {
 
@@ -412,7 +412,7 @@ public class DetailPanel extends AbstractEngineerPanel {
         String[] availableLanguages = {
                 "C++", "C#", "Java", "Python", "JavaScript",
                 "TypeScript", "PHP", "Ruby", "Go", "Swift",
-                "Kotlin", "SQL", "HTML/CSS",
+                "Kotlin", "SQL", "HTML/CSS", "その他",
         };
 
         // CheckableItemの配列を作成
@@ -659,14 +659,15 @@ public class DetailPanel extends AbstractEngineerPanel {
         // 言語選択コンボボックスのリスナー設定
         // 元々のAddPanelのMultiSelectComboBoxの内部リスナーと同等の機能を追加
         languageComboBox.addActionListener(e -> {
+            // 内部のトグル処理は既存のリスナーに委譲
             // まず選択状態をトグル
-            Object selected = languageComboBox.getSelectedItem();
-            if (selected instanceof AddPanel.CheckableItem item) {
-                item.setSelected(!item.isSelected());
-                languageComboBox.repaint(); // 表示更新
-            }
+            //Object selected = languageComboBox.getSelectedItem();
+            //if (selected instanceof AddPanel.CheckableItem item) {
+            //    item.setSelected(!item.isSelected());
+            //    languageComboBox.repaint(); // 表示更新
+            //}
 
-            // そして変更フラグを設定
+            // 変更フラグのみ設定
             setFormModified(true);
         });
 
