@@ -15,7 +15,7 @@ import java.util.logging.*;
  *
  * @author Nakano
  * @version 4.9.0
- * @since 2025-05-26
+ * @since 2025-05-28
  */
 public class LogHandler {
 
@@ -49,7 +49,7 @@ public class LogHandler {
     private static final int MAX_LOG_SIZE_BYTES = 10 * 1024 * 1024; // 10MB
 
     /** 拡張されたログフォーマット（クラス・メソッド・行番号を先頭に追加） */
-    private static final String LOG_FORMAT = "[%8$s.%9$s:%10$s] [%1$tY-%1$tm-%1$td %1$tH:%1$tM:%1$tS] [%4$s] [%7$s] %5$s%6$s%n";
+    private static final String LOG_FORMAT = "[%1$tY-%1$tm-%1$td %1$tH:%1$tM:%1$tS] [%8$s.%9$s:%10$s] [%4$s] [%7$s] %5$s%6$s%n";
 
     /** ロガー設定 */
     private Logger logger;
