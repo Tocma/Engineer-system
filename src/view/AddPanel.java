@@ -83,8 +83,8 @@ import java.util.logging.Level;
  * </p>
  *
  * @author Nakano
- * @version 4.9.4
- * @since 2025-05-28
+ * @version 4.9.6
+ * @since 2025-05-29
  */
 public class AddPanel extends AbstractEngineerPanel {
 
@@ -594,7 +594,7 @@ public class AddPanel extends AbstractEngineerPanel {
 
         // 戻るボタン
         backButton = new JButton("戻る");
-        backButton.addActionListener(e -> {
+        backButton.addActionListener(_e -> {
             if (!processing) {
                 goBack();
             }
@@ -603,7 +603,7 @@ public class AddPanel extends AbstractEngineerPanel {
 
         // 登録ボタン
         addButton = new JButton("登録");
-        addButton.addActionListener(e -> {
+        addButton.addActionListener(_e -> {
             if (!processing) {
                 addEngineer();
             }
@@ -1482,7 +1482,7 @@ public class AddPanel extends AbstractEngineerPanel {
             });
 
             // 選択時の処理（選択された項目のチェック状態をトグル）
-            addActionListener(e -> {
+            addActionListener(_e -> {
                 Object selected = getSelectedItem();
                 if (selected instanceof CheckableItem item) {
                     item.setSelected(!item.isSelected());

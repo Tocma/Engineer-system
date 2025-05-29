@@ -58,8 +58,8 @@ import java.util.logging.Level;
  * </p>
  *
  * @author Nakano
- * @version 4.9.4
- * @since 2025-05-28
+ * @version 4.9.6
+ * @since 2025-05-29
  */
 public class DetailPanel extends AbstractEngineerPanel {
 
@@ -585,7 +585,7 @@ public class DetailPanel extends AbstractEngineerPanel {
 
         // 戻るボタン
         backButton = new JButton("一覧へ戻る");
-        backButton.addActionListener(e -> {
+        backButton.addActionListener(_e -> {
             if (!processing) {
                 goBack();
             }
@@ -595,7 +595,7 @@ public class DetailPanel extends AbstractEngineerPanel {
         // 更新ボタン
         updateButton = new JButton("保存");
         updateButton.setEnabled(false); // 初期状態では無効化
-        updateButton.addActionListener(e -> {
+        updateButton.addActionListener(_e -> {
             if (!processing) {
                 updateEngineer();
             }
@@ -658,14 +658,7 @@ public class DetailPanel extends AbstractEngineerPanel {
 
         // 言語選択コンボボックスのリスナー設定
         // 元々のAddPanelのMultiSelectComboBoxの内部リスナーと同等の機能を追加
-        languageComboBox.addActionListener(e -> {
-            // 内部のトグル処理は既存のリスナーに委譲
-            // まず選択状態をトグル
-            //Object selected = languageComboBox.getSelectedItem();
-            //if (selected instanceof AddPanel.CheckableItem item) {
-            //    item.setSelected(!item.isSelected());
-            //    languageComboBox.repaint(); // 表示更新
-            //}
+        languageComboBox.addActionListener(_e -> {
 
             // 変更フラグのみ設定
             setFormModified(true);
