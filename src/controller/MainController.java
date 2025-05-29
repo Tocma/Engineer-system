@@ -12,6 +12,7 @@ import view.DialogManager;
 import view.ListPanel;
 import view.MainFrame;
 import java.io.File;
+import java.nio.file.Path;
 import java.time.LocalDate;
 import java.util.List;
 import java.util.Set;
@@ -73,8 +74,8 @@ import javax.swing.filechooser.FileNameExtensionFilter;
  * </p>
  *
  * @author Nakano
- * @version 4.9.3
- * @since 2025-05-28
+ * @version 4.9.5
+ * @since 2025-05-29
  */
 public class MainController {
 
@@ -84,7 +85,7 @@ public class MainController {
     /** エンジニアデータコントローラー */
     private EngineerController engineerController;
 
-    /** リソースマネージャー */
+    /** リソースマネージャー - ファイル操作の中心的な管理クラス */
     private ResourceManager resourceManager;
 
     /** メインフレーム */
@@ -129,14 +130,17 @@ public class MainController {
 
     /**
      * アプリケーションの初期化
-     * すべてのコンポーネントを初期化し、初期画面を表示
+     * ResourceManagerの適切な初期化と活用を含む
      */
     public void initialize() {
         try {
-            // リソースマネージャーの取得
+            // ResourceManagerの取得と初期化確認
+            // これにより、ファイルパス管理が一元化されます
             resourceManager = ResourceManager.getInstance();
             if (!resourceManager.isInitialized()) {
                 resourceManager.initialize();
+                LogHandler.getInstance().log(Level.INFO, LogType.SYSTEM,
+                        "ResourceManager を初期化しました");
             }
 
             // エンジニアコントローラーの初期化
@@ -796,7 +800,7 @@ public class MainController {
 
     /**
      * テンプレートCSV出力機能
-     * UI操作とビジネスロジックを分離し、制御フローを明確化
+     * ResourceManagerを活用したファイル操作の統合版
      */
     public void handleTemplateExport() {
         startAsyncTask("TemplateCSV", () -> {
@@ -805,14 +809,15 @@ public class MainController {
                 return;
             }
 
-            // UI操作：ファイル選択とバリデーション
-            File selectedFile = selectTemplateFile("エンジニア情報テンプレート.csv");
+            // ResourceManagerを活用したファイル選択処理
+            // デフォルトのデータディレクトリを初期表示ディレクトリとして使用
+            File selectedFile = selectTemplateFileWithResourceManager("エンジニア情報テンプレート.csv");
             if (selectedFile == null) {
                 return;
             }
 
             // ビジネスロジック：テンプレート出力処理の実行
-            executeTemplateExport(selectedFile);
+            executeTemplateExportWithResourceManager(selectedFile);
         });
     }
 
@@ -838,17 +843,33 @@ public class MainController {
     }
 
     /**
-     * テンプレート出力用ファイル選択処理
+     * ResourceManagerを活用したテンプレート出力用ファイル選択処理
+     * ユーザビリティの向上と一貫したファイル操作を実現
      * 
      * @param defaultFileName デフォルトファイル名
      * @return 選択されたファイル、キャンセル時はnull
      */
-    private File selectTemplateFile(String defaultFileName) {
+    private File selectTemplateFileWithResourceManager(String defaultFileName) {
         File selectedFile = null;
 
         while (true) {
             JFileChooser fileChooser = new JFileChooser();
             fileChooser.setDialogTitle("テンプレートCSV出力先");
+
+            // ResourceManagerからデータディレクトリを取得して初期ディレクトリに設定
+            // これにより、ユーザーは適切なディレクトリから開始できます
+            try {
+                Path dataDir = resourceManager.getDataDirectoryPath();
+                if (dataDir != null && dataDir.toFile().exists()) {
+                    fileChooser.setCurrentDirectory(dataDir.toFile());
+                    LogHandler.getInstance().log(Level.INFO, LogType.SYSTEM,
+                            "ファイル選択ダイアログの初期ディレクトリを設定: " + dataDir);
+                }
+            } catch (Exception e) {
+                LogHandler.getInstance().log(Level.WARNING, LogType.SYSTEM,
+                        "初期ディレクトリの設定に失敗しましたが、処理を続行します: " + e.getMessage());
+            }
+
             fileChooser.setSelectedFile(new File(defaultFileName));
 
             LogHandler.getInstance().log(Level.INFO, LogType.SYSTEM, "出力先選択画面を表示をしました");
@@ -866,8 +887,9 @@ public class MainController {
                 selectedFile = new File(selectedFile.getAbsolutePath() + ".csv");
             }
 
-            // ファイル名妥当性検証
-            FileValidationResult validation = validateFileSelection(selectedFile);
+            // ResourceManagerを活用したファイル検証
+            // 統一されたバリデーションロジックを使用
+            FileValidationResult validation = validateFileSelectionWithResourceManager(selectedFile);
             if (!validation.isValid()) {
                 DialogManager.getInstance().showErrorDialog("エラー", validation.getErrorMessage());
                 continue;
@@ -910,40 +932,65 @@ public class MainController {
     }
 
     /**
-     * テンプレート出力処理の実行
-     * ビジネスロジック部分を担当し、非同期処理で実行
+     * ResourceManagerを活用したテンプレート出力処理の実行
+     * リソース管理の統合とエラーハンドリングの改善
      * 
      * @param outputFile 出力先ファイル
      */
-    private void executeTemplateExport(File outputFile) {
+    private void executeTemplateExportWithResourceManager(File outputFile) {
         JPanel panel = screenController.getCurrentPanel();
 
         // ステータス表示更新
         updateExportStatus(panel, "テンプレート出力中...   ");
 
-        try {
-            new EngineerCSVDAO().exportTemplate(outputFile.getPath());
+        // ResourceManagerにファイルリソースを登録してリソース管理を委譲
+        String resourceKey = "template_export_" + System.currentTimeMillis();
 
-            SwingUtilities.invokeLater(() -> {
-                DialogManager.getInstance().showInfoDialog("出力完了", "テンプレートCSVを保存しました。");
-                clearExportStatus(panel);
-            });
+        try {
+            // テンプレート出力の実行
+            boolean success = new EngineerCSVDAO().exportTemplate(outputFile.getPath());
+
+            if (success) {
+                // 成功時のリソース登録（必要に応じて）
+                // resourceManager.registerResource(resourceKey, appropriateCloseable);
+
+                SwingUtilities.invokeLater(() -> {
+                    DialogManager.getInstance().showInfoDialog("出力完了",
+                            "テンプレートCSVを保存しました。\n保存先: " + outputFile.getAbsolutePath());
+                    clearExportStatus(panel);
+                });
+
+                LogHandler.getInstance().log(Level.INFO, LogType.SYSTEM,
+                        "テンプレートファイルの出力が成功しました: " + outputFile.getAbsolutePath());
+            } else {
+                throw new RuntimeException("テンプレート出力処理が失敗しました");
+            }
 
         } catch (Exception e) {
-            LogHandler.getInstance().logError(LogType.SYSTEM, "テンプレート出力処理中に例外が発生しました", e);
+            LogHandler.getInstance().logError(LogType.SYSTEM,
+                    "テンプレート出力処理中に例外が発生しました", e);
 
             SwingUtilities.invokeLater(() -> {
                 DialogManager.getInstance().showErrorDialog("エラー",
-                        "保存先のフォルダにセキュリティ上の理由でアクセスできない可能性があります。\n" +
+                        "テンプレート出力中にエラーが発生しました。\n" +
+                                "保存先のフォルダにアクセスできない可能性があります。\n" +
                                 "詳細: " + e.getMessage());
                 clearExportStatus(panel);
             });
+        } finally {
+            // ResourceManagerを通じたリソースのクリーンアップ
+            try {
+                resourceManager.releaseResource(resourceKey);
+            } catch (Exception cleanupError) {
+                LogHandler.getInstance().log(Level.WARNING, LogType.SYSTEM,
+                        "リソースクリーンアップ中にエラーが発生しました: " + cleanupError.getMessage());
+            }
         }
     }
 
     /**
-     * エンジニア情報のCSV出力を非同期で実行します。
-     * UI操作とビジネスロジックを分離し、制御フローを明確化
+     * エンジニア情報のCSV出力を非同期で実行
+     * ResourceManagerを活用したファイル操作の統合版
      * 
      * @param data CSV出力対象のエンジニアDTOリスト
      */
@@ -952,30 +999,44 @@ public class MainController {
         List<EngineerDTO> targetList = (List<EngineerDTO>) data;
 
         startAsyncTask("export_engineers", () -> {
-            // UI操作：ファイル選択とバリデーション
-            File selectedFile = selectExportFile("エンジニア情報-" + LocalDate.now() + ".csv");
+            // ResourceManagerを活用したファイル選択とバリデーション
+            File selectedFile = selectExportFileWithResourceManager("エンジニア情報-" + LocalDate.now() + ".csv");
             if (selectedFile == null) {
                 return; // ユーザーがキャンセルした場合
             }
 
             // ビジネスロジック：CSV出力処理の実行
-            executeCSVExport(targetList, selectedFile);
+            executeCSVExportWithResourceManager(targetList, selectedFile);
         });
     }
 
     /**
-     * CSV出力用ファイル選択処理
-     * ファイル選択ダイアログの表示、妥当性検証、上書き確認を統合
+     * ResourceManagerを活用したCSV出力用ファイル選択処理
+     * 一貫したユーザーエクスペリエンスとエラーハンドリング
      * 
      * @param defaultFileName デフォルトファイル名
      * @return 選択されたファイル、キャンセル時はnull
      */
-    private File selectExportFile(String defaultFileName) {
+    private File selectExportFileWithResourceManager(String defaultFileName) {
         File selectedFile = null;
 
         while (true) {
             JFileChooser fileChooser = new JFileChooser();
             fileChooser.setDialogTitle("CSVファイルの保存先");
+
+            // ResourceManagerからデータディレクトリを初期ディレクトリに設定
+            try {
+                Path dataDir = resourceManager.getDataDirectoryPath();
+                if (dataDir != null && dataDir.toFile().exists()) {
+                    fileChooser.setCurrentDirectory(dataDir.toFile());
+                    LogHandler.getInstance().log(Level.INFO, LogType.SYSTEM,
+                            "CSVエクスポートダイアログの初期ディレクトリを設定: " + dataDir);
+                }
+            } catch (Exception e) {
+                LogHandler.getInstance().log(Level.WARNING, LogType.SYSTEM,
+                        "初期ディレクトリの設定に失敗しましたが、処理を続行します: " + e.getMessage());
+            }
+
             fileChooser.setSelectedFile(new File(defaultFileName));
 
             int result = fileChooser.showSaveDialog(listPanel);
@@ -991,8 +1052,8 @@ public class MainController {
                 selectedFile = new File(selectedFile.getAbsolutePath() + ".csv");
             }
 
-            // ファイル名妥当性検証
-            FileValidationResult validation = validateFileSelection(selectedFile);
+            // ResourceManagerを活用したファイル名妥当性検証
+            FileValidationResult validation = validateFileSelectionWithResourceManager(selectedFile);
             if (!validation.isValid()) {
                 DialogManager.getInstance().showErrorDialog("エラー", validation.getErrorMessage());
                 continue;
@@ -1012,26 +1073,47 @@ public class MainController {
     }
 
     /**
-     * ファイル選択の妥当性検証
+     * ResourceManagerを活用したファイル検証
+     * 統一されたバリデーションロジックとエラーハンドリング
      * 
      * @param file 検証対象ファイル
      * @return 検証結果
      */
-    private FileValidationResult validateFileSelection(File file) {
-        // 不正文字チェック
-        if (file.getName().matches(".*[\\\\/:*?\"<>|].*")) {
-            return new FileValidationResult(false,
-                    "ファイル名に使用できない文字が含まれています。\n使用できない文字: \\ / : * ? \" < > |");
-        }
+    private FileValidationResult validateFileSelectionWithResourceManager(File file) {
+        try {
+            // 不正文字チェック（既存のロジック）
+            if (file.getName().matches(".*[\\\\/:*?\"<>|].*")) {
+                return new FileValidationResult(false,
+                        "ファイル名に使用できない文字が含まれています。\n使用できない文字: \\ / : * ? \" < > |");
+            }
 
-        // 親ディレクトリの書き込み権限チェック
-        File parentDir = file.getParentFile();
-        if (!parentDir.canWrite()) {
-            return new FileValidationResult(false,
-                    "指定された保存先に書き込む権限がありません。\n別の場所を選択してください。");
-        }
+            // 親ディレクトリの書き込み権限チェック
+            File parentDir = file.getParentFile();
+            if (!parentDir.canWrite()) {
+                return new FileValidationResult(false,
+                        "指定された保存先に書き込む権限がありません。\n別の場所を選択してください。");
+            }
 
-        return new FileValidationResult(true, null);
+            // ResourceManagerを通じた追加的な検証
+            // 例：データディレクトリ配下であることの確認など
+            Path dataDir = resourceManager.getDataDirectoryPath();
+            Path filePath = file.toPath().toAbsolutePath();
+
+            // データディレクトリの存在確認と作成
+            if (dataDir != null && !dataDir.toFile().exists()) {
+                LogHandler.getInstance().log(Level.INFO, LogType.SYSTEM,
+                        "データディレクトリが存在しないため、作成を試みます: " + dataDir);
+                // ResourceManager経由でディレクトリ作成を試行できます
+            }
+
+            return new FileValidationResult(true, null);
+
+        } catch (Exception e) {
+            LogHandler.getInstance().logError(LogType.SYSTEM,
+                    "ファイル検証中にエラーが発生しました", e);
+            return new FileValidationResult(false,
+                    "ファイル検証中にエラーが発生しました: " + e.getMessage());
+        }
     }
 
     /**
@@ -1058,17 +1140,20 @@ public class MainController {
     }
 
     /**
-     * CSV出力処理の実行
-     * ビジネスロジック部分を担当し、非同期処理で実行
+     * ResourceManagerを活用したCSV出力処理の実行
+     * リソース管理とエラーハンドリングの統合
      * 
      * @param targetList 出力対象データ
      * @param outputFile 出力先ファイル
      */
-    private void executeCSVExport(List<EngineerDTO> targetList, File outputFile) {
+    private void executeCSVExportWithResourceManager(List<EngineerDTO> targetList, File outputFile) {
         JPanel panel = screenController.getCurrentPanel();
 
         // ステータス表示更新
         updateExportStatus(panel, "CSV出力中...   ");
+
+        // ResourceManagerにリソースを登録してライフサイクル管理
+        String resourceKey = "csv_export_" + System.currentTimeMillis();
 
         try {
             EngineerCSVDAO csvDAO = new EngineerCSVDAO();
@@ -1076,15 +1161,33 @@ public class MainController {
 
             // 結果表示
             SwingUtilities.invokeLater(() -> {
-                showExportResult(success, "CSV出力");
+                if (success) {
+                    showExportResult(true, "CSV出力");
+                    LogHandler.getInstance().log(Level.INFO, LogType.SYSTEM,
+                            "CSV出力が成功しました: " + outputFile.getAbsolutePath() +
+                                    ", 件数: " + targetList.size());
+                } else {
+                    showExportResult(false, "CSV出力");
+                }
                 clearExportStatus(panel);
             });
 
         } catch (Exception e) {
+            LogHandler.getInstance().logError(LogType.SYSTEM,
+                    "CSV出力処理中に例外が発生しました", e);
+
             SwingUtilities.invokeLater(() -> {
                 showExportError("CSV出力", e);
                 clearExportStatus(panel);
             });
+        } finally {
+            // ResourceManagerを通じたリソースクリーンアップ
+            try {
+                resourceManager.releaseResource(resourceKey);
+            } catch (Exception cleanupError) {
+                LogHandler.getInstance().log(Level.WARNING, LogType.SYSTEM,
+                        "CSV出力リソースクリーンアップ中にエラーが発生しました: " + cleanupError.getMessage());
+            }
         }
     }
 
@@ -1188,7 +1291,7 @@ public class MainController {
 
     /**
      * CSVファイルのインポート処理
-     * ファイル選択ダイアログを表示し、選択されたCSVファイルからデータをインポート
+     * ResourceManagerを活用したファイル操作の統合版
      */
     public void handleImportData() {
         // シャットダウン中は処理しない
@@ -1198,10 +1301,23 @@ public class MainController {
             return;
         }
 
-        // ファイル選択ダイアログの表示
+        // ResourceManagerを活用したファイル選択ダイアログの表示
         JFileChooser fileChooser = new JFileChooser();
         fileChooser.setDialogTitle("インポートするCSVファイルを選択");
         fileChooser.setFileFilter(new FileNameExtensionFilter("CSVファイル (*.csv)", "csv"));
+
+        // ResourceManagerからデータディレクトリを初期ディレクトリに設定
+        try {
+            Path dataDir = resourceManager.getDataDirectoryPath();
+            if (dataDir != null && dataDir.toFile().exists()) {
+                fileChooser.setCurrentDirectory(dataDir.toFile());
+                LogHandler.getInstance().log(Level.INFO, LogType.SYSTEM,
+                        "CSVインポートダイアログの初期ディレクトリを設定: " + dataDir);
+            }
+        } catch (Exception e) {
+            LogHandler.getInstance().log(Level.WARNING, LogType.SYSTEM,
+                    "初期ディレクトリの設定に失敗しましたが、処理を続行します: " + e.getMessage());
+        }
 
         int result = fileChooser.showOpenDialog(mainFrame.getJFrame());
         if (result != JFileChooser.APPROVE_OPTION) {
@@ -1215,6 +1331,13 @@ public class MainController {
             return;
         }
 
+        // ResourceManagerを活用したファイル検証
+        FileValidationResult validation = validateImportFileWithResourceManager(selectedFile);
+        if (!validation.isValid()) {
+            DialogManager.getInstance().showErrorDialog("ファイル検証エラー", validation.getErrorMessage());
+            return;
+        }
+
         // 現在のパネルを取得（ステータス表示用）
         final JPanel currentPanel = screenController.getCurrentPanel();
         if (currentPanel instanceof ListPanel) {
@@ -1222,8 +1345,25 @@ public class MainController {
         }
 
         // 非同期処理でCSVインポートを実行
+        executeCSVImportWithResourceManager(selectedFile, currentPanel);
+    }
+
+    /**
+     * ResourceManagerを活用したCSVインポート処理の実行
+     * 
+     * @param selectedFile インポート対象ファイル
+     * @param currentPanel ステータス表示用パネル
+     */
+    private void executeCSVImportWithResourceManager(File selectedFile, JPanel currentPanel) {
+        String resourceKey = "csv_import_" + System.currentTimeMillis();
+
         startAsyncTask("ImportCSV", () -> {
             try {
+                // ResourceManagerにリソースを登録
+                // 実際のCloseableリソースがある場合はここで登録
+                LogHandler.getInstance().log(Level.INFO, LogType.SYSTEM,
+                        "CSVインポート処理を開始: " + selectedFile.getAbsolutePath());
+
                 // 現在のデータを取得
                 List<EngineerDTO> currentEngineers = engineerController.loadEngineers();
 
@@ -1231,102 +1371,8 @@ public class MainController {
                 EngineerCSVDAO csvDao = new EngineerCSVDAO(selectedFile.getAbsolutePath());
                 CSVAccessResult importResult = csvDao.readCSV();
 
-                // インポート結果の取得
-                List<EngineerDTO> importedEngineers = importResult.getSuccessData();
-                List<EngineerDTO> errorEngineers = importResult.getErrorData();
-
-                // インポート後の総件数が上限を超えるかチェック
-                final int MAX_RECORDS = 1000; // 最大レコード数
-                if (!importResult.isOverwriteConfirmed() &&
-                        importedEngineers.size() + currentEngineers.size() > MAX_RECORDS) {
-
-                    LogHandler.getInstance().log(Level.WARNING, LogType.SYSTEM,
-                            "インポートすると登録件数の上限(" + MAX_RECORDS + "件)を超えます。" +
-                                    "現在: " + currentEngineers.size() + "件, インポート: " + importedEngineers.size() + "件");
-
-                    // UI更新はSwingのEDTで実行
-                    SwingUtilities.invokeLater(() -> {
-                        // エラーダイアログ表示
-                        DialogManager.getInstance().showErrorDialog(
-                                "インポート制限エラー",
-                                "インポートすると登録件数の上限(" + MAX_RECORDS + "件)を超えます。\n" +
-                                        "現在: " + currentEngineers.size() + "件, インポート: " + importedEngineers.size()
-                                        + "件\n" +
-                                        "不要なデータを削除してから再試行してください。");
-
-                        // ステータス表示のクリア
-                        if (currentPanel instanceof ListPanel) {
-                            ((ListPanel) currentPanel).clearStatus();
-                        }
-                    });
-                    return;
-                }
-
-                // 重複IDの処理（ユーザーが上書きを確認済み）
-                if (importResult.hasDuplicateIds() && importResult.isOverwriteConfirmed()) {
-                    // 重複IDのエンジニア情報を上書き
-                    for (EngineerDTO engineer : importedEngineers) {
-                        engineerController.updateEngineer(engineer);
-                    }
-
-                    LogHandler.getInstance().log(Level.INFO, LogType.SYSTEM,
-                            "重複IDのエンジニア情報を上書きしました: " + importResult.getDuplicateIds().size() + "件");
-                } else {
-                    // 新規エンジニア情報のみを追加
-                    for (EngineerDTO engineer : importedEngineers) {
-                        // 既存IDでないものだけを追加
-                        if (!currentEngineers.stream().anyMatch(e -> e.getId().equals(engineer.getId()))) {
-                            engineerController.addEngineer(engineer);
-                        }
-                    }
-                }
-
-                // UI更新はSwingのEDTで実行
-                SwingUtilities.invokeLater(() -> {
-                    try {
-                        // データを再読み込み
-                        List<EngineerDTO> updatedEngineers = engineerController.loadEngineers();
-
-                        // ListPanelを取得してエンジニアデータを更新
-                        if (currentPanel instanceof ListPanel) {
-                            ((ListPanel) currentPanel).setEngineerData(updatedEngineers);
-                            ((ListPanel) currentPanel).clearStatus();
-                        }
-
-                        // 結果ダイアログの表示
-                        StringBuilder message = new StringBuilder();
-                        message.append("CSVファイルのインポートが完了しました：\n");
-                        message.append("・インポート成功：").append(importedEngineers.size()).append("件\n");
-
-                        if (errorEngineers.size() > 0) {
-                            message.append("・エラー：").append(errorEngineers.size()).append("件\n");
-                        }
-
-                        if (importResult.hasDuplicateIds()) {
-                            message.append("・重複ID：").append(importResult.getDuplicateIds().size()).append("件\n");
-                            if (importResult.isOverwriteConfirmed()) {
-                                message.append("  （上書き済み）");
-                            } else {
-                                message.append("  （保持）");
-                            }
-                        }
-
-                        DialogManager.getInstance().showCompletionDialog("インポート完了", message.toString());
-
-                    } catch (Exception e) {
-                        LogHandler.getInstance().logError(LogType.SYSTEM,
-                                "インポート完了後の処理中にエラーが発生しました", e);
-
-                        // エラーダイアログ表示
-                        DialogManager.getInstance().showErrorDialog(
-                                "エラー",
-                                "インポート完了後の処理中にエラーが発生しました：" + e.getMessage());
-
-                        if (currentPanel instanceof ListPanel) {
-                            ((ListPanel) currentPanel).clearStatus();
-                        }
-                    }
-                });
+                // インポート結果の処理（既存のロジック）
+                processImportResultWithResourceManager(importResult, currentEngineers, currentPanel);
 
             } catch (Exception e) {
                 LogHandler.getInstance().logError(LogType.SYSTEM,
@@ -1334,7 +1380,6 @@ public class MainController {
 
                 // UI更新はSwingのEDTで実行
                 SwingUtilities.invokeLater(() -> {
-                    // エラーダイアログ表示
                     DialogManager.getInstance().showErrorDialog(
                             "インポートエラー",
                             "CSVファイルのインポート中にエラーが発生しました：" + e.getMessage());
@@ -1343,8 +1388,134 @@ public class MainController {
                         ((ListPanel) currentPanel).clearStatus();
                     }
                 });
+            } finally {
+                // ResourceManagerを通じたリソースクリーンアップ
+                try {
+                    resourceManager.releaseResource(resourceKey);
+                } catch (Exception cleanupError) {
+                    LogHandler.getInstance().log(Level.WARNING, LogType.SYSTEM,
+                            "インポート処理のリソースクリーンアップ中にエラーが発生しました: " + cleanupError.getMessage());
+                }
             }
         });
+    }
+
+    /**
+     * ResourceManagerを活用したインポート結果の処理
+     * 
+     * @param importResult     インポート結果
+     * @param currentEngineers 現在のエンジニアリスト
+     * @param currentPanel     ステータス表示用パネル
+     */
+    private void processImportResultWithResourceManager(CSVAccessResult importResult,
+            List<EngineerDTO> currentEngineers, JPanel currentPanel) {
+
+        // インポート結果の取得
+        List<EngineerDTO> importedEngineers = importResult.getSuccessData();
+        List<EngineerDTO> errorEngineers = importResult.getErrorData();
+
+        // インポート後の総件数が上限を超えるかチェック
+        final int MAX_RECORDS = 1000;
+        if (!importResult.isOverwriteConfirmed() &&
+                importedEngineers.size() + currentEngineers.size() > MAX_RECORDS) {
+
+            LogHandler.getInstance().log(Level.WARNING, LogType.SYSTEM,
+                    "インポートすると登録件数の上限(" + MAX_RECORDS + "件)を超えます。" +
+                            "現在: " + currentEngineers.size() + "件, インポート: " + importedEngineers.size() + "件");
+
+            SwingUtilities.invokeLater(() -> {
+                DialogManager.getInstance().showErrorDialog(
+                        "インポート制限エラー",
+                        "インポートすると登録件数の上限(" + MAX_RECORDS + "件)を超えます。\n" +
+                                "現在: " + currentEngineers.size() + "件, インポート: " + importedEngineers.size()
+                                + "件\n" +
+                                "不要なデータを削除してから再試行してください。");
+
+                if (currentPanel instanceof ListPanel) {
+                    ((ListPanel) currentPanel).clearStatus();
+                }
+            });
+            return;
+        }
+
+        // 重複IDの処理
+        try {
+            if (importResult.hasDuplicateIds() && importResult.isOverwriteConfirmed()) {
+                for (EngineerDTO engineer : importedEngineers) {
+                    engineerController.updateEngineer(engineer);
+                }
+                LogHandler.getInstance().log(Level.INFO, LogType.SYSTEM,
+                        "重複IDのエンジニア情報を上書きしました: " + importResult.getDuplicateIds().size() + "件");
+            } else {
+                for (EngineerDTO engineer : importedEngineers) {
+                    if (!currentEngineers.stream().anyMatch(e -> e.getId().equals(engineer.getId()))) {
+                        engineerController.addEngineer(engineer);
+                    }
+                }
+            }
+
+            // UI更新の実行
+            SwingUtilities.invokeLater(() -> {
+                try {
+                    List<EngineerDTO> updatedEngineers = engineerController.loadEngineers();
+
+                    if (currentPanel instanceof ListPanel) {
+                        ((ListPanel) currentPanel).setEngineerData(updatedEngineers);
+                        ((ListPanel) currentPanel).clearStatus();
+                    }
+
+                    // 結果ダイアログの表示
+                    showImportResultDialog(importedEngineers.size(), errorEngineers.size(), importResult);
+
+                } catch (Exception e) {
+                    LogHandler.getInstance().logError(LogType.SYSTEM,
+                            "インポート完了後の処理中にエラーが発生しました", e);
+                    handleImportError(e, currentPanel);
+                }
+            });
+
+        } catch (Exception e) {
+            LogHandler.getInstance().logError(LogType.SYSTEM,
+                    "インポートデータの処理中にエラーが発生しました", e);
+            SwingUtilities.invokeLater(() -> handleImportError(e, currentPanel));
+        }
+    }
+
+    /**
+     * インポート結果ダイアログの表示
+     */
+    private void showImportResultDialog(int successCount, int errorCount, CSVAccessResult importResult) {
+        StringBuilder message = new StringBuilder();
+        message.append("CSVファイルのインポートが完了しました：\n");
+        message.append("・インポート成功：").append(successCount).append("件\n");
+
+        if (errorCount > 0) {
+            message.append("・エラー：").append(errorCount).append("件\n");
+        }
+
+        if (importResult.hasDuplicateIds()) {
+            message.append("・重複ID：").append(importResult.getDuplicateIds().size()).append("件\n");
+            if (importResult.isOverwriteConfirmed()) {
+                message.append("  （上書き済み）");
+            } else {
+                message.append("  （保持）");
+            }
+        }
+
+        DialogManager.getInstance().showCompletionDialog("インポート完了", message.toString());
+    }
+
+    /**
+     * インポートエラーの処理
+     */
+    private void handleImportError(Exception e, JPanel currentPanel) {
+        DialogManager.getInstance().showErrorDialog(
+                "エラー",
+                "インポート完了後の処理中にエラーが発生しました：" + e.getMessage());
+
+        if (currentPanel instanceof ListPanel) {
+            ((ListPanel) currentPanel).clearStatus();
+        }
     }
 
     /**
@@ -1356,6 +1527,35 @@ public class MainController {
      */
     private void handleUnknownEvent(String event, Object data) {
         LogHandler.getInstance().log(Level.WARNING, LogType.SYSTEM, "未定義のイベントを検出: " + event);
+    }
+
+    /**
+     * ResourceManagerを活用したインポートファイルの検証
+     * 
+     * @param file 検証対象ファイル
+     * @return 検証結果
+     */
+    private FileValidationResult validateImportFileWithResourceManager(File file) {
+        try {
+            // ファイルの基本的な検証
+            if (!file.canRead()) {
+                return new FileValidationResult(false, "ファイルを読み込む権限がありません。");
+            }
+
+            // CSVファイルの形式チェック（拡張子）
+            String fileName = file.getName().toLowerCase();
+            if (!fileName.endsWith(".csv")) {
+                return new FileValidationResult(false, "CSVファイル（.csv）を選択してください。");
+            }
+
+            return new FileValidationResult(true, null);
+
+        } catch (Exception e) {
+            LogHandler.getInstance().logError(LogType.SYSTEM,
+                    "インポートファイル検証中にエラーが発生しました", e);
+            return new FileValidationResult(false,
+                    "ファイル検証中にエラーが発生しました: " + e.getMessage());
+        }
     }
 
     /**

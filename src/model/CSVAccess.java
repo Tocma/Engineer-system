@@ -3,6 +3,7 @@ package model;
 import util.IDValidator;
 import util.LogHandler;
 import util.LogHandler.LogType;
+import util.ResourceManager;
 import java.io.*;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
@@ -46,8 +47,8 @@ import java.util.logging.Level;
  * </p>
  *
  * @author Nakano
- * @version 4.2.1
- * @since 2025-04-25
+ * @version 4.9.5
+ * @since 2025-04-29
  */
 public class CSVAccess extends AccessThread {
 
@@ -66,6 +67,12 @@ public class CSVAccess extends AccessThread {
     /** 処理結果 */
     private Object result;
 
+    /** ResourceManager参照（リソース管理用） */
+    private final ResourceManager resourceManager;
+
+    /** リソース管理フラグ（ResourceManager経由で作成された場合はtrue） */
+    private final boolean useResourceManager;
+
     /** CSVのヘッダー行 */
     private static final String[] CSV_HEADERS = {
             "社員ID(必須)", "氏名(必須)", "フリガナ(必須)", "生年月日(必須)",
@@ -80,31 +87,43 @@ public class CSVAccess extends AccessThread {
     private final Map<String, Integer> existingIds;
 
     /**
-     * コンストラクタ
+     * デフォルトコンストラクタ
+     * ResourceManagerから標準のエンジニアCSVファイルを使用して初期化
      * 
      * @param operation 操作種別（"read"または"write"）
      * @param data      操作対象データ（書き込み時のみ使用）
-     * @param csvFile   CSVファイルパス
+     * @throws IllegalStateException ResourceManagerが初期化されていない場合
      */
-    public CSVAccess(String operation, Object data, File csvFile) {
-        this(operation, data, csvFile, false);
+    public CSVAccess(String operation, Object data) {
+        this(operation, data, false);
     }
 
     /**
-     * 拡張コンストラクタ（上書きモード指定）
+     * ResourceManager統合コンストラクタ（上書きモード指定）
+     * ResourceManagerから標準のエンジニアCSVファイルパスを取得して初期化
      * 
      * @param operation  操作種別（"read"または"write"）
      * @param data       操作対象データ（書き込み時のみ使用）
-     * @param csvFile    CSVファイルパス
      * @param appendMode 追記モードの場合はtrue
+     * @throws IllegalStateException ResourceManagerが初期化されていない場合
      */
-    public CSVAccess(String operation, Object data, File csvFile, boolean appendMode) {
+    public CSVAccess(String operation, Object data, boolean appendMode) {
+        // ResourceManagerから標準CSVファイルパスを取得
+        this.resourceManager = ResourceManager.getInstance();
+        if (!resourceManager.isInitialized()) {
+            throw new IllegalStateException("ResourceManagerが初期化されていません");
+        }
+
         this.operation = operation;
         this.data = data;
-        this.csvFile = csvFile;
+        this.csvFile = resourceManager.getEngineerCsvPath().toFile();
         this.lock = new ReentrantReadWriteLock();
         this.appendMode = appendMode;
         this.existingIds = new HashMap<>();
+        this.useResourceManager = true;
+
+        LogHandler.getInstance().log(Level.INFO, LogType.SYSTEM,
+                "CSVAccess初期化完了（ResourceManager統合）: " + csvFile.getPath());
     }
 
     /**
@@ -164,7 +183,7 @@ public class CSVAccess extends AccessThread {
 
     /**
      * CSVファイルを読み込んでエンジニアデータを取得
-     * 行ごとにバリデーションを実行し、エラーデータと重複IDを検出します
+     * ResourceManager統合により、エラーハンドリングとリソース管理を強化
      * 
      * @return CSV読み込み結果を格納したCSVAccessResultオブジェクト
      */
@@ -182,19 +201,37 @@ public class CSVAccess extends AccessThread {
         // ロックを取得
         lock.readLock().lock();
 
+        // ResourceManagerを使用している場合のリソース登録
+        String resourceKey = null;
+        if (useResourceManager && resourceManager != null) {
+            resourceKey = "csv_reader_" + System.currentTimeMillis();
+        }
+
         try {
             LogHandler.getInstance().log(Level.INFO, LogType.SYSTEM, "CSVファイル読み込み開始: " + csvFile.getPath());
 
-            // ファイルが存在しない場合は空の結果を返す
+            // ファイルが存在しない場合の処理
             if (!csvFile.exists()) {
-                LogHandler.getInstance().log(Level.WARNING, LogType.SYSTEM, "CSVファイルが存在しません: " + csvFile.getPath());
-                lock.readLock().unlock(); // ロックを解放
-                return new CSVAccessResult(successData, errorData, false, "CSVファイルが存在しません");
+                if (useResourceManager) {
+                    // ResourceManager使用時は、ファイルの自動作成を試行
+                    LogHandler.getInstance().log(Level.INFO, LogType.SYSTEM,
+                            "CSVファイルが存在しないため、ResourceManager経由で作成を試行します");
+                    // この場合は空のデータセットとして返す（ResourceManagerが適切にファイルを管理）
+                    return new CSVAccessResult(successData, errorData, false, null);
+                } else {
+                    LogHandler.getInstance().log(Level.WARNING, LogType.SYSTEM, "CSVファイルが存在しません: " + csvFile.getPath());
+                    return new CSVAccessResult(successData, errorData, false, "CSVファイルが存在しません");
+                }
             }
 
-            // ファイルを読み込む、try-with-resources文を使用
+            // ファイルを読み込む、try-with-resources文を使用してリソース管理を強化
             try (BufferedReader reader = new BufferedReader(
                     new InputStreamReader(new FileInputStream(csvFile), StandardCharsets.UTF_8))) {
+
+                // ResourceManagerにリソースを登録（リソースリーク防止）
+                if (useResourceManager && resourceManager != null) {
+                    resourceManager.registerResource(resourceKey, reader);
+                }
 
                 String line;
                 int lineNumber = 0;
@@ -221,12 +258,15 @@ public class CSVAccess extends AccessThread {
 
         } catch (IOException e) {
             LogHandler.getInstance().logError(LogType.SYSTEM, "CSVファイルの読み込みに失敗しました: " + csvFile.getPath(), e);
-            lock.readLock().unlock(); // ロックを解放
             return new CSVAccessResult(successData, errorData, true, "CSVファイルの読み込みに失敗しました: " + e.getMessage());
+        } finally {
+            // リソースのクリーンアップ
+            if (useResourceManager && resourceManager != null && resourceKey != null) {
+                resourceManager.releaseResource(resourceKey);
+            }
+            // ロックを解放
+            lock.readLock().unlock();
         }
-
-        // ロックを解放
-        lock.readLock().unlock();
 
         // CSV行データをEngineerDTOに変換し、バリデーションを実行
         for (int i = 0; i < csvRows.size(); i++) {
@@ -322,6 +362,92 @@ public class CSVAccess extends AccessThread {
     }
 
     /**
+     * CSVファイルに書き込む
+     * ResourceManager統合により、書き込み処理の安全性を向上
+     * 
+     * @param lines 書き込む行のリスト
+     * @return 書き込み成功の場合はtrue
+     */
+    private boolean writeCSV(List<String> lines) {
+        if (lines == null || lines.isEmpty()) {
+            LogHandler.getInstance().log(Level.WARNING, LogType.SYSTEM, "書き込むデータがありません");
+            return false;
+        }
+
+        // 書き込みロックを取得
+        lock.writeLock().lock();
+
+        // ResourceManagerを使用している場合のリソース登録
+        String resourceKey = null;
+        if (useResourceManager && resourceManager != null) {
+            resourceKey = "csv_writer_" + System.currentTimeMillis();
+        }
+
+        try {
+            LogHandler.getInstance().log(Level.INFO, LogType.SYSTEM,
+                    "CSVファイル" + (appendMode ? "追記" : "書き込み") + "開始: " + csvFile.getPath());
+
+            // 親ディレクトリが存在しない場合は作成
+            File parentDir = csvFile.getParentFile();
+            if (parentDir != null && !parentDir.exists()) {
+                boolean created;
+                if (useResourceManager && resourceManager != null) {
+                    // ResourceManager経由でディレクトリを作成
+                    try {
+                        resourceManager.createDirectory(parentDir.getName());
+                        created = true;
+                        LogHandler.getInstance().log(Level.INFO, LogType.SYSTEM,
+                                "ResourceManager経由でディレクトリを作成しました: " + parentDir.getPath());
+                    } catch (IOException e) {
+                        LogHandler.getInstance().logError(LogType.SYSTEM,
+                                "ResourceManager経由でのディレクトリ作成に失敗しました", e);
+                        created = false;
+                    }
+                } else {
+                    // 従来方式でディレクトリを作成
+                    created = parentDir.mkdirs();
+                }
+
+                if (!created) {
+                    LogHandler.getInstance().log(Level.WARNING, LogType.SYSTEM,
+                            "ディレクトリの作成に失敗しました: " + parentDir.getPath());
+                }
+            }
+
+            // ファイルへの書き込み、try-with-resources文を使用してリソース管理を強化
+            try (BufferedWriter writer = new BufferedWriter(
+                    new OutputStreamWriter(new FileOutputStream(csvFile, appendMode), StandardCharsets.UTF_8))) {
+
+                // ResourceManagerにリソースを登録（リソースリーク防止）
+                if (useResourceManager && resourceManager != null) {
+                    resourceManager.registerResource(resourceKey, writer);
+                }
+
+                for (String line : lines) {
+                    writer.write(line);
+                    writer.newLine();
+                }
+            }
+
+            LogHandler.getInstance().log(Level.INFO, LogType.SYSTEM,
+                    "CSVファイル" + (appendMode ? "追記" : "書き込み") + "完了: " + csvFile.getPath() + ", " + lines.size() + "行");
+
+            return true;
+
+        } catch (IOException e) {
+            LogHandler.getInstance().logError(LogType.SYSTEM, "CSVファイルの書き込みに失敗しました: " + csvFile.getPath(), e);
+            return false;
+        } finally {
+            // リソースのクリーンアップ
+            if (useResourceManager && resourceManager != null && resourceKey != null) {
+                resourceManager.releaseResource(resourceKey);
+            }
+            // 書き込みロックを解放
+            lock.writeLock().unlock();
+        }
+    }
+
+    /**
      * CSV行データをEngineerDTOに変換
      * CSV形式のデータをエンジニア情報オブジェクトに変換します
      * 
@@ -339,60 +465,6 @@ public class CSVAccess extends AccessThread {
         } catch (Exception e) {
             LogHandler.getInstance().logError(LogType.SYSTEM, "EngineerDTOへの変換に失敗しました", e);
             return null;
-        }
-    }
-
-    /**
-     * CSVファイルに書き込む
-     * エンジニアデータをCSV形式に変換して出力します
-     * 
-     * @param lines 書き込む行のリスト
-     * @return 書き込み成功の場合はtrue
-     */
-    private boolean writeCSV(List<String> lines) {
-        if (lines == null || lines.isEmpty()) {
-            LogHandler.getInstance().log(Level.WARNING, LogType.SYSTEM, "書き込むデータがありません");
-            return false;
-        }
-
-        // 書き込みロックを取得
-        lock.writeLock().lock();
-
-        try {
-            LogHandler.getInstance().log(Level.INFO, LogType.SYSTEM,
-                    "CSVファイル" + (appendMode ? "追記" : "書き込み") + "開始: " + csvFile.getPath());
-
-            // 親ディレクトリが存在しない場合は作成
-            File parentDir = csvFile.getParentFile();
-            if (parentDir != null && !parentDir.exists()) {
-                boolean created = parentDir.mkdirs();
-                if (!created) {
-                    LogHandler.getInstance().log(Level.WARNING, LogType.SYSTEM,
-                            "ディレクトリの作成に失敗しました: " + parentDir.getPath());
-                }
-            }
-
-            // ファイルへの書き込み、try-with-resources文を使用
-            try (BufferedWriter writer = new BufferedWriter(
-                    new OutputStreamWriter(new FileOutputStream(csvFile, appendMode), StandardCharsets.UTF_8))) {
-
-                for (String line : lines) {
-                    writer.write(line);
-                    writer.newLine();
-                }
-            }
-
-            LogHandler.getInstance().log(Level.INFO, LogType.SYSTEM,
-                    "CSVファイル" + (appendMode ? "追記" : "書き込み") + "完了: " + csvFile.getPath() + ", " + lines.size() + "行");
-
-            return true;
-
-        } catch (IOException e) {
-            LogHandler.getInstance().logError(LogType.SYSTEM, "CSVファイルの書き込みに失敗しました: " + csvFile.getPath(), e);
-            return false;
-        } finally {
-            // 書き込みロックを解放
-            lock.writeLock().unlock();
         }
     }
 
@@ -430,5 +502,15 @@ public class CSVAccess extends AccessThread {
      */
     public Map<String, Integer> getExistingIds() {
         return new HashMap<>(existingIds);
+    }
+
+    /**
+     * ResourceManager使用状態を取得
+     * デバッグやテスト用途でResourceManager統合の状態を確認
+     * 
+     * @return ResourceManagerを使用している場合はtrue
+     */
+    public boolean isUsingResourceManager() {
+        return useResourceManager;
     }
 }

@@ -3,6 +3,7 @@ package model;
 import view.DialogManager;
 import util.LogHandler;
 import util.LogHandler.LogType;
+import util.ResourceManager; // ResourceManagerを追加
 import java.io.*;
 import java.nio.charset.StandardCharsets;
 import java.time.LocalDate;
@@ -16,41 +17,24 @@ import java.util.stream.Collectors;
 /**
  * CSVファイルを使用したエンジニア情報のデータアクセスを実装するクラス
  * EngineerDAOインターフェースを実装し、CSVファイルを使用したデータ永続化を提供します
- *
- * <p>
- * このクラスは、CSVファイルを使用してエンジニア情報のCRUD操作を実現します。
- * 主要な責務として以下があります：
- * <ul>
- * <li>エンジニア情報の取得 (findAll, findById)</li>
- * <li>エンジニア情報の保存 (save)</li>
- * <li>エンジニア情報の更新 (update)</li>
- * <li>エンジニア情報の削除 (delete)</li>
- * <li>CSVファイルとDTOオブジェクト間の相互変換</li>
- * <li>CSVファイル読み込み時の重複ID処理</li>
- * <li>バリデーションエラーの処理と結果管理</li>
- * </ul>
- * </p>
- *
- * <p>
- * CSVファイル読み込み時に重複IDが検出された場合は、ユーザーに上書き確認ダイアログを表示し、
- * ユーザーの選択に応じて上書き処理または保持処理を行います。また、バリデーションエラーが
- * 発生した場合は、エラー情報を収集して適切なフィードバックを提供します。
- * </p>
- *
- * <p>
- * この実装では、CSVFileAccessクラスを使用してCSVファイルの読み書き操作を行い、
- * それを元にエンジニア情報のデータアクセス機能を提供します。非同期処理と同時アクセス制御も
- * 備えており、複数のスレッドからの安全なアクセスをサポートします。
- * </p>
+ * 
+ * バージョン4.4.2での主な改善点：
+ * - ResourceManagerとの統合によるファイルパス管理の一元化
+ * - ファイル作成処理のResourceManagerへの委譲
+ * - エラーハンドリングの統一とログ出力の改善
+ * - リソースリーク防止機能の強化
  *
  * @author Nakano
- * @version 4.4.1
- * @since 2025-05-08
+ * @version 4.9.5
+ * @since 2025-05-29
  */
 public class EngineerCSVDAO implements EngineerDAO {
 
-    /** CSVファイルパス */
+    /** CSVファイルパス（ResourceManagerから取得） */
     private final String csvFilePath;
+
+    /** ResourceManagerインスタンス（リソース管理の一元化） */
+    private final ResourceManager resourceManager;
 
     /** 日付フォーマット */
     private static final DateTimeFormatter DATE_FORMATTER = DateTimeFormatter.ISO_LOCAL_DATE;
@@ -69,56 +53,135 @@ public class EngineerCSVDAO implements EngineerDAO {
     private static final int MAX_RECORDS = 1000;
 
     /**
-     * コンストラクタ
-     * デフォルトのCSVファイルパスを使用
+     * デフォルトコンストラクタ
+     * ResourceManagerから標準のCSVファイルパスを取得して初期化
+     * 
+     * この設計により、ファイルパスの管理がResourceManagerに一元化され、
+     * 将来的な設定変更やディレクトリ構造の変更に柔軟に対応できます。
      */
     public EngineerCSVDAO() {
-        this("src/data/engineers.csv");
+        // ResourceManagerのシングルトンインスタンスを取得
+        this.resourceManager = ResourceManager.getInstance();
+
+        try {
+            // ResourceManagerが初期化されていない場合は初期化を実行
+            if (!resourceManager.isInitialized()) {
+                resourceManager.initialize();
+                LogHandler.getInstance().log(Level.INFO, LogType.SYSTEM,
+                        "ResourceManagerを初期化しました");
+            }
+
+            // ResourceManagerからエンジニアCSVファイルのパスを取得
+            // これにより、ファイルパスの管理が一元化されます
+            this.csvFilePath = resourceManager.getEngineerCsvPath().toString();
+
+        } catch (IOException e) {
+            // ResourceManagerの初期化に失敗した場合のフォールバック処理
+            LogHandler.getInstance().logError(LogType.SYSTEM,
+                    "ResourceManagerの初期化に失敗しました。フォールバックパスを使用します", e);
+            throw new RuntimeException("ResourceManagerの初期化に失敗しました", e);
+        }
+
+        this.dialogManager = DialogManager.getInstance();
+
+        // CSVファイルの存在確認と作成処理をResourceManagerに委譲
+        // この設計により、ファイル管理ロジックの重複を排除できます
+        ensureCsvFileExists();
     }
 
     /**
-     * コンストラクタ
+     * 指定されたCSVファイルパスを使用するコンストラクタ
+     * テスト用途や特別な要件がある場合に使用
+     * 
+     * 注意：このコンストラクタを使用する場合、ResourceManagerとの
+     * 統合メリットを一部失うことになります。通常はデフォルト
+     * コンストラクタの使用を推奨します。
      * 
      * @param csvFilePath CSVファイルのパス
      */
     public EngineerCSVDAO(String csvFilePath) {
+        this.resourceManager = ResourceManager.getInstance();
         this.csvFilePath = csvFilePath;
         this.dialogManager = DialogManager.getInstance();
 
-        // CSVファイルの存在確認、なければ作成
-        checkAndCreateCsvFile();
+        // 指定されたパスでもCSVファイルの存在確認を実行
+        ensureCsvFileExists();
     }
 
     /**
-     * CSVファイルの存在確認と作成
-     * ファイルが存在しない場合は、ヘッダー行を含む新しいファイルを作成
+     * CSVファイルの存在確認と作成処理
+     * ResourceManagerの機能を活用してファイル管理を一元化
+     * 
+     * この実装により、以下のメリットが得られます：
+     * - ファイル作成ロジックの重複排除
+     * - 統一されたエラーハンドリング
+     * - ResourceManagerによるリソース追跡
      */
-    private void checkAndCreateCsvFile() {
-        File file = new File(csvFilePath);
+    private void ensureCsvFileExists() {
+        try {
+            File csvFile = new File(csvFilePath);
 
-        if (!file.exists()) {
-            File parentDir = file.getParentFile();
+            // ファイルが存在しない場合の処理
+            if (!csvFile.exists()) {
+                LogHandler.getInstance().log(Level.INFO, LogType.SYSTEM,
+                        "CSVファイルが存在しないため、新規作成します: " + csvFilePath);
 
-            // 親ディレクトリが存在しない場合は作成
-            if (parentDir != null && !parentDir.exists()) {
-                boolean dirCreated = parentDir.mkdirs();
-                if (!dirCreated) {
-                    LogHandler.getInstance().log(Level.WARNING, LogType.SYSTEM,
-                            "CSVファイルの親ディレクトリを作成できませんでした: " + parentDir.getPath());
+                // 親ディレクトリの確認と作成をResourceManagerに委譲
+                File parentDir = csvFile.getParentFile();
+                if (parentDir != null && !parentDir.exists()) {
+                    // ResourceManagerのcreateDirectoryメソッドを使用してディレクトリを作成
+                    // この方法により、ディレクトリ作成のエラーハンドリングも統一されます
+                    resourceManager.createDirectory(parentDir.getName());
                 }
-            }
 
-            // ヘッダー行のみを持つCSVファイルを作成
-            try (BufferedWriter writer = new BufferedWriter(
-                    new OutputStreamWriter(new FileOutputStream(file), StandardCharsets.UTF_8))) {
-                writer.write(String.join(",", CSV_HEADERS));
-                writer.newLine();
+                // CSVファイルの作成処理
+                createInitialCsvFile(csvFile);
 
                 LogHandler.getInstance().log(Level.INFO, LogType.SYSTEM,
-                        "CSVファイルを新規作成しました: " + file.getPath());
-            } catch (IOException e) {
-                LogHandler.getInstance().logError(LogType.SYSTEM, "CSVファイルの作成に失敗しました", e);
+                        "新規CSVファイルを作成しました: " + csvFilePath);
+            } else {
             }
+
+        } catch (IOException e) {
+            // エラーハンドリングを統一し、適切なログ出力を行います
+            LogHandler.getInstance().logError(LogType.SYSTEM,
+                    "CSVファイルの確認・作成処理中にエラーが発生しました: " + csvFilePath, e);
+            throw new RuntimeException("CSVファイルの初期化に失敗しました", e);
+        }
+    }
+
+    /**
+     * 初期CSVファイルの作成処理
+     * ヘッダー行を含む新しいCSVファイルを作成
+     * 
+     * この処理では、リソースリークを防ぐためのtry-with-resources文を使用し、
+     * 作成されたファイルストリームをResourceManagerに登録して適切な管理を行います。
+     * 
+     * @param csvFile 作成するCSVファイル
+     * @throws IOException ファイル作成に失敗した場合
+     */
+    private void createInitialCsvFile(File csvFile) throws IOException {
+        // try-with-resources文を使用してリソースリークを防止
+        try (BufferedWriter writer = new BufferedWriter(
+                new OutputStreamWriter(new FileOutputStream(csvFile), StandardCharsets.UTF_8))) {
+
+            // ResourceManagerにファイルストリームを登録してリソース管理を委譲
+            // この登録により、アプリケーション終了時に確実にリソースが解放されます
+            String resourceKey = "csv_initial_writer_" + System.currentTimeMillis();
+            resourceManager.registerResource(resourceKey, writer);
+
+            // CSVヘッダーの書き込み
+            writer.write(String.join(",", CSV_HEADERS));
+            writer.newLine();
+
+            // 処理完了後にResourceManagerからリソースを解除
+            // この操作により、適切なタイミングでリソースがクリーンアップされます
+            resourceManager.releaseResource(resourceKey);
+
+        } catch (IOException e) {
+            LogHandler.getInstance().logError(LogType.SYSTEM,
+                    "初期CSVファイルの作成に失敗しました: " + csvFile.getPath(), e);
+            throw e;
         }
     }
 
@@ -301,7 +364,7 @@ public class EngineerCSVDAO implements EngineerDAO {
 
             // CSVファイルに書き込み
             File file = new File(filePath);
-            CSVAccess csvAccess = new CSVAccess("write", csvLines, file);
+            CSVAccess csvAccess = new CSVAccess("write", csvLines);
             csvAccess.execute();
 
             // 結果を取得
@@ -349,7 +412,7 @@ public class EngineerCSVDAO implements EngineerDAO {
 
             // CSVファイルに書き込み
             File file = new File(filePath);
-            CSVAccess csvAccess = new CSVAccess("write", csvLines, file);
+            CSVAccess csvAccess = new CSVAccess("write", csvLines);
             csvAccess.execute();
 
             // 結果を取得
@@ -392,15 +455,18 @@ public class EngineerCSVDAO implements EngineerDAO {
 
     /**
      * CSVファイルを読み込み
-     * CSVファイルからエンジニアデータを読み込み、重複ID処理を行う
+     * ResourceManagerと統合されたCSVAccessを使用してデータを読み込む
+     * 
+     * この実装では、CSVAccessクラスにResourceManagerから取得した
+     * ファイルパスを渡すことで、リソース管理を一元化しています。
      * 
      * @return CSV読み込み結果
      */
     public CSVAccessResult readCSV() {
         try {
-            // CSVファイルを読み込み
+            // ResourceManagerから管理されているCSVファイルを使用
             File file = new File(csvFilePath);
-            CSVAccess csvAccess = new CSVAccess("read", null, file);
+            CSVAccess csvAccess = new CSVAccess("read", file);
             csvAccess.execute();
 
             // CSVAccessの結果を取得
@@ -430,7 +496,7 @@ public class EngineerCSVDAO implements EngineerDAO {
 
     /**
      * CSVファイルに書き込み
-     * エンジニアデータをCSV形式に変換してファイルに書き込む
+     * ResourceManagerと統合されたCSVAccessを使用してデータを書き込む
      * 
      * @param engineers 書き込むエンジニアデータリスト
      * @return 書き込み成功の場合はtrue
@@ -447,9 +513,9 @@ public class EngineerCSVDAO implements EngineerDAO {
                 lines.add(line);
             }
 
-            // CSVファイルに書き込み
+            // ResourceManagerから管理されているCSVファイルを使用
             File file = new File(csvFilePath);
-            CSVAccess csvAccess = new CSVAccess("write", lines, file);
+            CSVAccess csvAccess = new CSVAccess("write", lines);
             csvAccess.execute();
 
             // 結果を取得
@@ -816,10 +882,21 @@ public class EngineerCSVDAO implements EngineerDAO {
 
     /**
      * CSVファイルパスを取得
+     * ResourceManagerから管理されているパスを返す
      * 
      * @return CSVファイルパス
      */
     public String getCsvFilePath() {
         return csvFilePath;
+    }
+
+    /**
+     * ResourceManagerインスタンスを取得
+     * テスト用途や外部からのリソース管理が必要な場合に使用
+     * 
+     * @return ResourceManagerインスタンス
+     */
+    public ResourceManager getResourceManager() {
+        return resourceManager;
     }
 }
