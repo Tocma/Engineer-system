@@ -101,14 +101,8 @@ public abstract class AbstractEngineerPanel extends JPanel {
     /** パネルの初期化済みフラグ */
     protected boolean initialized;
 
-    /** 入力フォームのセクション間のマージン */
-    protected static final int SECTION_MARGIN = 15;
-
     /** ラベルとフィールド間のマージン */
     protected static final int LABEL_FIELD_MARGIN = 5;
-
-    /** フィールドとエラーメッセージ間のマージン */
-    protected static final int FIELD_ERROR_MARGIN = 2;
 
     /** 必須項目を表すマーク */
     protected static final String REQUIRED_MARK = " *";
@@ -463,33 +457,6 @@ public abstract class AbstractEngineerPanel extends JPanel {
         rowPanel.add(topPanel);
         rowPanel.add(Box.createVerticalStrut(LABEL_FIELD_MARGIN));
         rowPanel.add(fieldPanel);
-
-        return rowPanel;
-    }
-
-    /**
-     * フォーム行パネルを作成（旧メソッド - 後方互換性用）
-     * ラベルとフィールドのみを配置する単純な行を作成
-     *
-     * @param label ラベルコンポーネント
-     * @param field フィールドコンポーネント
-     * @return 行パネル
-     * @deprecated 代わりに {@link #createFormRow(JLabel, Component, String)} を使用してください
-     */
-    @Deprecated
-    protected JPanel createFormRow(JLabel label, Component field) {
-        JPanel rowPanel = new JPanel();
-        rowPanel.setLayout(new BorderLayout(LABEL_FIELD_MARGIN, 0));
-        rowPanel.setBackground(Color.WHITE);
-
-        // ラベルを固定幅で配置
-        JPanel labelPanel = new JPanel(new FlowLayout(FlowLayout.LEFT, 0, 0));
-        labelPanel.setBackground(Color.WHITE);
-        labelPanel.setPreferredSize(new Dimension(100, 25));
-        labelPanel.add(label);
-
-        rowPanel.add(labelPanel, BorderLayout.WEST);
-        rowPanel.add(field, BorderLayout.CENTER);
 
         return rowPanel;
     }
