@@ -14,8 +14,8 @@ import java.util.logging.*;
  * 自動初期化機能と強化されたエラーハンドリング、詳細な呼び出し元情報を提供
  *
  * @author Nakano
- * @version 4.9.0
- * @since 2025-05-28
+ * @version 4.9.7
+ * @since 2025-05-29
  */
 public class LogHandler {
 
@@ -247,12 +247,12 @@ public class LogHandler {
          * @return フォーマット済み例外文字列
          */
         private String formatException(Throwable thrown) {
-            StringBuilder sb = new StringBuilder();
-            sb.append(thrown.toString());
+            StringBuilder exceptionBuilder = new StringBuilder();
+            exceptionBuilder.append(thrown.toString());
             for (StackTraceElement element : thrown.getStackTrace()) {
-                sb.append("\n\tat ").append(element.toString());
+                exceptionBuilder.append("\n\tat ").append(element.toString());
             }
-            return sb.toString();
+            return exceptionBuilder.toString();
         }
     }
 

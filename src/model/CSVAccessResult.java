@@ -14,8 +14,8 @@ import java.util.List;
  * </p>
  *
  * @author Nakano
- * @version 4.0.0
- * @since 2025-04-15
+ * @version 4.9.7
+ * @since 2025-04-29
  */
 public class CSVAccessResult {
 
@@ -236,17 +236,17 @@ public class CSVAccessResult {
      */
     @Override
     public String toString() {
-        StringBuilder sb = new StringBuilder();
-        sb.append("CSVAccessResult{");
-        sb.append("successCount=").append(getSuccessCount());
-        sb.append(", errorCount=").append(getErrorCount());
-        sb.append(", duplicateIdCount=").append(getDuplicateIdCount());
-        sb.append(", fatalError=").append(fatalError);
+        StringBuilder resultBuilder = new StringBuilder();
+        resultBuilder.append("CSVAccessResult{");
+        resultBuilder.append("successCount=").append(getSuccessCount());
+        resultBuilder.append(", errorCount=").append(getErrorCount());
+        resultBuilder.append(", duplicateIdCount=").append(getDuplicateIdCount());
+        resultBuilder.append(", fatalError=").append(fatalError);
         if (errorMessage != null) {
-            sb.append(", errorMessage='").append(errorMessage).append('\'');
+            resultBuilder.append(", errorMessage='").append(errorMessage).append('\'');
         }
-        sb.append(", overwriteConfirmed=").append(overwriteConfirmed);
-        sb.append('}');
-        return sb.toString();
+        resultBuilder.append(", overwriteConfirmed=").append(overwriteConfirmed);
+        resultBuilder.append('}');
+        return resultBuilder.toString();
     }
 }

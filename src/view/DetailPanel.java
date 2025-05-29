@@ -58,7 +58,7 @@ import java.util.logging.Level;
  * </p>
  *
  * @author Nakano
- * @version 4.9.6
+ * @version 4.9.7
  * @since 2025-05-29
  */
 public class DetailPanel extends AbstractEngineerPanel {
@@ -678,11 +678,11 @@ public class DetailPanel extends AbstractEngineerPanel {
 
         // nameFieldのリスナー削除
         if (nameField != null) {
-            Document doc = nameField.getDocument();
-            Document newDoc = new PlainDocument();
+            Document currentDocument = nameField.getDocument();
+            Document cleanDocument = new PlainDocument();
             try {
-                newDoc.insertString(0, doc.getText(0, doc.getLength()), null);
-                nameField.setDocument(newDoc);
+                cleanDocument.insertString(0, currentDocument.getText(0, currentDocument.getLength()), null);
+                nameField.setDocument(cleanDocument);
             } catch (BadLocationException e) {
                 LogHandler.getInstance().logError(LogType.UI, "リスナー削除中にエラーが発生しました", e);
             }
@@ -690,11 +690,11 @@ public class DetailPanel extends AbstractEngineerPanel {
 
         // nameKanaFieldのリスナー削除
         if (nameKanaField != null) {
-            Document doc = nameKanaField.getDocument();
-            Document newDoc = new PlainDocument();
+            Document currentDocument = nameKanaField.getDocument();
+            Document cleanDocument = new PlainDocument();
             try {
-                newDoc.insertString(0, doc.getText(0, doc.getLength()), null);
-                nameKanaField.setDocument(newDoc);
+                cleanDocument.insertString(0, currentDocument.getText(0, currentDocument.getLength()), null);
+                nameKanaField.setDocument(cleanDocument);
             } catch (BadLocationException e) {
                 LogHandler.getInstance().logError(LogType.UI, "リスナー削除中にエラーが発生しました", e);
             }
@@ -702,11 +702,11 @@ public class DetailPanel extends AbstractEngineerPanel {
 
         // careerHistoryAreaのリスナー削除
         if (careerHistoryArea != null) {
-            Document doc = careerHistoryArea.getDocument();
-            Document newDoc = new PlainDocument();
+            Document currentDocument = careerHistoryArea.getDocument();
+            Document cleanDocument = new PlainDocument();
             try {
-                newDoc.insertString(0, doc.getText(0, doc.getLength()), null);
-                careerHistoryArea.setDocument(newDoc);
+                cleanDocument.insertString(0, currentDocument.getText(0, currentDocument.getLength()), null);
+                careerHistoryArea.setDocument(cleanDocument);
             } catch (BadLocationException e) {
                 LogHandler.getInstance().logError(LogType.UI, "リスナー削除中にエラーが発生しました", e);
             }
@@ -714,11 +714,11 @@ public class DetailPanel extends AbstractEngineerPanel {
 
         // trainingHistoryAreaのリスナー削除
         if (trainingHistoryArea != null) {
-            Document doc = trainingHistoryArea.getDocument();
-            Document newDoc = new PlainDocument();
+            Document currentDocument = trainingHistoryArea.getDocument();
+            Document cleanDocument = new PlainDocument();
             try {
-                newDoc.insertString(0, doc.getText(0, doc.getLength()), null);
-                trainingHistoryArea.setDocument(newDoc);
+                cleanDocument.insertString(0, currentDocument.getText(0, currentDocument.getLength()), null);
+                trainingHistoryArea.setDocument(cleanDocument);
             } catch (BadLocationException e) {
                 LogHandler.getInstance().logError(LogType.UI, "リスナー削除中にエラーが発生しました", e);
             }
@@ -726,11 +726,11 @@ public class DetailPanel extends AbstractEngineerPanel {
 
         // noteAreaのリスナー削除
         if (noteArea != null) {
-            Document doc = noteArea.getDocument();
-            Document newDoc = new PlainDocument();
+            Document currentDocument = noteArea.getDocument();
+            Document cleanDocument = new PlainDocument();
             try {
-                newDoc.insertString(0, doc.getText(0, doc.getLength()), null);
-                noteArea.setDocument(newDoc);
+                cleanDocument.insertString(0, currentDocument.getText(0, currentDocument.getLength()), null);
+                noteArea.setDocument(cleanDocument);
             } catch (BadLocationException e) {
                 LogHandler.getInstance().logError(LogType.UI, "リスナー削除中にエラーが発生しました", e);
             }

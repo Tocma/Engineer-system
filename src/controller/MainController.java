@@ -74,7 +74,7 @@ import javax.swing.filechooser.FileNameExtensionFilter;
  * </p>
  *
  * @author Nakano
- * @version 4.9.5
+ * @version 4.9.7
  * @since 2025-05-29
  */
 public class MainController {
@@ -344,8 +344,8 @@ public class MainController {
      */
     public ListPanel getListPanel() {
         JPanel panel = screenController.getPanelByType("LIST");
-        if (panel instanceof ListPanel lp) {
-            return lp;
+        if (panel instanceof ListPanel listPanel) {
+            return listPanel;
         }
         return null;
     }
@@ -753,8 +753,8 @@ public class MainController {
         // ★ListPanelから削除中フラグを取得（この行だけ追加）
         final boolean isCurrentlyDeleting;
         JPanel listPanelRaw = screenController.getPanelByType("LIST");
-        if (listPanelRaw instanceof ListPanel lp) {
-            isCurrentlyDeleting = lp.isDeleting();
+        if (listPanelRaw instanceof ListPanel listPanel) {
+            isCurrentlyDeleting = listPanel.isDeleting();
         } else {
             isCurrentlyDeleting = false;
         }
@@ -766,12 +766,12 @@ public class MainController {
                 // 詳細画面に遷移し、完了後にエンジニア情報を設定するコールバックを指定
                 screenController.showPanelWithCallback("DETAIL", () -> {
                     JPanel currentPanel = screenController.getCurrentPanel();
-                    if (currentPanel instanceof DetailPanel dp) {
+                    if (currentPanel instanceof DetailPanel detailPanel) {
                         // エンジニア情報を設定
-                        dp.setEngineerData(engineer);
+                        detailPanel.setEngineerData(engineer);
 
                         // ★更新ボタンを削除中なら無効化（この行だけ追加）
-                        dp.setUpdateButtonEnabled(!isCurrentlyDeleting);
+                        detailPanel.setUpdateButtonEnabled(!isCurrentlyDeleting);
 
                         LogHandler.getInstance().log(Level.INFO, LogType.SYSTEM,
                                 "エンジニア詳細を表示: ID=" + engineerId);

@@ -58,9 +58,9 @@ import java.util.stream.Collectors;
  * </pre>
  * </p>
  *
- * @author Bando
- * @version 4.1.0
- * @since 2025-05-07
+ * @author Nakano
+ * @version 4.9.7
+ * @since 2025-05-29
  */
 public class DialogManager {
 
@@ -225,15 +225,15 @@ public class DialogManager {
      */
     public boolean showScrollableListDialog(String title, String headerMessage, List<String> lines) {
         try {
-            StringBuilder sb = new StringBuilder();
+            StringBuilder messageBuilder = new StringBuilder();
             if (headerMessage != null && !headerMessage.isEmpty()) {
-                sb.append(headerMessage).append("\n\n");
+                messageBuilder.append(headerMessage).append("\n\n");
             }
             for (String line : lines) {
-                sb.append(line).append("\n");
+                messageBuilder.append(line).append("\n");
             }
 
-            JTextArea textArea = new JTextArea(sb.toString());
+            JTextArea textArea = new JTextArea(messageBuilder.toString());
             textArea.setEditable(false);
             textArea.setLineWrap(true);
             textArea.setWrapStyleWord(true);

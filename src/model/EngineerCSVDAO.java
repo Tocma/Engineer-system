@@ -25,7 +25,7 @@ import java.util.stream.Collectors;
  * - リソースリーク防止機能の強化
  *
  * @author Nakano
- * @version 4.9.5
+ * @version 4.9.7
  * @since 2025-05-29
  */
 public class EngineerCSVDAO implements EngineerDAO {
@@ -283,9 +283,9 @@ public class EngineerCSVDAO implements EngineerDAO {
             boolean updated = false;
 
             // 更新対象のエンジニアを探して更新
-            for (int i = 0; i < engineers.size(); i++) {
-                if (engineer.getId().equals(engineers.get(i).getId())) {
-                    engineers.set(i, engineer);
+            for (int engineerIndex = 0; engineerIndex < engineers.size(); engineerIndex++) {
+                if (engineer.getId().equals(engineers.get(engineerIndex).getId())) {
+                    engineers.set(engineerIndex, engineer);
                     updated = true;
                     break;
                 }
@@ -576,79 +576,79 @@ public class EngineerCSVDAO implements EngineerDAO {
      * @return CSV形式の文字列
      */
     public String convertToCSV(EngineerDTO engineer) {
-        StringBuilder sb = new StringBuilder();
+        StringBuilder csvLineBuilder = new StringBuilder();
 
         // id
-        sb.append(nullToEmpty(engineer.getId())).append(",");
+        csvLineBuilder.append(nullToEmpty(engineer.getId())).append(",");
 
         // name
-        sb.append(nullToEmpty(engineer.getName())).append(",");
+        csvLineBuilder.append(nullToEmpty(engineer.getName())).append(",");
 
         // nameKana
-        sb.append(nullToEmpty(engineer.getNameKana())).append(",");
+        csvLineBuilder.append(nullToEmpty(engineer.getNameKana())).append(",");
 
         // birthDate
         if (engineer.getBirthDate() != null) {
-            sb.append(engineer.getBirthDate().format(DATE_FORMATTER));
+            csvLineBuilder.append(engineer.getBirthDate().format(DATE_FORMATTER));
         }
-        sb.append(",");
+        csvLineBuilder.append(",");
 
         // joinDate
         if (engineer.getJoinDate() != null) {
-            sb.append(engineer.getJoinDate().format(DATE_FORMATTER));
+            csvLineBuilder.append(engineer.getJoinDate().format(DATE_FORMATTER));
         }
-        sb.append(",");
+        csvLineBuilder.append(",");
 
         // career
-        sb.append(engineer.getCareer()).append(",");
+        csvLineBuilder.append(engineer.getCareer()).append(",");
 
         // programmingLanguages
         if (engineer.getProgrammingLanguages() != null && !engineer.getProgrammingLanguages().isEmpty()) {
-            sb.append(String.join(";", engineer.getProgrammingLanguages()));
+            csvLineBuilder.append(String.join(";", engineer.getProgrammingLanguages()));
         }
-        sb.append(",");
+        csvLineBuilder.append(",");
 
         // careerHistory
-        sb.append(nullToEmpty(engineer.getCareerHistory())).append(",");
+        csvLineBuilder.append(nullToEmpty(engineer.getCareerHistory())).append(",");
 
         // trainingHistory
-        sb.append(nullToEmpty(engineer.getTrainingHistory())).append(",");
+        csvLineBuilder.append(nullToEmpty(engineer.getTrainingHistory())).append(",");
 
         // technicalSkill
         if (engineer.getTechnicalSkill() != null) {
-            sb.append(engineer.getTechnicalSkill());
+            csvLineBuilder.append(engineer.getTechnicalSkill());
         }
-        sb.append(",");
+        csvLineBuilder.append(",");
 
         // learningAttitude
         if (engineer.getLearningAttitude() != null) {
-            sb.append(engineer.getLearningAttitude());
+            csvLineBuilder.append(engineer.getLearningAttitude());
         }
-        sb.append(",");
+        csvLineBuilder.append(",");
 
         // communicationSkill
         if (engineer.getCommunicationSkill() != null) {
-            sb.append(engineer.getCommunicationSkill());
+            csvLineBuilder.append(engineer.getCommunicationSkill());
         }
-        sb.append(",");
+        csvLineBuilder.append(",");
 
         // leadership
         if (engineer.getLeadership() != null) {
-            sb.append(engineer.getLeadership());
+            csvLineBuilder.append(engineer.getLeadership());
         }
-        sb.append(",");
+        csvLineBuilder.append(",");
 
         // note
-        sb.append(nullToEmpty(engineer.getNote())).append(",");
+        csvLineBuilder.append(nullToEmpty(engineer.getNote())).append(",");
 
         // registeredDate
         if (engineer.getRegisteredDate() != null) {
-            sb.append(engineer.getRegisteredDate().format(DATE_FORMATTER));
+            csvLineBuilder.append(engineer.getRegisteredDate().format(DATE_FORMATTER));
         } else {
-            sb.append(LocalDate.now().format(DATE_FORMATTER));
+            csvLineBuilder.append(LocalDate.now().format(DATE_FORMATTER));
         }
 
-        return sb.toString();
+        return csvLineBuilder.toString();
     }
 
     /**

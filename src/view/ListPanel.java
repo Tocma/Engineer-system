@@ -28,7 +28,7 @@ import java.awt.event.InputEvent;
  * ページング、ソート、検索、追加、取込、削除機能
  *
  * @author Nakano
- * @version 4.9.6
+ * @version 4.9.7
  * @since 2025-05-29
  */
 public class ListPanel extends JPanel {
@@ -224,8 +224,8 @@ public class ListPanel extends JPanel {
         years[0] = "";
         DecimalFormat df = new DecimalFormat("0");
         int startYear = 1940; // 1940年から2025年
-        for (int i = 1; i < years.length; i++) {
-            years[i] = df.format(startYear + (i - 1));
+        for (int yearIndex = 1; yearIndex < years.length; yearIndex++) {
+            years[yearIndex] = df.format(startYear + (yearIndex - 1));
         }
         return years;
     }
@@ -239,8 +239,8 @@ public class ListPanel extends JPanel {
         String[] months = new String[13]; // 空白 + 1～12の月を追加
         months[0] = ""; // 最初の選択肢は空白
         DecimalFormat df = new DecimalFormat("0"); // 小数点なしで整数部分のみを表示
-        for (int i = 1; i <= 12; i++) {
-            months[i] = df.format(i); // 1, 2, ..., 12
+        for (int monthValue = 1; monthValue <= 12; monthValue++) {
+            months[monthValue] = df.format(monthValue); // 1, 2, ..., 12
         }
         return months;
     }
