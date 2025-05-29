@@ -396,41 +396,22 @@ public class EngineerCSVDAO implements EngineerDAO {
      * @return エクスポート成功の場合はtrue
      */
     public boolean exportCSV(List<EngineerDTO> engineerList, String filePath) {
-        if (engineerList == null || engineerList.isEmpty()) {
-            return false;
-        }
+        try (BufferedWriter writer = new BufferedWriter(
+                new OutputStreamWriter(new FileOutputStream(filePath), StandardCharsets.UTF_8))) {
 
-        try {
-            // ヘッダー行の追加
-            List<String> csvLines = new ArrayList<>();
-            csvLines.add(String.join(",", CSV_HEADERS));
+            // ヘッダー書き込み
+            writer.write(String.join(",", CSV_HEADERS));
+            writer.newLine();
 
-            // エンジニアリストをCSV形式に変換
+            // データ書き込み
             for (EngineerDTO engineer : engineerList) {
-                csvLines.add(convertToCSV(engineer));
+                writer.write(convertToCSV(engineer));
+                writer.newLine();
             }
 
-            // CSVファイルに書き込み
-            File file = new File(filePath);
-            CSVAccess csvAccess = new CSVAccess("write", csvLines);
-            csvAccess.execute();
-
-            // 結果を取得
-            Object result = csvAccess.getResult();
-            boolean success = result instanceof Boolean && (Boolean) result;
-
-            if (success) {
-                LogHandler.getInstance().log(Level.INFO, LogType.SYSTEM,
-                        "エンジニアデータをCSVファイルに出力しました: " + filePath);
-            } else {
-                LogHandler.getInstance().log(Level.WARNING, LogType.SYSTEM,
-                        "エンジニアデータのCSV出力に失敗しました: " + filePath);
-            }
-
-            return success;
-
-        } catch (Exception e) {
-            LogHandler.getInstance().logError(LogType.SYSTEM, "エンジニアデータのCSV出力中にエラーが発生しました", e);
+            return true;
+        } catch (IOException e) {
+            LogHandler.getInstance().logError(LogType.SYSTEM, "CSV出力エラー", e);
             return false;
         }
     }
