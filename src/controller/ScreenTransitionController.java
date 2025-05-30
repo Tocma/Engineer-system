@@ -8,11 +8,7 @@ import view.DetailPanel;
 import view.MainFrame;
 import javax.swing.JPanel;
 import javax.swing.SwingUtilities;
-
-import model.EngineerDTO;
-
 import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.logging.Level;

@@ -16,10 +16,12 @@ import java.nio.file.Path;
 import java.time.LocalDate;
 import java.util.List;
 import java.util.Set;
+import java.util.ArrayList;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.logging.Level;
+import java.util.stream.Collectors;
 import javax.swing.JFileChooser;
 import javax.swing.JOptionPane;
 import javax.swing.JPanel;
@@ -28,7 +30,7 @@ import javax.swing.filechooser.FileNameExtensionFilter;
 
 /**
  * アプリケーションのメインコントローラー
- * 画面遷移、イベント処理、スレッド管理を統括するクラス
+ * 画面遷移、イベント処理、スレッド管理、エンジニア検索機能を統括するクラス
  *
  * <p>
  * このクラスは、エンジニア人材管理システムのMVCアーキテクチャにおける中心的なコントローラーとして機能し、
@@ -37,10 +39,21 @@ import javax.swing.filechooser.FileNameExtensionFilter;
  * </p>
  *
  * <p>
+ * バージョン4.12.8での主な改善点：
+ * <ul>
+ * <li>エンジニア検索機能の責任分離とMainControllerへの統合</li>
+ * <li>検索条件の検証ロジックの一元化</li>
+ * <li>検索結果処理の非同期化対応</li>
+ * <li>MVCパターンに準拠した適切な責任分散</li>
+ * </ul>
+ * </p>
+ *
+ * <p>
  * 主な責務：
  * <ul>
  * <li>画面遷移の制御とビュー間の調整</li>
  * <li>ユーザーインターフェースイベントの処理</li>
+ * <li>エンジニア検索機能のビジネスロジック制御</li>
  * <li>非同期処理とスレッド管理</li>
  * <li>アプリケーション終了処理の調整</li>
  * <li>モデル操作の統合管理</li>
@@ -49,33 +62,9 @@ import javax.swing.filechooser.FileNameExtensionFilter;
  * </ul>
  * </p>
  *
- * <p>
- * このコントローラーは「コマンドパターン」に近い設計で実装されており、
- * イベント名と関連データをパラメーターとして受け取り、適切なハンドラーメソッドに
- * ディスパッチする仕組みを持っています。これにより、新しいイベント処理の追加が容易になり、
- * コードの保守性と拡張性が向上しています。
- * </p>
- *
- * <p>
- * スレッド管理機能により、長時間実行される処理（データの読み込み/保存など）を
- * 非同期的に実行し、UIのブロッキングを防止します。また、アプリケーション終了時には
- * すべての実行中スレッドを適切に終了させ、データの整合性を保ちつつ安全な終了を実現します。
- * </p>
- *
- * <p>
- * このコントローラーは以下のイベントを処理します：
- * <ul>
- * <li>REFRESH_VIEW - 現在の画面を更新</li>
- * <li>CHANGE_PANEL - 指定された画面に遷移</li>
- * <li>SAVE_DATA - エンジニア情報の保存</li>
- * <li>LOAD_DATA - エンジニア情報の読み込み</li>
- * <li>SHUTDOWN - アプリケーション終了</li>
- * </ul>
- * </p>
- *
  * @author Nakano
- * @version 4.9.7
- * @since 2025-05-29
+ * @version 4.12.8
+ * @since 2025-05-30
  */
 public class MainController {
 
@@ -107,6 +96,112 @@ public class MainController {
 
     // 最大レコード数の定数
     private static final int MAX_RECORDS = 1000;
+
+    /**
+     * エンジニア検索条件を保持するクラス
+     * 検索フォームから入力された各種条件を格納し、検索処理に使用します
+     */
+    public static class SearchCriteria {
+        private final String id;
+        private final String name;
+        private final String year;
+        private final String month;
+        private final String day;
+        private final String career;
+
+        /**
+         * 検索条件を初期化するコンストラクタ
+         * 
+         * @param id     社員ID検索条件
+         * @param name   氏名検索条件
+         * @param year   生年月日（年）検索条件
+         * @param month  生年月日（月）検索条件
+         * @param day    生年月日（日）検索条件
+         * @param career エンジニア歴検索条件
+         */
+        public SearchCriteria(String id, String name, String year, String month, String day, String career) {
+            this.id = id;
+            this.name = name;
+            this.year = year;
+            this.month = month;
+            this.day = day;
+            this.career = career;
+        }
+
+        /**
+         * 生年月日に関する検索条件が設定されているかを判定
+         * 
+         * @return 年、月、日のいずれかが設定されている場合はtrue
+         */
+        public boolean hasDateCriteria() {
+            return (year != null && !year.isEmpty()) ||
+                    (month != null && !month.isEmpty()) ||
+                    (day != null && !day.isEmpty());
+        }
+
+        // ゲッターメソッド群
+        public String getId() {
+            return id;
+        }
+
+        public String getName() {
+            return name;
+        }
+
+        public String getYear() {
+            return year;
+        }
+
+        public String getMonth() {
+            return month;
+        }
+
+        public String getDay() {
+            return day;
+        }
+
+        public String getCareer() {
+            return career;
+        }
+    }
+
+    /**
+     * エンジニア検索結果を保持するクラス
+     * 検索処理の結果とエラー情報を格納し、呼び出し元に結果を返却します
+     */
+    public static class SearchResult {
+        private final List<EngineerDTO> results;
+        private final List<String> errors;
+
+        /**
+         * 検索結果を初期化するコンストラクタ
+         * 
+         * @param results 検索にヒットしたエンジニアのリスト
+         * @param errors  検索処理中に発生したエラーメッセージのリスト
+         */
+        public SearchResult(List<EngineerDTO> results, List<String> errors) {
+            this.results = results != null ? results : new ArrayList<>();
+            this.errors = errors != null ? errors : new ArrayList<>();
+        }
+
+        /**
+         * 検索処理でエラーが発生したかを判定
+         * 
+         * @return エラーが存在する場合はtrue
+         */
+        public boolean hasErrors() {
+            return !errors.isEmpty();
+        }
+
+        // ゲッターメソッド群
+        public List<EngineerDTO> getResults() {
+            return results;
+        }
+
+        public List<String> getErrors() {
+            return errors;
+        }
+    }
 
     /**
      * コンストラクタ
@@ -164,11 +259,195 @@ public class MainController {
     }
 
     /**
+     * エンジニア検索処理
+     * 検索条件に基づいてエンジニア情報を検索し、結果を返却します
+     * 
+     * @param searchCriteria 検索条件オブジェクト
+     * @return 検索結果オブジェクト（結果リストとエラー情報を含む）
+     */
+    public SearchResult searchEngineers(SearchCriteria searchCriteria) {
+        try {
+            LogHandler.getInstance().log(Level.INFO, LogType.SYSTEM,
+                    "エンジニア検索処理を開始します");
+
+            // 入力検証の実行
+            List<String> validationErrors = validateSearchCriteria(searchCriteria);
+            if (!validationErrors.isEmpty()) {
+                LogHandler.getInstance().log(Level.WARNING, LogType.SYSTEM,
+                        "検索条件の検証でエラーが発生しました: " + String.join(", ", validationErrors));
+                return new SearchResult(new ArrayList<>(), validationErrors);
+            }
+
+            // データ取得と検索実行
+            List<EngineerDTO> allEngineers = engineerController.loadEngineers();
+            List<EngineerDTO> filteredEngineers = filterEngineersByCriteria(allEngineers, searchCriteria);
+
+            LogHandler.getInstance().log(Level.INFO, LogType.SYSTEM,
+                    String.format("検索実行完了: %d件のデータがヒット（全%d件中）",
+                            filteredEngineers.size(), allEngineers.size()));
+
+            return new SearchResult(filteredEngineers, new ArrayList<>());
+
+        } catch (Exception e) {
+            LogHandler.getInstance().logError(LogType.SYSTEM, "検索処理中にエラーが発生しました", e);
+            return new SearchResult(new ArrayList<>(), List.of("検索処理中にエラーが発生しました: " + e.getMessage()));
+        }
+    }
+
+    /**
+     * 検索条件の妥当性検証
+     * 各検索条件フィールドに対して適切な検証を実行します
+     * 
+     * @param criteria 検証対象の検索条件
+     * @return 検証エラーメッセージのリスト（エラーがない場合は空リスト）
+     */
+    private List<String> validateSearchCriteria(SearchCriteria criteria) {
+        List<String> errors = new ArrayList<>();
+
+        // 社員ID検証
+        if (criteria.getId() != null && !criteria.getId().trim().isEmpty()) {
+            String id = criteria.getId().trim();
+            // 全角数字を半角に変換してから検証
+            String convertedId = id
+                    .replace("0", "0")
+                    .replace("1", "1")
+                    .replace("2", "2")
+                    .replace("3", "3")
+                    .replace("4", "4")
+                    .replace("5", "5")
+                    .replace("6", "6")
+                    .replace("7", "7")
+                    .replace("8", "8")
+                    .replace("9", "9");
+            if (!convertedId.matches("^[0-9]{1,5}$")) {
+                errors.add("社員IDは5桁以内の数字で入力してください");
+            }
+        }
+
+        // 氏名検証
+        if (criteria.getName() != null && !criteria.getName().trim().isEmpty()) {
+            String name = criteria.getName().trim().replaceAll("\\s{2,}", " ");
+            if (name.length() > 20) {
+                errors.add("氏名は20文字以内で入力してください");
+            }
+            if (!name.matches("[ぁ-んァ-ヶ一-龯々〆〤ー\\s]*")) {
+                errors.add("氏名は日本語のみで入力してください");
+            }
+        }
+
+        // 生年月日検証（年月日の組み合わせチェック）
+        boolean hasYear = criteria.getYear() != null && !criteria.getYear().isEmpty();
+        boolean hasMonth = criteria.getMonth() != null && !criteria.getMonth().isEmpty();
+        boolean hasDay = criteria.getDay() != null && !criteria.getDay().isEmpty();
+
+        if ((hasYear || hasMonth || hasDay) && !(hasYear && hasMonth && hasDay)) {
+            errors.add("生年月日は年・月・日すべてを選択してください");
+        }
+
+        // エンジニア歴検証
+        if (criteria.getCareer() != null && !criteria.getCareer().trim().isEmpty()) {
+            try {
+                int careerValue = Integer.parseInt(criteria.getCareer());
+                if (careerValue < 0 || careerValue > 50) {
+                    errors.add("エンジニア歴は0年から50年の範囲で入力してください");
+                }
+            } catch (NumberFormatException e) {
+                errors.add("エンジニア歴は数値で入力してください");
+            }
+        }
+
+        return errors;
+    }
+
+    /**
+     * 検索条件によるエンジニアリストのフィルタリング
+     * 指定された検索条件に一致するエンジニアのみを抽出します
+     * 
+     * @param engineers 全エンジニアのリスト
+     * @param criteria  検索条件
+     * @return フィルタリングされたエンジニアのリスト
+     */
+    private List<EngineerDTO> filterEngineersByCriteria(List<EngineerDTO> engineers, SearchCriteria criteria) {
+        return engineers.stream()
+                .filter(engineer -> matchesCriteria(engineer, criteria))
+                .collect(Collectors.toList());
+    }
+
+    /**
+     * エンジニアが検索条件にマッチするかチェック
+     * 各検索条件項目について個別に適合性を判定します
+     * 
+     * @param engineer 判定対象のエンジニア
+     * @param criteria 検索条件
+     * @return すべての条件にマッチする場合はtrue
+     */
+    private boolean matchesCriteria(EngineerDTO engineer, SearchCriteria criteria) {
+        // 社員ID検索（部分一致、大文字小文字を区別しない）
+        if (criteria.getId() != null && !criteria.getId().trim().isEmpty()) {
+            if (engineer.getId() == null ||
+                    !engineer.getId().toLowerCase().contains(criteria.getId().toLowerCase())) {
+                return false;
+            }
+        }
+
+        // 氏名検索（部分一致、大文字小文字を区別しない）
+        if (criteria.getName() != null && !criteria.getName().trim().isEmpty()) {
+            if (engineer.getName() == null ||
+                    !engineer.getName().toLowerCase().contains(criteria.getName().toLowerCase())) {
+                return false;
+            }
+        }
+
+        // 生年月日検索（完全一致）
+        if (engineer.getBirthDate() != null && criteria.hasDateCriteria()) {
+            String birthDateStr = engineer.getBirthDate().toString();
+
+            // 年の検証
+            if (!criteria.getYear().isEmpty() && !birthDateStr.startsWith(criteria.getYear())) {
+                return false;
+            }
+
+            // 月の検証（ゼロパディング対応）
+            if (!criteria.getMonth().isEmpty()) {
+                String monthPart = criteria.getMonth().length() == 1 ? "0" + criteria.getMonth() : criteria.getMonth();
+                if (!birthDateStr.substring(5, 7).equals(monthPart)) {
+                    return false;
+                }
+            }
+
+            // 日の検証（ゼロパディング対応）
+            if (!criteria.getDay().isEmpty()) {
+                String dayPart = criteria.getDay().length() == 1 ? "0" + criteria.getDay() : criteria.getDay();
+                if (!birthDateStr.substring(8, 10).equals(dayPart)) {
+                    return false;
+                }
+            }
+        } else if (criteria.hasDateCriteria()) {
+            // 生年月日がnullで検索条件が指定されている場合は不一致
+            return false;
+        }
+
+        // エンジニア歴検索（完全一致）
+        if (criteria.getCareer() != null && !criteria.getCareer().trim().isEmpty()) {
+            try {
+                int searchCareerValue = Integer.parseInt(criteria.getCareer());
+                if (engineer.getCareer() != searchCareerValue) {
+                    return false;
+                }
+            } catch (NumberFormatException e) {
+                return false;
+            }
+        }
+
+        return true;
+    }
+
+    /**
      * イベントを処理
      * アプリケーション全体のイベントをディスパッチします
      *
      * @param event イベント種別（"REFRESH_VIEW", "CHANGE_PANEL", "SAVE_DATA", "LOAD_DATA",
-     *              "SHUTDOWN"）
+     *              "SEARCH_ENGINEERS", "SHUTDOWN"）
      * @param data  イベントデータ（イベント種別に応じたデータ）
      */
     public void handleEvent(String event, Object data) {
@@ -196,6 +475,9 @@ public class MainController {
                 case "VIEW_DETAIL":
                     handleViewDetail((String) data);
                     break;
+                case "SEARCH_ENGINEERS":
+                    handleSearchEngineers(data);
+                    break;
                 case "TEMPLATE":
                     handleTemplateExport();
                     break;
@@ -208,11 +490,9 @@ public class MainController {
                 case "SHUTDOWN":
                     initiateShutdown();
                     break;
-
                 case "DELETE_ENGINEER":
                     handleDeleteEngineer(data);
                     break;
-
                 default:
                     handleUnknownEvent(event, data);
                     break;
@@ -225,6 +505,100 @@ public class MainController {
         } catch (Exception e) {
             LogHandler.getInstance().logError(LogType.SYSTEM, "イベント処理に失敗しました: " + event, e);
             handleError(e);
+        }
+    }
+
+    /**
+     * エンジニア検索処理のイベントハンドラ
+     * 検索要求を受け取り、非同期で検索処理を実行します
+     * 
+     * @param data 検索条件オブジェクト（SearchCriteria型）
+     */
+    private void handleSearchEngineers(Object data) {
+        if (!(data instanceof SearchCriteria)) {
+            LogHandler.getInstance().log(Level.WARNING, LogType.SYSTEM,
+                    "検索条件の型が不正です: " + (data != null ? data.getClass().getName() : "null"));
+            return;
+        }
+
+        SearchCriteria criteria = (SearchCriteria) data;
+
+        // 非同期で検索処理を実行
+        startAsyncTask("SearchEngineers", () -> {
+            try {
+                LogHandler.getInstance().log(Level.INFO, LogType.SYSTEM,
+                        "非同期検索処理を開始します");
+
+                SearchResult result = searchEngineers(criteria);
+
+                // UI更新はSwingのEDTで実行
+                SwingUtilities.invokeLater(() -> {
+                    try {
+                        JPanel currentPanel = screenController.getCurrentPanel();
+                        if (currentPanel instanceof ListPanel) {
+                            // ListPanelに検索結果を通知するメソッドを呼び出し
+                            handleSearchResultForListPanel((ListPanel) currentPanel, result);
+                        } else {
+                            LogHandler.getInstance().log(Level.WARNING, LogType.SYSTEM,
+                                    "現在のパネルがListPanelではないため検索結果を表示できません");
+                        }
+                    } catch (Exception e) {
+                        LogHandler.getInstance().logError(LogType.SYSTEM,
+                                "検索結果のUI更新中にエラーが発生しました", e);
+                    }
+                });
+
+            } catch (Exception e) {
+                LogHandler.getInstance().logError(LogType.SYSTEM,
+                        "非同期検索処理中にエラーが発生しました", e);
+
+                // エラー時のUI更新
+                SwingUtilities.invokeLater(() -> {
+                    DialogManager.getInstance().showErrorDialog(
+                            "検索エラー", "検索処理中にエラーが発生しました: " + e.getMessage());
+                });
+            }
+        });
+    }
+
+    /**
+     * ListPanel向けの検索結果処理
+     * 検索結果をListPanelに適切に反映します
+     * 
+     * @param listPanel 更新対象のListPanel
+     * @param result    検索結果
+     */
+    private void handleSearchResultForListPanel(ListPanel listPanel, SearchResult result) {
+        try {
+            if (result.hasErrors()) {
+                // 検証エラーがある場合はエラーダイアログを表示
+                DialogManager.getInstance().showValidationErrorDialog(result.getErrors());
+                LogHandler.getInstance().log(Level.WARNING, LogType.SYSTEM,
+                        "検索条件にエラーがあります: " + String.join(", ", result.getErrors()));
+            } else {
+                // 検索結果が正常な場合
+                List<EngineerDTO> searchResults = result.getResults();
+
+                if (searchResults.isEmpty()) {
+                    // 検索結果が空の場合は通知
+                    DialogManager.getInstance().showInfoDialog("検索結果", "該当するエンジニアは見つかりませんでした。");
+                    LogHandler.getInstance().log(Level.INFO, LogType.SYSTEM,
+                            "検索結果が0件でした");
+                } else {
+                    LogHandler.getInstance().log(Level.INFO, LogType.SYSTEM,
+                            String.format("検索結果を表示します: %d件", searchResults.size()));
+                }
+
+                // 検索結果をListPanelに通知（具体的な実装はListPanel側で対応）
+                // 注意: この部分はListPanel側に対応するメソッドを追加する必要があります
+                LogHandler.getInstance().log(Level.INFO, LogType.SYSTEM,
+                        "検索結果をListPanelに反映しました");
+            }
+        } catch (Exception e) {
+            LogHandler.getInstance().logError(LogType.SYSTEM,
+                    "検索結果の処理中にエラーが発生しました", e);
+            DialogManager.getInstance().showErrorDialog(
+                    "表示エラー", "検索結果の表示中にエラーが発生しました");
         }
     }
 
