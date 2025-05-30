@@ -1,8 +1,8 @@
 package model;
 
-import util.IDValidator;
 import util.LogHandler;
 import util.LogHandler.LogType;
+import util.validator.IDValidator;
 import util.ResourceManager;
 import java.io.*;
 import java.nio.charset.StandardCharsets;

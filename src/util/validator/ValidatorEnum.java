@@ -1,6 +1,8 @@
-package util;
+package util.validator;
 
 import java.util.Set;
+
+import util.Constants.MessageEnum;
 
 /**
  * バリデーション戦略を定義する列挙型クラス。

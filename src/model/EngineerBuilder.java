@@ -2,7 +2,8 @@ package model;
 
 import java.time.LocalDate;
 import java.util.List;
-import util.IDValidator;
+
+import util.validator.IDValidator;
 
 /**
  * EngineerDTOオブジェクトを生成するビルダークラス

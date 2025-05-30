@@ -5,7 +5,8 @@ import model.EngineerBuilder;
 import controller.MainController;
 import util.LogHandler;
 import util.LogHandler.LogType;
-import util.IDValidator;
+import util.validator.IDValidator;
+
 import javax.swing.*;
 import java.awt.*;
 import java.time.LocalDate;

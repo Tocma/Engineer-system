@@ -1,11 +1,12 @@
 package view;
 
 import util.LogHandler;
+import util.Constants.MessageEnum;
 import util.LogHandler.LogType;
-import util.MessageEnum;
-import util.Validator;
-import util.ValidatorEnum;
-import util.IDValidator;
+import util.validator.IDValidator;
+import util.validator.Validator;
+import util.validator.ValidatorEnum;
+
 import javax.swing.*;
 import javax.swing.border.Border;
 import javax.swing.text.JTextComponent;

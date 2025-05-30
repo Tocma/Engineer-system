@@ -1,4 +1,6 @@
-package util;
+package util.validator;
+
+import util.Constants.MessageEnum;
 
 /**
  * 入力データの検証を行うためのインターフェース。

@@ -1,6 +1,9 @@
-package util;
+package util.validator;
 
 import java.util.regex.Pattern;
+
+import util.Constants.MessageEnum;
+
 import java.util.regex.Matcher;
 
 /**

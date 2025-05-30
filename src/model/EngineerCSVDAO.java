@@ -3,6 +3,7 @@ package model;
 import view.DialogManager;
 import util.LogHandler;
 import util.LogHandler.LogType;
+import util.validator.IDValidator;
 import util.ResourceManager; // ResourceManagerを追加
 import java.io.*;
 import java.nio.charset.StandardCharsets;
@@ -10,7 +11,6 @@ import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
 import java.time.format.DateTimeParseException;
 import java.util.*;
-import util.IDValidator;
 import java.util.logging.Level;
 import java.util.stream.Collectors;
 
