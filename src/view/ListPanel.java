@@ -4,9 +4,10 @@ import model.EngineerDTO;
 import util.LogHandler;
 import util.LogHandler.LogType;
 import javax.swing.*;
+import javax.swing.text.*;
 import javax.swing.table.DefaultTableModel;
 import javax.swing.table.TableRowSorter;
-import java.util.Iterator;
+
 import controller.MainController;
 import java.awt.*;
 import java.text.Collator;
@@ -15,6 +16,7 @@ import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.HashSet;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Locale;
 import java.util.Set;
@@ -26,10 +28,16 @@ import java.awt.event.InputEvent;
 /**
  * エンジニア一覧を表示するパネルクラス
  * ページング、ソート、検索、追加、取込、削除機能
+ * 
+ * 統合版では以下の検索機能が改善されています：
+ * - プレースホルダー付きテキストフィールド
+ * - リアルタイム入力検証
+ * - より厳密なバリデーション
+ * - 改善されたUI体験
  *
  * @author Nakano
- * @version 4.9.7
- * @since 2025-05-29
+ * @version 4.9.8
+ * @since 2025-05-30
  */
 public class ListPanel extends JPanel {
 
@@ -75,8 +83,6 @@ public class ListPanel extends JPanel {
     /** 全エンジニアデータ */
     private List<EngineerDTO> allData;
 
-    // currentDisplayDataフィールドを削除
-
     // 追加するフィールド - ソートとフィルタの状態のみ保持
     private String searchId = "";
     private String searchName = "";
@@ -86,8 +92,8 @@ public class ListPanel extends JPanel {
     private String searchCareer = "";
 
     /** 検索用フィールド */
-    private JTextField idField;
-    private JTextField nameField;
+    private PlaceholderTextField idField;
+    private PlaceholderTextField nameField;
     private JComboBox<String> yearBox;
     private JComboBox<String> monthBox;
     private JComboBox<String> dayBox;
@@ -108,8 +114,45 @@ public class ListPanel extends JPanel {
     private boolean isCtrlPressed = false;
     private boolean isShiftPressed = false;
 
+    /** 検索機能のUI */
+    private JButton searchButton;
+    private JButton endSearchButton;
+
     /** メインコントローラー参照 */
     private MainController mainController;
+
+    /**
+     * プレースホルダー機能付きテキストフィールド
+     * ユーザーに入力ヒントを提供するテキストフィールド
+     */
+    private static class PlaceholderTextField extends JTextField {
+        private final String placeholder;
+
+        public PlaceholderTextField(String placeholder) {
+            this.placeholder = placeholder;
+            setColumns(10); // デフォルトの列数を設定
+        }
+
+        @Override
+        protected void paintComponent(Graphics g) {
+            super.paintComponent(g);
+
+            // テキストが空でフォーカスが当たっていない場合にプレースホルダーを表示
+            if (getText().isEmpty() && !isFocusOwner()) {
+                Graphics2D g2d = (Graphics2D) g.create();
+                g2d.setColor(Color.GRAY);
+                g2d.setFont(getFont().deriveFont(Font.ITALIC));
+
+                // プレースホルダーテキストの位置を計算
+                FontMetrics fm = g2d.getFontMetrics();
+                int x = getInsets().left;
+                int y = (getHeight() - fm.getHeight()) / 2 + fm.getAscent();
+
+                g2d.drawString(placeholder, x, y);
+                g2d.dispose();
+            }
+        }
+    }
 
     /** ViewがControllerへの参照を持つためのセッター */
     public void setController(MainController mainController) {
@@ -140,7 +183,6 @@ public class ListPanel extends JPanel {
 
         // 初期化処理を実行
         initialize();
-
     }
 
     /**
@@ -267,13 +309,13 @@ public class ListPanel extends JPanel {
      * @return エンジニア歴のリスト
      */
     private String[] getCareerYears() {
-        // 0から20までの整数値（計21要素）
-        String[] careers = new String[51]; // 21要素 + 空の選択肢用の1要素
+        // 0から50までの整数値
+        String[] careers = new String[51]; // 51要素 + 空の選択肢用の1要素
         // 最初の要素は空（選択なし）
         careers[0] = "";
         // DecimalFormatを使用して一貫した表示形式を保証
         DecimalFormat df = new DecimalFormat("0");
-        // 0から20まで整数値を設定
+        // 0から50まで整数値を設定
         for (int i = 1; i <= 50; i++) {
             careers[i] = df.format(i);
         }
@@ -282,6 +324,7 @@ public class ListPanel extends JPanel {
 
     /**
      * 上部パネルを作成
+     * ボタン群と検索パネルを含む2段構成
      *
      * @return 上部パネル
      */
@@ -317,16 +360,30 @@ public class ListPanel extends JPanel {
         topPanel.add(buttonPanel); // ボタン群を追加
 
         // 検索パネル
+        topPanel.add(createSearchPanel()); // 検索パネルを追加
+
+        return topPanel;
+    }
+
+    /**
+     * 検索パネルを作成
+     * プレースホルダー付きテキストフィールドと入力検証機能を含む
+     *
+     * @return 検索パネル
+     */
+    private JPanel createSearchPanel() {
         JPanel searchPanel = new JPanel(new FlowLayout(FlowLayout.LEFT));
 
-        // 社員ID（テキストボックス）ラベル
+        // 社員ID - プレースホルダー付き＋入力検証
         searchPanel.add(new JLabel("社員ID:"));
-        idField = new JTextField(10);
+        idField = new PlaceholderTextField("5桁の数値");
+        idField.setDocument(createIdDocument()); // 入力検証を追加
         searchPanel.add(idField);
 
-        // 氏名（テキストボックス）
+        // 氏名 - プレースホルダー付き＋入力検証
         searchPanel.add(new JLabel("氏名:"));
-        nameField = new JTextField(10);
+        nameField = new PlaceholderTextField("20文字以内");
+        nameField.setDocument(createNameDocument()); // 入力検証を追加
         searchPanel.add(nameField);
 
         // 生年月日（プルダウン 年・月・日）
@@ -347,19 +404,198 @@ public class ListPanel extends JPanel {
         searchPanel.add(careerBox);
 
         // 検索ボタン
-        JButton searchButton = new JButton("検索");
-        searchButton.addActionListener(e -> search(
+        searchButton = new JButton("検索");
+        searchButton.addActionListener(e -> handleSearchButton());
+        searchPanel.add(searchButton);
+
+        // 検索終了ボタン - 新機能
+        endSearchButton = new JButton("検索終了");
+        endSearchButton.setVisible(false); // 初期状態では非表示
+        endSearchButton.addActionListener(e -> handleEndSearchButton());
+        searchPanel.add(endSearchButton);
+
+        return searchPanel;
+    }
+
+    /**
+     * 社員ID用の入力検証Documentを作成
+     * 数値のみ5桁まで入力可能
+     *
+     * @return 社員ID用Document
+     */
+    private PlainDocument createIdDocument() {
+        return new PlainDocument() {
+            @Override
+            public void insertString(int offset, String str, AttributeSet attr) throws BadLocationException {
+                if (str == null)
+                    return;
+
+                // 現在のテキストを取得
+                String currentText = getText(0, getLength());
+                StringBuilder sb = new StringBuilder(currentText);
+                sb.insert(offset, str);
+
+                // 数値以外を除去（全角数字も半角に変換）
+                String newText = sb.toString().replaceAll("[^0-9０-９]", "");
+
+                // 5桁以下の場合のみ挿入を許可
+                if (newText.length() <= 5) {
+                    super.insertString(offset, str, attr);
+                }
+            }
+        };
+    }
+
+    /**
+     * 氏名用の入力検証Documentを作成
+     * 20文字以内まで入力可能
+     *
+     * @return 氏名用Document
+     */
+    private PlainDocument createNameDocument() {
+        return new PlainDocument() {
+            @Override
+            public void insertString(int offset, String str, AttributeSet attr) throws BadLocationException {
+                if (str == null)
+                    return;
+
+                // 現在のテキストを取得
+                String currentText = getText(0, getLength());
+                StringBuilder sb = new StringBuilder(currentText);
+                sb.insert(offset, str);
+
+                // 20文字以下の場合のみ挿入を許可
+                if (sb.length() <= 20) {
+                    super.insertString(offset, str, attr);
+                }
+            }
+        };
+    }
+
+    /**
+     * 検索ボタンのクリック処理
+     * 入力値の検証と検索実行を行う
+     */
+    private void handleSearchButton() {
+        // 氏名の詳細バリデーション
+        String name = nameField.getText().trim();
+        String cleanedName = name.replaceAll("\\s{2,}", " "); // 連続する空白を単一に
+
+        // 日本語文字のみ許可（ひらがな、カタカナ、漢字、スペース）
+        if (!cleanedName.matches("[ぁ-んァ-ヶ一-龯々〆〤ー\\s]{0,20}")) {
+            DialogManager.getInstance().showErrorDialog("入力エラー", "氏名は日本語のみ20文字以内で入力してください");
+            return;
+        }
+
+        // 生年月日の完全性チェック
+        boolean yearSelected = yearBox.getSelectedIndex() != 0;
+        boolean monthSelected = monthBox.getSelectedIndex() != 0;
+        boolean daySelected = dayBox.getSelectedIndex() != 0;
+
+        // 年月日のいずれかが選択されている場合、すべて選択されている必要がある
+        if ((yearSelected || monthSelected || daySelected) && !(yearSelected && monthSelected && daySelected)) {
+            DialogManager.getInstance().showErrorDialog("入力エラー", "生年月日は年・月・日すべてを選択してください");
+            return;
+        }
+
+        // 検索実行時のUI状態変更
+        statusLabel.setText("検索中・・・");
+        setUIComponentsEnabled(false);
+
+        // 検索実行
+        List<EngineerDTO> results = search(
                 idField.getText(),
                 nameField.getText(),
                 yearBox.getSelectedItem().toString(),
                 monthBox.getSelectedItem().toString(),
                 dayBox.getSelectedItem().toString(),
-                careerBox.getSelectedItem().toString()));
-        searchPanel.add(searchButton);
+                careerBox.getSelectedItem().toString());
 
-        topPanel.add(searchPanel); // 検索パネルを追加
+        // 検索結果が空の場合は通知
+        if (results.isEmpty()) {
+            DialogManager.getInstance().showErrorDialog("検索結果", "該当するエンジニアは見つかりませんでした。");
+        }
 
-        return topPanel;
+        // 検索終了ボタンを表示
+        endSearchButton.setVisible(true);
+
+        // UI状態を復元
+        setUIComponentsEnabled(true);
+        statusLabel.setText("");
+    }
+
+    /**
+     * 検索終了ボタンのクリック処理
+     * 検索状態をリセットし、全データを表示する
+     */
+    private void handleEndSearchButton() {
+        // バックグラウンドでリセット処理を実行
+        SwingWorker<Void, Void> searchWorker = new SwingWorker<Void, Void>() {
+            @Override
+            protected Void doInBackground() {
+                // 検索条件をクリア
+                SwingUtilities.invokeLater(() -> {
+                    idField.setText("");
+                    nameField.setText("");
+                    yearBox.setSelectedIndex(0);
+                    monthBox.setSelectedIndex(0);
+                    dayBox.setSelectedIndex(0);
+                    careerBox.setSelectedIndex(0);
+                });
+
+                // テーブルをクリアして全データを復元
+                resetSearchAndShowAllData();
+                return null;
+            }
+
+            @Override
+            protected void done() {
+                // UI状態をリセット
+                statusLabel.setText("");
+                endSearchButton.setVisible(false);
+                setUIComponentsEnabled(true);
+            }
+        };
+        searchWorker.execute();
+    }
+
+    /**
+     * UI コンポーネントの有効/無効を切り替える
+     * 検索中などの処理中状態を表現するために使用
+     *
+     * @param enabled true で有効、false で無効
+     */
+    public void setUIComponentsEnabled(boolean enabled) {
+        idField.setEnabled(enabled);
+        nameField.setEnabled(enabled);
+        yearBox.setEnabled(enabled);
+        monthBox.setEnabled(enabled);
+        dayBox.setEnabled(enabled);
+        careerBox.setEnabled(enabled);
+        searchButton.setEnabled(enabled);
+    }
+
+    /**
+     * 検索状態をリセットして全データを表示
+     */
+    private void resetSearchAndShowAllData() {
+        // 検索条件をクリア
+        this.searchId = "";
+        this.searchName = "";
+        this.searchYear = "";
+        this.searchMonth = "";
+        this.searchDay = "";
+        this.searchCareer = "";
+
+        // ページを1ページ目にリセット
+        currentPage = 1;
+
+        // 全データを表示
+        SwingUtilities.invokeLater(() -> {
+            List<EngineerDTO> displayData = getDisplayData();
+            updateTableData(displayData);
+            updateButtonState();
+        });
     }
 
     /**
@@ -369,6 +605,7 @@ public class ListPanel extends JPanel {
      */
     private JPanel createBottomPanel() {
         JPanel bottomPanel = new JPanel(new BorderLayout());
+
         // 中央にボタン群
         JPanel navigationPanel = new JPanel(new FlowLayout(FlowLayout.CENTER));
         navigationPanel.add(prevButton);
@@ -423,7 +660,6 @@ public class ListPanel extends JPanel {
      *
      * @param columnIndex ソート対象の列インデックス（0:社員ID, 1:氏名かな, 2:生年月日, 3:経験年数）
      */
-
     private void sortByColumn(int columnIndex) {
         try {
             // ソート可能な列かチェック
@@ -566,8 +802,9 @@ public class ListPanel extends JPanel {
      * @param month  生年月日（月）
      * @param day    生年月日（日）
      * @param career エンジニア歴
+     * @return フィルタリングされたエンジニアリスト
      */
-    private void search(String id, String name, String year, String month, String day, String career) {
+    private List<EngineerDTO> search(String id, String name, String year, String month, String day, String career) {
         // 検索条件を保存
         this.searchId = id;
         this.searchName = name;
@@ -583,17 +820,19 @@ public class ListPanel extends JPanel {
         List<EngineerDTO> filteredData = getDisplayData();
 
         // 選択状態をクリア
-        selectedEngineerIds.clear(); // 追加
-        table.clearSelection(); // 追加
+        selectedEngineerIds.clear();
+        table.clearSelection();
 
         // テーブルを更新
         updateTableData(filteredData);
 
         // ボタンの状態を更新
-        updateButtonState(); // 追加
+        updateButtonState();
 
         LogHandler.getInstance().log(Level.INFO, LogType.UI,
                 String.format("検索実行: %d件のデータがヒット", filteredData.size()));
+
+        return filteredData;
     }
 
     /**
@@ -1162,7 +1401,7 @@ public class ListPanel extends JPanel {
                 // 選択されたエンジニアリストを取得
                 List<EngineerDTO> selectedEngineers = getSelectedEngineers();
 
-                //ボタンの無効化
+                // ボタンの無効化
                 setButtonsEnabled(false);
                 mainController.getScreenController().setRegisterButtonEnabled(false); // 登録ボタンも無効化
 
@@ -1172,22 +1411,22 @@ public class ListPanel extends JPanel {
                         .collect(Collectors.toList());
 
                 LogHandler.getInstance().log(Level.INFO, LogType.UI,
-                String.format("%d件の行が出力対象に選択されました", selectedRows.length));
+                        String.format("%d件の行が出力対象に選択されました", selectedRows.length));
 
                 // 確認ダイアログを表示
                 boolean confirmed = DialogManager.getInstance()
                         .showScrollableListDialog("CSV出力確認", "以下の項目を出力しますか？", selectedTargets);
 
                 if (confirmed) {
-                    //CSV出力項目許可のログ表示
+                    // CSV出力項目許可のログ表示
                     LogHandler.getInstance().log(Level.INFO, LogType.SYSTEM,
                             "CSV出力確認が承認されました");
                     // CSV出力実行
                     mainController.handleEvent("EXPORT_CSV", selectedEngineers);
                 } else {
-                    //CSV出力確認キャンセルのログ表示
+                    // CSV出力確認キャンセルのログ表示
                     LogHandler.getInstance().log(Level.INFO, LogType.SYSTEM,
-                                "CSV出力確認がキャンセルされました");
+                            "CSV出力確認がキャンセルされました");
                     // キャンセルされた場合、ボタンを再度有効化
                     setButtonsEnabled(true);
                     mainController.getScreenController().setRegisterButtonEnabled(true);
