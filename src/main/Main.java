@@ -8,6 +8,7 @@ import util.ResourceManager;
 import view.MainFrame;
 import javax.swing.SwingUtilities;
 import java.io.IOException;
+import java.net.ServerSocket;
 import java.util.logging.Level;
 
 /**
@@ -15,8 +16,8 @@ import java.util.logging.Level;
  * システムの初期化、実行、リソース管理、終了処理を担当
  *
  * @author Nakano
- * @version 4.8.1
- * @since 2025-05-19
+ * @version 4.12.7
+ * @since 2025-05-30
  */
 public class Main {
 
@@ -25,6 +26,9 @@ public class Main {
 
     /** メインコントローラー */
     private static MainController mainController;
+
+    /** ロックソケット */
+    private static ServerSocket lockSocket;
 
     /**
      * アプリケーションのエントリーポイント
@@ -39,6 +43,11 @@ public class Main {
         if (isTestMode(args)) {
             runTestMode(args);
             return;
+        }
+
+        // 重複起動時のポート番号の確認
+        if (!acquireLock(54321)) {
+            System.exit(0);
         }
 
         try {
@@ -262,6 +271,22 @@ public class Main {
         } catch (Exception e) {
             System.err.println("クリーンアップ処理に失敗しました: " + e.getMessage());
             e.printStackTrace();
+        }
+    }
+
+    /**
+     * 重複起動を防ぐためのロックを取得
+     * 指定されたポートでServerSocketを開き、他のインスタンスが起動できないようにする
+     *
+     * @param port ロック用のポート番号
+     * @return ロック取得成功ならtrue、失敗ならfalse
+     */
+    private static boolean acquireLock(int port) {
+        try {
+            lockSocket = new ServerSocket(port);
+            return true;
+        } catch (IOException e) {
+            return false;
         }
     }
 }
