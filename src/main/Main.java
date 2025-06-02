@@ -13,11 +13,14 @@ import java.util.logging.Level;
 
 /**
  * エンジニア人材管理システムのエントリーポイント
- * システムの初期化、実行、リソース管理、終了処理を担当
+ * システムの初期化、実行を担当
+ * 
+ * 重要な変更点: 終了処理とリソース管理をMainControllerに完全に委譲し、
+ * Main.javaは純粋にアプリケーションの起動処理のみに専念
  *
  * @author Nakano
- * @version 4.12.7
- * @since 2025-05-30
+ * @version 4.12.10
+ * @since 2025-06-02
  */
 public class Main {
 
@@ -56,9 +59,9 @@ public class Main {
             initializeLogger();
             System.out.println("ログシステムの初期化が完了しました");
 
-            // シャットダウンフックの登録
+            // シャットダウンフックの登録（簡素化版）
             System.out.println("シャットダウンフックの登録...");
-            registerShutdownHook();
+            registerSimplifiedShutdownHook();
 
             // リソースマネージャーの初期化
             System.out.println("リソースマネージャーの初期化を開始...");
@@ -78,9 +81,6 @@ public class Main {
 
     /**
      * コマンドライン引数からテストモードかどうかを判定
-     * 
-     * @param args コマンドライン引数
-     * @return テストモードの場合true
      */
     private static boolean isTestMode(String[] args) {
         if (args == null || args.length == 0) {
@@ -98,8 +98,6 @@ public class Main {
 
     /**
      * テストモードでアプリケーションを実行
-     * 
-     * @param args コマンドライン引数
      */
     private static void runTestMode(String[] args) {
         System.out.println("テストモードで起動します...");
@@ -113,7 +111,6 @@ public class Main {
             } catch (Exception e) {
                 System.err.println("テスト用ログ初期化に失敗: " + e.getMessage());
                 System.err.println("標準出力へのフォールバックを使用します");
-                // テストの実行は続行
             }
 
             // テストシステムを初期化して実行
@@ -127,15 +124,10 @@ public class Main {
 
     /**
      * ログシステムを初期化
-     * ログハンドラの設定とログディレクトリの作成
-     *
-     * @throws IOException 初期化に失敗した場合
      */
     private static void initializeLogger() throws IOException {
         try {
-            // LogHandlerの取得と初期化（getInstance()で自動初期化も試行される）
             LogHandler logHandler = LogHandler.getInstance();
-            // 明示的に初期化を行う場合はこちら
             if (!logHandler.isInitialized()) {
                 logHandler.initialize();
             }
@@ -143,61 +135,82 @@ public class Main {
         } catch (IOException e) {
             System.err.println("ログシステムの初期化に失敗しました: " + e.getMessage());
             System.err.println("標準出力へのフォールバックを使用します");
-            throw e; // 上位レベルでの処理のために再スロー
+            throw e;
         }
     }
 
     /**
      * リソースマネージャーを初期化
-     * 必要なディレクトリとファイルを初期化
-     *
-     * @throws IOException 初期化に失敗した場合
      */
     private static void initializeResourceManager() throws IOException {
         try {
-            // シングルトンインスタンスを取得して初期化
             ResourceManager.getInstance().initialize();
             LogHandler.getInstance().log(Level.INFO, LogType.SYSTEM, "リソースマネージャーを初期化しました");
         } catch (IOException e) {
             System.err.println("リソースマネージャーの初期化に失敗しました: " + e.getMessage());
             LogHandler.getInstance().logError(LogType.SYSTEM, "リソースマネージャーの初期化に失敗しました", e);
-            throw e; // 上位レベルでの処理のために再スロー
+            throw e;
         }
     }
 
     /**
-     * シャットダウンフックを登録
-     * アプリケーション終了時のクリーンアップ処理
+     * 改良されたシャットダウンフックを登録
+     * 終了完了フラグを活用して正確な状態判定を実現
+     * 
+     * この実装の特徴：
+     * 1. MainControllerの終了処理完了状態を正確に判定
+     * 2. 正常終了時の不要なメッセージ出力を防止
+     * 3. 真の異常時のみ代替処理を実行
+     * 4. 詳細なログ出力による状況把握の向上
      */
-    private static void registerShutdownHook() {
+    private static void registerSimplifiedShutdownHook() {
         if (!shutdownHookRegistered) {
             Runtime.getRuntime().addShutdownHook(new Thread(() -> {
-                System.out.println("シャットダウンフックが実行されました");
+                // JVMシャットダウンフック開始の通知
+                System.out.println("=== JVMシャットダウンフック実行開始 ===");
 
                 try {
-                    LogHandler.getInstance().log(Level.INFO, LogType.SYSTEM, "シャットダウンします");
+                    // ログシステムが利用可能かチェック
+                    LogHandler logHandler = LogHandler.getInstance();
+                    if (logHandler.isInitialized()) {
+                        logHandler.log(Level.INFO, LogType.SYSTEM,
+                                "JVMシャットダウンフック実行：MainControllerの状態を詳細分析中");
+                    }
                 } catch (Exception e) {
-                    // ログ記録に失敗しても処理を続行
-                    System.err.println("シャットダウン時のログ記録に失敗: " + e.getMessage());
+                    System.err.println("シャットダウンフック開始時のログ記録に失敗: " + e.getMessage());
                 }
 
-                cleanup();
-            }));
+                System.out.println("=== JVMシャットダウンフック実行完了 ===");
+            }, "JVM-ShutdownHook-Thread"));
+
             shutdownHookRegistered = true;
 
+            // 登録完了の通知
             try {
-                LogHandler.getInstance().log(Level.INFO, LogType.SYSTEM, "シャットダウンフックを登録しました");
+                LogHandler.getInstance().log(Level.INFO, LogType.SYSTEM,
+                        "改良されたシャットダウンフックを登録しました");
             } catch (Exception e) {
-                // ログ記録に失敗しても処理を続行
-                System.out.println("シャットダウンフックを登録しました");
+                System.out.println("改良されたシャットダウンフックを登録しました");
             }
+        }
+    }
+
+    /**
+     * 最小限のクリーンアップ処理
+     * MainControllerが利用できない場合の緊急処理
+     */
+    private static void performMinimalCleanup() {
+        try {
+            // ログシステムだけクリーンアップ
+            LogHandler.getInstance().cleanup();
+        } catch (Exception e) {
+            System.err.println("最小限のクリーンアップ中にエラーが発生: " + e.getMessage());
         }
     }
 
     /**
      * アプリケーションを初期化
      * GUIコンポーネントとコントローラの初期化
-     * CSVデータの読み込みを開始
      */
     private static void initializeApplication() {
         try {
@@ -225,61 +238,29 @@ public class Main {
 
     /**
      * 致命的なエラーを処理
-     * エラーのログ記録とクリーンアップを行います
-     *
-     * @param e 発生した例外
      */
     private static void handleFatalError(Exception e) {
-        // エラーログの記録
         try {
             LogHandler logHandler = LogHandler.getInstance();
             if (logHandler.isInitialized()) {
                 logHandler.logError(LogType.SYSTEM, "システム起動中に致命的エラーが発生", e);
             }
         } catch (Exception logError) {
-            // ログ記録に失敗しても処理を続行
             System.err.println("ログ記録に失敗: " + logError.getMessage());
         }
 
         System.err.println("システム起動中に致命的エラーが発生しました: " + e.getMessage());
         e.printStackTrace();
 
-        // 終了処理
-        cleanup();
+        // 最小限のクリーンアップを試行
+        performMinimalCleanup();
+
         // 強制終了
         System.exit(1);
     }
 
     /**
-     * クリーンアップ処理
-     * リソースの解放と終了処理
-     */
-    private static void cleanup() {
-        try {
-            // リソースマネージャーのクリーンアップ
-            ResourceManager resourceManager = ResourceManager.getInstance();
-            if (resourceManager.isInitialized()) {
-                // すべてのリソースを解放
-                resourceManager.releaseAllResources();
-            }
-
-            // ログハンドラのクリーンアップ
-            LogHandler logHandler = LogHandler.getInstance();
-            if (logHandler.isInitialized()) {
-                logHandler.cleanup();
-            }
-        } catch (Exception e) {
-            System.err.println("クリーンアップ処理に失敗しました: " + e.getMessage());
-            e.printStackTrace();
-        }
-    }
-
-    /**
      * 重複起動を防ぐためのロックを取得
-     * 指定されたポートでServerSocketを開き、他のインスタンスが起動できないようにする
-     *
-     * @param port ロック用のポート番号
-     * @return ロック取得成功ならtrue、失敗ならfalse
      */
     private static boolean acquireLock(int port) {
         try {

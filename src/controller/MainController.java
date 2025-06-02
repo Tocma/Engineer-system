@@ -64,8 +64,8 @@ import javax.swing.filechooser.FileNameExtensionFilter;
  * </p>
  *
  * @author Nakano
- * @version 4.12.8
- * @since 2025-05-30
+ * @version 4.12.10
+ * @since 2025-06-02
  */
 public class MainController {
 
@@ -92,6 +92,9 @@ public class MainController {
 
     /** シャットダウン中フラグ */
     private final AtomicBoolean isShuttingDown;
+
+    /** シャットダウン完了フラグ */
+    private final AtomicBoolean isShutdownCompleted = new AtomicBoolean(false);
 
     private final Set<String> deletingIds = ConcurrentHashMap.newKeySet();
 
@@ -1976,83 +1979,174 @@ public class MainController {
         }
 
         LogHandler.getInstance().log(Level.INFO, LogType.SYSTEM,
-                "MainController主導でアプリケーションのシャットダウンを開始します");
+                "MainController主導で統合シャットダウンを開始します");
 
         try {
-            // ステップ1: ビジネスロジック層のシャットダウン
-            LogHandler.getInstance().log(Level.INFO, LogType.SYSTEM,
-                    "ステップ1: 実行中タスクの終了処理を開始");
-            terminateRunningTasks();
+            // ステップ1: ビジネスロジック層の終了
+            performBusinessLayerShutdown();
 
-            // ステップ2: ResourceManagerのクリーンアップ
-            LogHandler.getInstance().log(Level.INFO, LogType.SYSTEM,
-                    "ステップ2: リソースマネージャーのクリーンアップを開始");
-            performResourceCleanup();
+            // ステップ2: UI層の終了（MainFrameに部分的に委譲）
+            performUILayerShutdown();
 
-            // ステップ3: UI層のシャットダウン（MainFrameに委譲）
-            LogHandler.getInstance().log(Level.INFO, LogType.SYSTEM,
-                    "ステップ3: UI層のシャットダウン処理をMainFrameに委譲");
-            if (mainFrame != null) {
-                // MainFrameの物理的終了処理を呼び出す
-                // ここがポイント：MainControllerが全体を統制している
-                mainFrame.performPhysicalShutdown();
-            } else {
-                LogHandler.getInstance().log(Level.WARNING, LogType.SYSTEM,
-                        "MainFrameへの参照がnullのため、直接終了処理を実行");
-                performDirectShutdown();
-            }
+            // ステップ3: リソース層の統合終了
+            performResourceLayerShutdown();
+
+            // ステップ4: 最終終了処理
+            performFinalShutdown();
 
         } catch (Exception e) {
-            // シャットダウン中のエラーはログに記録するが、処理は続行
+            // エラー時は緊急終了処理を実行
             LogHandler.getInstance().logError(LogType.SYSTEM,
-                    "シャットダウン処理中にエラーが発生しましたが、処理を続行します", e);
-
-            // エラー時のフォールバック処理
-            performDirectShutdown();
+                    "統合シャットダウン処理中にエラーが発生しました", e);
+            performEmergencyShutdown(e);
         }
     }
 
     /**
-     * リソースマネージャーのクリーンアップ処理
-     * ResourceManagerとの連携によるリソース解放
+     * ステップ1: ビジネスロジック層の終了処理
+     * 実行中のタスクを安全に終了させる
      */
-    private void performResourceCleanup() {
+    private void performBusinessLayerShutdown() {
+        LogHandler.getInstance().log(Level.INFO, LogType.SYSTEM,
+                "ステップ1: ビジネスロジック層のシャットダウンを開始");
+
+        try {
+            terminateRunningTasks();
+            LogHandler.getInstance().log(Level.INFO, LogType.SYSTEM,
+                    "ビジネスロジック層のシャットダウンが完了しました");
+        } catch (Exception e) {
+            LogHandler.getInstance().logError(LogType.SYSTEM,
+                    "ビジネスロジック層の終了処理中にエラーが発生しました", e);
+            // エラーがあっても次のステップに進む
+        }
+    }
+
+    /**
+     * ステップ2: UI層の終了処理
+     * MainFrameに最小限の処理のみ委譲し、制御権は保持
+     */
+    private void performUILayerShutdown() {
+        LogHandler.getInstance().log(Level.INFO, LogType.SYSTEM,
+                "ステップ2: UI層のシャットダウンを開始");
+
+        try {
+            if (mainFrame != null) {
+                // MainFrameには純粋にUI関連のリソース解放のみを委譲
+                mainFrame.releaseUIResources();
+                LogHandler.getInstance().log(Level.INFO, LogType.SYSTEM,
+                        "UI層のリソース解放が完了しました");
+            } else {
+                LogHandler.getInstance().log(Level.WARNING, LogType.SYSTEM,
+                        "MainFrameへの参照がnullのため、UI層の終了処理をスキップします");
+            }
+        } catch (Exception e) {
+            LogHandler.getInstance().logError(LogType.SYSTEM,
+                    "UI層の終了処理中にエラーが発生しました", e);
+            // エラーがあっても次のステップに進む
+        }
+    }
+
+    /**
+     * ステップ3: リソース層の統合終了処理
+     * ResourceManagerとログシステムの統合クリーンアップ
+     */
+    private void performResourceLayerShutdown() {
+        LogHandler.getInstance().log(Level.INFO, LogType.SYSTEM,
+                "ステップ3: リソース層のシャットダウンを開始");
+
+        // ResourceManagerのクリーンアップ（一度だけ実行）
+        performResourceManagerCleanup();
+
+        // 注意: ログシステムのクリーンアップは最後のステップで実行
+        LogHandler.getInstance().log(Level.INFO, LogType.SYSTEM,
+                "リソース層のシャットダウンが完了しました");
+    }
+
+    /**
+     * ResourceManagerの統合クリーンアップ
+     * 重複実行を防ぎ、一度だけ確実に実行
+     */
+    private void performResourceManagerCleanup() {
         try {
             if (resourceManager != null && resourceManager.isInitialized()) {
                 boolean allResourcesReleased = resourceManager.releaseAllResources();
                 if (allResourcesReleased) {
                     LogHandler.getInstance().log(Level.INFO, LogType.SYSTEM,
-                            "すべてのリソースが正常に解放されました");
+                            "ResourceManagerのリソースが正常に解放されました");
                 } else {
                     LogHandler.getInstance().log(Level.WARNING, LogType.SYSTEM,
-                            "一部のリソース解放に失敗しましたが、処理を続行します");
+                            "一部のResourceManagerリソース解放に失敗しましたが、処理を続行します");
                 }
+            } else {
+                LogHandler.getInstance().log(Level.INFO, LogType.SYSTEM,
+                        "ResourceManagerは未初期化のため、クリーンアップをスキップします");
             }
         } catch (Exception e) {
             LogHandler.getInstance().logError(LogType.SYSTEM,
-                    "リソースクリーンアップ中にエラーが発生しました", e);
+                    "ResourceManagerクリーンアップ中にエラーが発生しました", e);
+            // エラーがあっても処理を続行
         }
     }
 
     /**
-     * 直接的なシャットダウン処理（フォールバック用）
-     * MainFrameが利用できない場合の緊急終了処理
+     * ステップ4: 最終終了処理
+     * ログシステムのクリーンアップとJVM終了
      */
-    private void performDirectShutdown() {
-        try {
-            LogHandler.getInstance().log(Level.WARNING, LogType.SYSTEM,
-                    "フォールバック処理により直接シャットダウンを実行します");
+    private void performFinalShutdown() {
+        LogHandler.getInstance().log(Level.INFO, LogType.SYSTEM,
+                "ステップ4: 最終終了処理を開始");
 
-            // ログシステムのクリーンアップ
+        try {
+            // ウィンドウを閉じる（MainFrameが存在する場合）
+            if (mainFrame != null) {
+                mainFrame.getJFrame().dispose();
+                LogHandler.getInstance().log(Level.INFO, LogType.SYSTEM,
+                        "メインウィンドウを閉じました");
+            }
+
+            // 終了処理完了フラグを設定
+            isShutdownCompleted.set(true);
+
+            // ログシステムの最終クリーンアップ（一度だけ実行）
+            LogHandler.getInstance().log(Level.INFO, LogType.SYSTEM,
+                    "統合シャットダウン処理が正常に完了しました");
             LogHandler.getInstance().cleanup();
 
-            // JVMの終了
+            // JVMの正常終了
             System.exit(0);
 
         } catch (Exception e) {
-            // 最後の手段
-            System.err.println("緊急終了処理中にもエラーが発生しました: " + e.getMessage());
+            // 最終段階でのエラーは緊急終了で対応
+            System.err.println("最終終了処理中にエラーが発生しました: " + e.getMessage());
+            performEmergencyShutdown(e);
+        }
+    }
+
+    /**
+     * 緊急終了処理
+     * 通常の終了処理でエラーが発生した場合の最後の手段
+     */
+    private void performEmergencyShutdown(Exception originalError) {
+        try {
+            // 最小限のクリーンアップを試行
+            System.err.println("緊急終了処理を実行します。元のエラー: " + originalError.getMessage());
+
+            // ログシステムが生きていれば最後のログを記録
+            try {
+                LogHandler.getInstance().logError(LogType.SYSTEM,
+                        "緊急終了処理を実行します", originalError);
+                LogHandler.getInstance().cleanup();
+            } catch (Exception logError) {
+                System.err.println("ログ記録も失敗しました: " + logError.getMessage());
+            }
+
+            // 強制終了
             System.exit(1);
+
+        } catch (Exception e) {
+            // 最後の最後の手段
+            System.err.println("緊急終了処理中にも例外が発生しました: " + e.getMessage());
+            Runtime.getRuntime().halt(1); // 即座に強制終了
         }
     }
 

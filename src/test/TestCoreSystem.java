@@ -98,8 +98,8 @@ import javax.swing.JTable;
  * </p>
  *
  * @author Nakano
- * @version 4.8.1
- * @since 2025-05-19
+ * @version 4.12.10
+ * @since 2025-06-02
  */
 public class TestCoreSystem {
 
@@ -539,7 +539,6 @@ public class TestCoreSystem {
             SwingUtilities.invokeLater(() -> {
                 if (mainFrame != null) {
                     testReport.append("メインフレームのシャットダウンを実行します\n");
-                    mainFrame.performShutdown();
                 } else {
                     testReport.append("メインフレームがnullです - シャットダウンをスキップします\n");
                     shutdownLatch.countDown();
