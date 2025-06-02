@@ -1,0 +1,77 @@
+@startuml 異常終了フロー
+title アプリケーション異常終了フロー\n(システムエラー・JVMシャットダウンフック)
+
+participant ErrorSource as "エラー発生源\n(例外・システム)"
+participant MainController
+participant AtomicBoolean
+participant LogHandler
+participant MainFrame
+participant ResourceManager
+participant System
+
+note right of ErrorSource
+    致命的エラー発生
+    または
+    JVMシャットダウンフック起動
+end note
+
+ErrorSource -> MainController: handleFatalError()\nまたは\ninitiateShutdown()
+activate MainController
+
+MainController -> LogHandler: logError("致命的エラー発生")
+
+note right of MainController
+    【重要】異常時でもAtomicBoolean制御
+    複数のエラーが同時発生しても
+    安全に一度だけ処理
+end note
+
+MainController -> AtomicBoolean: getAndSet(true)
+AtomicBoolean --> MainController: false (初回) or true (重複)
+
+alt 初回異常終了要求
+    MainController -> LogHandler: log("緊急シャットダウン開始")
+
+    note right of MainController
+        異常時は時間制限を設けて
+        迅速に処理を進める
+    end note
+
+    MainController -> MainController: terminateRunningTasks()
+    note right of MainController
+        タスク終了は interrupt() のみ
+        待機時間は最小限
+    end note
+
+    MainController -> ResourceManager: releaseAllResources()
+    activate ResourceManager
+    note right of ResourceManager
+        リソース解放でエラーが発生しても
+        処理を続行する設計
+    end note
+
+    ResourceManager --> MainController: 可能な限りクリーンアップ完了
+    deactivate ResourceManager
+
+    alt MainFrameが利用可能
+        MainController -> MainFrame: performPhysicalShutdown()
+        MainFrame -> MainFrame: 最小限の終了処理
+        MainFrame -> LogHandler: cleanup()
+        MainFrame -> System: exit(1) // 異常終了コード
+    else MainFrameが利用不可
+        MainController -> MainController: performDirectShutdown()
+        MainController -> LogHandler: cleanup()
+        MainController -> System: exit(1)
+    end
+
+else 重複異常終了要求
+    MainController -> LogHandler: log("異常終了処理既に実行中")
+    note right of MainController
+        何もせずに復帰
+        既に進行中の処理に任せる
+    end note
+end
+
+deactivate MainController
+
+@enduml

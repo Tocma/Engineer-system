@@ -1,0 +1,89 @@
+@startuml 同時終了要求フロー
+title 同時終了要求における排他制御\n(AtomicBooleanの真価を発揮)
+
+participant Thread1 as "スレッド1\n(ユーザー操作)"
+participant Thread2 as "スレッド2\n(システムエラー)"
+participant Thread3 as "スレッド3\n(タイムアウト)"
+participant MainController
+participant AtomicBoolean
+participant LogHandler
+participant ShutdownProcess as "実際のシャットダウン処理"
+
+note across
+複数のスレッドから同時に
+シャットダウン要求が発生
+end note
+
+par 同時実行
+Thread1 -> MainController: initiateShutdown()
+activate MainController
+else
+Thread2 -> MainController: initiateShutdown()
+activate MainController
+else
+Thread3 -> MainController: initiateShutdown()
+activate MainController
+end
+
+note right of MainController
+【核心】AtomicBooleanの原子的操作
+getAndSet(true)により
+一つのスレッドのみが処理を継続
+end note
+
+Thread1 -> AtomicBoolean: getAndSet(true)
+Thread2 -> AtomicBoolean: getAndSet(true)
+Thread3 -> AtomicBoolean: getAndSet(true)
+
+note right of AtomicBoolean
+原子的操作により
+最初の一つだけがfalseを取得
+他はtrueを取得
+end note
+
+AtomicBoolean --> Thread1: false (勝者)
+AtomicBoolean --> Thread2: true (敗者)
+AtomicBoolean --> Thread3: true (敗者)
+
+alt Thread1が処理を継続
+Thread1 -> LogHandler: log("Thread1がシャットダウン処理を開始")
+Thread1 -> ShutdownProcess: 実際のシャットダウン処理実行
+activate ShutdownProcess
+
+note right of ShutdownProcess
+    ・タスク終了
+    ・リソースクリーンアップ
+    ・物理的終了処理
+end note
+
+ShutdownProcess --> Thread1: 処理完了
+deactivate ShutdownProcess
+Thread1 -> LogHandler: log("シャットダウン完了")
+
+else Thread2とThread3は即座に復帰
+Thread2 -> LogHandler: log("Thread2: シャットダウン既に進行中")
+Thread3 -> LogHandler: log("Thread3: シャットダウン既に進行中")
+
+note right of Thread2
+    何もせずに復帰
+    Thread1の処理完了を待つ
+end note
+
+note right of Thread3
+    何もせずに復帰
+    重複処理による
+    競合状態を完全回避
+    end note
+end
+
+deactivate MainController
+deactivate MainController
+deactivate MainController
+
+note across
+結果：競合状態なし
+データ不整合なし
+一度だけの確実な終了処理
+end note
+
+@enduml

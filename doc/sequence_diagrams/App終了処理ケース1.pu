@@ -1,0 +1,96 @@
+@startuml 正常終了フロー
+title アプリケーション正常終了フロー\n(ユーザーがウィンドウ×ボタンをクリック)
+
+actor User
+participant MainFrame
+participant MainController
+participant AtomicBoolean
+participant ResourceManager
+participant LogHandler
+participant ExecutorService
+participant ManagedThreads
+participant System
+
+User -> MainFrame: ウィンドウ×ボタンクリック
+activate MainFrame
+
+note right of MainFrame
+    windowClosing()イベント発生
+    DO_NOTHING_ON_CLOSE設定済み
+end note
+
+MainFrame -> MainFrame: initiateControlledShutdown()
+MainFrame -> LogHandler: log("ウィンドウ終了イベント受信")
+
+MainFrame -> MainController: initiateShutdown()
+activate MainController
+
+note right of MainController
+    【重要】AtomicBooleanによる排他制御
+    isShuttingDown.getAndSet(true)
+end note
+
+MainController -> AtomicBoolean: getAndSet(true)
+AtomicBoolean --> MainController: false (初回呼び出し)
+
+alt 初回シャットダウン要求の場合
+    MainController -> LogHandler: log("MainController主導シャットダウン開始")
+
+    note right of MainController
+        ステップ1: ビジネスロジック層の終了
+    end note
+
+    MainController -> MainController: terminateRunningTasks()
+    MainController -> ExecutorService: 全タスクに interrupt()
+    MainController -> MainController: runningTasks.clear()
+
+    note right of MainController
+        ステップ2: リソースクリーンアップ
+    end note
+
+    MainController -> ResourceManager: releaseAllResources()
+    activate ResourceManager
+    ResourceManager -> ResourceManager: 全登録リソースを close()
+    ResourceManager --> MainController: クリーンアップ完了
+    deactivate ResourceManager
+
+    note right of MainController
+        ステップ3: UI層シャットダウンをMainFrameに委譲
+    end note
+
+    MainController -> MainFrame: performPhysicalShutdown()
+
+    MainFrame -> LogHandler: log("物理的シャットダウン開始")
+    MainFrame -> ExecutorService: shutdown()
+    MainFrame -> ExecutorService: awaitTermination(5秒)
+
+    alt ExecutorService正常終了
+        ExecutorService --> MainFrame: 正常終了
+    else タイムアウト
+        MainFrame -> ExecutorService: shutdownNow()
+        ExecutorService --> MainFrame: 強制終了
+    end
+
+    MainFrame -> ManagedThreads: 全スレッドに interrupt()
+    MainFrame -> ManagedThreads: join(5秒) で終了待機
+    ManagedThreads --> MainFrame: スレッド終了完了
+
+    MainFrame -> MainFrame: frame.dispose()
+    MainFrame -> LogHandler: log("物理的シャットダウン完了")
+    MainFrame -> LogHandler: cleanup()
+    MainFrame -> System: exit(0)
+
+else 既にシャットダウン中の場合
+    note right of MainController
+        AtomicBooleanがtrueを返すため
+        重複処理をスキップ
+    end note
+
+    MainController -> LogHandler: log("シャットダウン既に進行中")
+    MainController --> MainFrame: 処理をスキップして復帰
+end
+
+deactivate MainController
+deactivate MainFrame
+
+@enduml
