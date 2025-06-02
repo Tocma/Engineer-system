@@ -15,6 +15,7 @@ import java.io.File;
 import java.nio.file.Path;
 import java.time.LocalDate;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 import java.util.ArrayList;
 import java.util.concurrent.ConcurrentHashMap;
@@ -219,6 +220,9 @@ public class MainController {
 
         // 画面遷移コントローラーにメインコントローラーへの参照を設定
         this.screenController.setMainController(this);
+
+        // MainFrameにMainControllerへの参照を設定（循環参照だが制御された形で）
+        this.mainFrame.setMainController(this);
 
         LogHandler.getInstance().log(Level.INFO, LogType.SYSTEM, "メインコントローラーを初期化しました");
     }
@@ -1960,40 +1964,134 @@ public class MainController {
     }
 
     /**
-     * シャットダウン処理の開始
-     * アプリケーションの安全な終了処理を開始します
+     * シャットダウン処理の開始（修正版）
+     * AtomicBooleanによる排他制御を活用し、システム全体を統制する
      */
     public void initiateShutdown() {
-        // 既にシャットダウン中なら処理しない
+        // 既にシャットダウン中なら処理しない（原子的操作による排他制御）
         if (isShuttingDown.getAndSet(true)) {
+            LogHandler.getInstance().log(Level.INFO, LogType.SYSTEM,
+                    "シャットダウンは既に進行中です。重複処理をスキップします");
             return;
         }
 
-        LogHandler.getInstance().log(Level.INFO, LogType.SYSTEM, "アプリケーションのシャットダウンを開始します");
+        LogHandler.getInstance().log(Level.INFO, LogType.SYSTEM,
+                "MainController主導でアプリケーションのシャットダウンを開始します");
 
-        // 実行中のタスクをすべて終了
-        terminateRunningTasks();
+        try {
+            // ステップ1: ビジネスロジック層のシャットダウン
+            LogHandler.getInstance().log(Level.INFO, LogType.SYSTEM,
+                    "ステップ1: 実行中タスクの終了処理を開始");
+            terminateRunningTasks();
 
-        // メインフレームに終了を通知
-        mainFrame.performShutdown();
+            // ステップ2: ResourceManagerのクリーンアップ
+            LogHandler.getInstance().log(Level.INFO, LogType.SYSTEM,
+                    "ステップ2: リソースマネージャーのクリーンアップを開始");
+            performResourceCleanup();
+
+            // ステップ3: UI層のシャットダウン（MainFrameに委譲）
+            LogHandler.getInstance().log(Level.INFO, LogType.SYSTEM,
+                    "ステップ3: UI層のシャットダウン処理をMainFrameに委譲");
+            if (mainFrame != null) {
+                // MainFrameの物理的終了処理を呼び出す
+                // ここがポイント：MainControllerが全体を統制している
+                mainFrame.performPhysicalShutdown();
+            } else {
+                LogHandler.getInstance().log(Level.WARNING, LogType.SYSTEM,
+                        "MainFrameへの参照がnullのため、直接終了処理を実行");
+                performDirectShutdown();
+            }
+
+        } catch (Exception e) {
+            // シャットダウン中のエラーはログに記録するが、処理は続行
+            LogHandler.getInstance().logError(LogType.SYSTEM,
+                    "シャットダウン処理中にエラーが発生しましたが、処理を続行します", e);
+
+            // エラー時のフォールバック処理
+            performDirectShutdown();
+        }
     }
 
     /**
-     * 実行中のタスクを終了
+     * リソースマネージャーのクリーンアップ処理
+     * ResourceManagerとの連携によるリソース解放
+     */
+    private void performResourceCleanup() {
+        try {
+            if (resourceManager != null && resourceManager.isInitialized()) {
+                boolean allResourcesReleased = resourceManager.releaseAllResources();
+                if (allResourcesReleased) {
+                    LogHandler.getInstance().log(Level.INFO, LogType.SYSTEM,
+                            "すべてのリソースが正常に解放されました");
+                } else {
+                    LogHandler.getInstance().log(Level.WARNING, LogType.SYSTEM,
+                            "一部のリソース解放に失敗しましたが、処理を続行します");
+                }
+            }
+        } catch (Exception e) {
+            LogHandler.getInstance().logError(LogType.SYSTEM,
+                    "リソースクリーンアップ中にエラーが発生しました", e);
+        }
+    }
+
+    /**
+     * 直接的なシャットダウン処理（フォールバック用）
+     * MainFrameが利用できない場合の緊急終了処理
+     */
+    private void performDirectShutdown() {
+        try {
+            LogHandler.getInstance().log(Level.WARNING, LogType.SYSTEM,
+                    "フォールバック処理により直接シャットダウンを実行します");
+
+            // ログシステムのクリーンアップ
+            LogHandler.getInstance().cleanup();
+
+            // JVMの終了
+            System.exit(0);
+
+        } catch (Exception e) {
+            // 最後の手段
+            System.err.println("緊急終了処理中にもエラーが発生しました: " + e.getMessage());
+            System.exit(1);
+        }
+    }
+
+    /**
+     * 実行中のタスクを終了（既存メソッドの改良）
+     * より詳細なログ出力と例外処理を追加
      */
     private void terminateRunningTasks() {
+        int taskCount = runningTasks.size();
         LogHandler.getInstance().log(Level.INFO, LogType.SYSTEM,
-                "実行中の非同期タスクを終了します: " + runningTasks.size() + "件");
+                "実行中の非同期タスクを終了します: " + taskCount + "件");
+
+        if (taskCount == 0) {
+            LogHandler.getInstance().log(Level.INFO, LogType.SYSTEM,
+                    "終了対象のタスクはありません");
+            return;
+        }
 
         // すべての実行中タスクを中断
-        for (Thread thread : runningTasks.values()) {
+        for (Map.Entry<String, Thread> entry : runningTasks.entrySet()) {
+            String taskId = entry.getKey();
+            Thread thread = entry.getValue();
+
             if (thread != null && thread.isAlive()) {
-                thread.interrupt();
+                try {
+                    thread.interrupt();
+                    LogHandler.getInstance().log(Level.INFO, LogType.SYSTEM,
+                            "タスクに中断信号を送信しました: " + taskId);
+                } catch (Exception e) {
+                    LogHandler.getInstance().logError(LogType.SYSTEM,
+                            "タスクの中断処理中にエラーが発生しました: " + taskId, e);
+                }
             }
         }
 
         // マップをクリア
         runningTasks.clear();
+        LogHandler.getInstance().log(Level.INFO, LogType.SYSTEM,
+                "すべてのタスク管理情報をクリアしました");
     }
 
     /**

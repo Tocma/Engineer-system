@@ -3,6 +3,9 @@ package view;
 import util.LogHandler;
 import util.LogHandler.LogType;
 import javax.swing.*;
+
+import controller.MainController;
+
 import java.awt.*;
 import java.awt.event.WindowAdapter;
 import java.awt.event.WindowEvent;
@@ -56,6 +59,9 @@ public class MainFrame extends AbstractFrame {
     /** メインコンテンツを配置するパネル */
     private final JPanel contentPanel;
 
+    /** メインコントローラー */
+    private MainController mainController;
+
     /** ワーカースレッドを管理するExecutorService */
     private final ExecutorService executor;
 
@@ -88,11 +94,10 @@ public class MainFrame extends AbstractFrame {
         setupWindowCloseHandler();
     }
 
-    //listpanelにアクセスするためのgetter
+    // listpanelにアクセスするためのgetter
     public ListPanel getListPanel() {
         return listPanel;
     }
-
 
     @Override
     protected void customizeFrame() {
@@ -109,9 +114,103 @@ public class MainFrame extends AbstractFrame {
         frame.addWindowListener(new WindowAdapter() {
             @Override
             public void windowClosing(WindowEvent e) {
-                performShutdown();
+                // MainController主導のシャットダウンを開始
+                initiateControlledShutdown();
             }
         });
+    }
+
+    /**
+     * 制御されたシャットダウンの開始
+     * MainControllerを通じて全体的なシャットダウン制御を行う
+     */
+    private void initiateControlledShutdown() {
+        LogHandler.getInstance().log(Level.INFO, LogType.SYSTEM,
+                "ウィンドウ終了イベントを受信。MainController主導のシャットダウンを開始します");
+
+        if (mainController != null) {
+            // MainControllerのAtomicBoolean制御によるシャットダウンを開始
+            mainController.initiateShutdown();
+        } else {
+            // フォールバック処理（MainControllerが設定されていない場合）
+            LogHandler.getInstance().log(Level.WARNING, LogType.SYSTEM,
+                    "MainControllerへの参照がnullのため、直接シャットダウンを実行します");
+            performDirectShutdown();
+        }
+    }
+
+    /**
+     * 直接シャットダウン処理（フォールバック用）
+     * MainControllerが利用できない場合の緊急処理
+     */
+    private void performDirectShutdown() {
+        LogHandler.getInstance().log(Level.WARNING, LogType.SYSTEM,
+                "フォールバック処理により直接シャットダウンを実行します");
+
+        shutdownExecutorService();
+        shutdownManagedThreads();
+        frame.dispose();
+
+        LogHandler.getInstance().log(Level.INFO, LogType.SYSTEM,
+                "フォールバック処理によるシャットダウンが完了しました");
+        LogHandler.getInstance().cleanup();
+
+        System.exit(0);
+    }
+
+    /**
+     * 物理的なシャットダウン処理
+     * MainControllerから呼び出される、UI層の実際の終了処理
+     * 
+     * 重要：このメソッドはMainControllerのAtomicBoolean制御下で呼ばれる
+     */
+    public void performPhysicalShutdown() {
+        LogHandler.getInstance().log(Level.INFO, LogType.SYSTEM,
+                "MainFrame物理的シャットダウン処理を開始します");
+
+        try {
+            // ExecutorServiceを安全に終了
+            LogHandler.getInstance().log(Level.INFO, LogType.SYSTEM,
+                    "ExecutorServiceの終了処理を開始");
+            shutdownExecutorService();
+
+            // 登録済みスレッドを安全に終了
+            LogHandler.getInstance().log(Level.INFO, LogType.SYSTEM,
+                    "登録済みスレッドの終了処理を開始");
+            shutdownManagedThreads();
+
+            // ウィンドウを閉じる
+            LogHandler.getInstance().log(Level.INFO, LogType.SYSTEM,
+                    "メインウィンドウを閉じます");
+            frame.dispose();
+
+            // ログシステムの最終クリーンアップ
+            LogHandler.getInstance().log(Level.INFO, LogType.SYSTEM,
+                    "MainFrame物理的シャットダウン処理が完了しました");
+            LogHandler.getInstance().cleanup();
+
+            // JVMの終了（ここで初めて実行）
+            System.exit(0);
+
+        } catch (Exception e) {
+            // エラー時のログ記録と緊急終了
+            try {
+                LogHandler.getInstance().logError(LogType.SYSTEM,
+                        "物理的シャットダウン処理中にエラーが発生しました", e);
+            } catch (Exception logError) {
+                System.err.println("ログ記録にも失敗しました: " + logError.getMessage());
+            }
+
+            // 緊急終了
+            System.exit(1);
+        }
+    }
+
+    // セッターメソッドを追加
+    public void setMainController(MainController mainController) {
+        this.mainController = mainController;
+        LogHandler.getInstance().log(Level.INFO, LogType.SYSTEM,
+                "MainFrameにMainControllerへの参照を設定しました");
     }
 
     /**
@@ -119,21 +218,9 @@ public class MainFrame extends AbstractFrame {
      * スレッドの安全な終了とリソースの解放を行います
      */
     public void performShutdown() {
-        LogHandler.getInstance().log(Level.INFO, LogType.SYSTEM, "アプリケーション終了処理を開始します");
-
-        // ExecutorServiceを安全に終了
-        shutdownExecutorService();
-
-        // 登録済みスレッドを安全に終了
-        shutdownManagedThreads();
-
-        // ウィンドウを閉じる
-        frame.dispose();
-
-        LogHandler.getInstance().log(Level.INFO, LogType.SYSTEM, "アプリケーション終了処理が完了しました");
-
-        // アプリケーションを終了
-        System.exit(0);
+        LogHandler.getInstance().log(Level.WARNING, LogType.SYSTEM,
+                "performShutdown()が呼ばれました。制御フローにリダイレクトします");
+        initiateControlledShutdown();
     }
 
     /**
