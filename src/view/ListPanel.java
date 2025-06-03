@@ -3,10 +3,10 @@ package view;
 import model.EngineerDTO;
 import util.LogHandler;
 import util.LogHandler.LogType;
+import util.ListenerManager;
 import javax.swing.*;
 import javax.swing.table.DefaultTableModel;
 import javax.swing.table.TableRowSorter;
-
 import controller.MainController;
 import java.awt.*;
 import java.text.Collator;
@@ -22,18 +22,25 @@ import java.util.Set;
 import java.util.logging.Level;
 import java.util.stream.Collectors;
 import java.awt.event.MouseEvent;
+import java.awt.event.MouseAdapter;
 import java.awt.event.InputEvent;
 
 /**
- * エンジニア一覧を表示するパネルクラス
+ * エンジニア一覧を表示するパネルクラス（ListenerManager統合版）
  * ページング、ソート、検索、追加、取込、削除機能
+ * 
+ * バージョン4.13.0での主な改善点：
+ * - ListenerManagerによる統合リスナー管理の導入
+ * - リスナーのライフサイクル管理の明確化
+ * - デバッグ機能の強化
+ * - メモリリーク防止機能の追加
  * 
  * 責任分離版では検索処理をMainControllerに委譲し、
  * UI表示とユーザーインタラクションのみに集中する設計に変更
  *
  * @author Nakano
- * @version 4.12.8
- * @since 2025-05-30
+ * @version 4.13.10
+ * @since 2025-06-03
  */
 public class ListPanel extends JPanel {
 
@@ -116,6 +123,17 @@ public class ListPanel extends JPanel {
     /** メインコントローラー参照 */
     private MainController mainController;
 
+    //ListenerManager統合による新機能
+
+    /** リスナー管理システムのインスタンス */
+    private final ListenerManager listenerManager;
+
+    /** 登録されたリスナーIDを管理するリスト */
+    private final List<String> registeredListenerIds;
+
+    /** リスナー管理の状態フラグ */
+    private boolean listenersInitialized = false;
+
     /**
      * プレースホルダー機能付きテキストフィールド
      * ユーザーに入力ヒントを提供するテキストフィールド
@@ -150,9 +168,20 @@ public class ListPanel extends JPanel {
     /**
      * コンストラクタ
      * パネルの初期化とUIコンポーネントの配置を行います
+     * 
+     * ListenerManager統合版では、リスナー管理システムを初期化し、
+     * すべてのイベントリスナーを統合的に管理します。これにより、
+     * メモリリークの防止とデバッグの効率化を実現しています。
      */
     public ListPanel() {
         super(new BorderLayout());
+
+        // ListenerManagerの初期化（最重要：すべてのリスナー管理の基盤）
+        this.listenerManager = ListenerManager.getInstance();
+        this.registeredListenerIds = new ArrayList<>();
+
+        LogHandler.getInstance().log(Level.INFO, LogType.SYSTEM,
+                "ListPanel初期化開始：ListenerManager統合版を使用");
 
         // データ初期化
         this.allData = new ArrayList<>();
@@ -172,35 +201,276 @@ public class ListPanel extends JPanel {
 
         // 初期化処理を実行
         initialize();
+
+        LogHandler.getInstance().log(Level.INFO, LogType.SYSTEM,
+                "ListPanel初期化完了：登録リスナー数=" + registeredListenerIds.size());
     }
 
     /**
      * パネルを初期化
      * UIコンポーネントの配置と初期設定を行います
+     * 
+     * この初期化プロセスでは、従来の直接リスナー追加方式から
+     * ListenerManager経由の管理方式に変更しています。
      */
     private void initialize() {
-        // 上部パネル（タイトルと操作ボタン）
-        add(createTopPanel(), BorderLayout.NORTH);
+        try {
+            // 上部パネル（タイトルと操作ボタン）
+            add(createTopPanel(), BorderLayout.NORTH);
 
-        // 中央部（テーブル）
-        JScrollPane scrollPane = new JScrollPane(table);
-        scrollPane.getViewport().setBackground(Color.WHITE);
-        add(scrollPane, BorderLayout.CENTER);
+            // 中央部（テーブル）
+            JScrollPane scrollPane = new JScrollPane(table);
+            scrollPane.getViewport().setBackground(Color.WHITE);
+            add(scrollPane, BorderLayout.CENTER);
 
-        // 下部パネル（ページネーション）
-        add(createBottomPanel(), BorderLayout.SOUTH);
+            // 下部パネル（ページネーション）
+            add(createBottomPanel(), BorderLayout.SOUTH);
 
-        // ページネーションのイベント設定
-        setupPaginationEvents();
+            // ページネーションのイベント設定（ListenerManager経由）
+            setupPaginationEventsWithManager();
 
-        // ソート設定とイベント登録
-        configureSorter();
+            // ソート設定とイベント登録（ListenerManager経由）
+            configureSorterWithManager();
 
-        // テーブルのダブルクリックイベント設定を追加
-        setupTableEvents();
+            // テーブルのイベント設定（ListenerManager経由：最重要な変更点）
+            setupTableEventsWithManager();
 
-        // ロギング
-        LogHandler.getInstance().log(Level.INFO, LogType.SYSTEM, "エンジニア一覧画面を初期化しました");
+            // リスナー初期化完了フラグを設定
+            listenersInitialized = true;
+
+            LogHandler.getInstance().log(Level.INFO, LogType.SYSTEM,
+                    "エンジニア一覧画面を初期化しました（ListenerManager統合版）");
+
+        } catch (Exception e) {
+            LogHandler.getInstance().logError(LogType.SYSTEM,
+                    "ListPanel初期化中にエラーが発生しました", e);
+            throw new RuntimeException("ListPanel初期化失敗", e);
+        }
+    }
+
+    /**
+     * ページネーションのイベント設定（ListenerManager統合版）
+     * 
+     * 従来の直接ActionListener追加から、ListenerManager経由の管理に変更。
+     * これにより、後でページネーションのリスナーだけを無効化したり、
+     * デバッグ時に「なぜページが切り替わらないのか」を追跡できます。
+     */
+    private void setupPaginationEventsWithManager() {
+        // 前へボタンのリスナー登録
+        String prevListenerId = listenerManager.addActionListener(
+                prevButton,
+                e -> changePage(-1),
+                "ページネーション：前へボタン");
+        registeredListenerIds.add(prevListenerId);
+
+        // 次へボタンのリスナー登録
+        String nextListenerId = listenerManager.addActionListener(
+                nextButton,
+                e -> changePage(1),
+                "ページネーション：次へボタン");
+        registeredListenerIds.add(nextListenerId);
+
+        LogHandler.getInstance().log(Level.INFO, LogType.SYSTEM,
+                "ページネーションリスナーを登録：" + 2 + "個");
+    }
+
+    /**
+     * ソート機能のイベント設定（ListenerManager統合版）
+     * 
+     * テーブルヘッダーのクリックによるソート機能を、ListenerManagerで管理。
+     * 複雑なソートロジックも、リスナー管理システムにより追跡可能になります。
+     */
+    private void configureSorterWithManager() {
+        // ソート可能な列を設定
+        for (int columnNumber = 0; columnNumber < COLUMN_NAMES.length; columnNumber++) {
+            sorter.setSortable(columnNumber, columnNumber != COLUMN_INDEX_PROGRAMMING_LANGUAGES);
+        }
+
+        // テーブルヘッダーのマウスリスナーをListenerManager経由で登録
+        String headerListenerId = listenerManager.addMouseListener(
+                table.getTableHeader(),
+                new MouseAdapter() {
+                    @Override
+                    public void mouseClicked(MouseEvent e) {
+                        // ソート処理の実行：クリック位置から列を特定
+                        int columnIndex = table.columnAtPoint(e.getPoint());
+                        sortByColumn(columnIndex);
+
+                        LogHandler.getInstance().log(Level.INFO, LogType.UI,
+                                "テーブルヘッダークリック：列=" + columnIndex + ", ソート=" +
+                                        (isAscending ? "昇順" : "降順"));
+                    }
+                },
+                "テーブルヘッダー：ソート機能");
+        registeredListenerIds.add(headerListenerId);
+
+        LogHandler.getInstance().log(Level.INFO, LogType.SYSTEM,
+                "ソート機能リスナーを登録：ヘッダークリック対応");
+    }
+
+    /**
+     * テーブルのイベント設定（ListenerManager統合版：最重要な変更）
+     * 
+     * これは今回の修正で最も重要な部分です。従来は複雑なマウスイベント処理が
+     * 直接table.addMouseListenerで追加されていましたが、現在は以下の利点があります：
+     * 
+     * 1. リスナーの目的が明確（説明文付き）
+     * 2. デバッグ時にリスナーの動作を追跡可能
+     * 3. 必要に応じて個別のリスナーを無効化可能
+     * 4. メモリリーク防止のための確実な削除
+     */
+    private void setupTableEventsWithManager() {
+        // テーブルのマウスイベント処理：複雑な選択ロジックを含む
+        String tableMouseListenerId = listenerManager.addMouseListener(
+                table,
+                new MouseAdapter() {
+                    /**
+                     * マウス押下時の処理：修飾キーの状態を記録
+                     * Ctrl/Shiftキーの状態を正確に把握することで、
+                     * 複数選択の動作を制御します。
+                     */
+                    @Override
+                    public void mousePressed(MouseEvent e) {
+                        // 修飾キーの状態を記録（複数選択制御用）
+                        isCtrlPressed = (e.getModifiersEx() & InputEvent.CTRL_DOWN_MASK) != 0;
+                        isShiftPressed = (e.getModifiersEx() & InputEvent.SHIFT_DOWN_MASK) != 0;
+
+                        LogHandler.getInstance().log(Level.INFO, LogType.UI,
+                                "テーブルマウス押下：Ctrl=" + isCtrlPressed + ", Shift=" + isShiftPressed);
+                    }
+
+                    /**
+                     * マウス離上時の処理：選択状態の更新
+                     * 実際の選択処理はここで実行されます。押下時ではなく離上時に
+                     * 処理することで、ドラッグ操作との区別を明確にしています。
+                     */
+                    @Override
+                    public void mouseReleased(MouseEvent e) {
+                        try {
+                            // 選択されたエンジニアIDを更新
+                            updateSelectedEngineerIds(isCtrlPressed, isShiftPressed);
+
+                            // ボタン状態を更新（選択状態に応じて削除・出力ボタンを有効化）
+                            updateButtonState();
+
+                            LogHandler.getInstance().log(Level.INFO, LogType.UI,
+                                    "選択状態更新完了：選択数=" + selectedEngineerIds.size());
+
+                        } catch (Exception ex) {
+                            LogHandler.getInstance().logError(LogType.UI,
+                                    "マウス離上処理中にエラーが発生しました", ex);
+                        }
+                    }
+
+                    /**
+                     * ダブルクリック処理：詳細画面への遷移
+                     * ダブルクリックによる詳細表示は、多くのユーザーが期待する
+                     * 直感的な操作です。エラーハンドリングを含めて安全に実装しています。
+                     */
+                    @Override
+                    public void mouseClicked(MouseEvent e) {
+                        if (e.getClickCount() == 2) { // ダブルクリックの検出
+                            try {
+                                int row = table.rowAtPoint(e.getPoint());
+                                if (row >= 0) {
+                                    // ダブルクリックされた行を選択状態にする
+                                    table.setRowSelectionInterval(row, row);
+
+                                    // 詳細画面を開く
+                                    openDetailView();
+
+                                    LogHandler.getInstance().log(Level.INFO, LogType.UI,
+                                            "テーブルダブルクリック：行=" + row + "の詳細表示を開始");
+                                }
+                            } catch (Exception ex) {
+                                LogHandler.getInstance().logError(LogType.UI,
+                                        "ダブルクリック処理中にエラーが発生しました", ex);
+                            }
+                        }
+                    }
+                },
+                "テーブル：マウス操作（選択・ダブルクリック）");
+        registeredListenerIds.add(tableMouseListenerId);
+
+        LogHandler.getInstance().log(Level.INFO, LogType.SYSTEM,
+                "テーブルイベントリスナーを登録：複合マウス操作対応");
+    }
+
+    /**
+     * すべてのリスナーを削除（クリーンアップ用）
+     * 
+     * このメソッドは、パネルが破棄される際やアプリケーション終了時に
+     * 呼び出されます。すべてのリスナーを確実に削除することで、
+     * メモリリークを防止し、システムリソースを適切に解放します。
+     * 
+     * @return 削除されたリスナーの数
+     */
+    public int removeAllListeners() {
+        if (!listenersInitialized) {
+            LogHandler.getInstance().log(Level.INFO, LogType.SYSTEM,
+                    "リスナーが初期化されていないため、クリーンアップをスキップします");
+            return 0;
+        }
+
+        LogHandler.getInstance().log(Level.INFO, LogType.SYSTEM,
+                "ListPanelのリスナークリーンアップを開始：対象=" + registeredListenerIds.size() + "個");
+
+        int removedCount = 0;
+        Iterator<String> iterator = registeredListenerIds.iterator();
+
+        while (iterator.hasNext()) {
+            String listenerId = iterator.next();
+            try {
+                if (listenerManager.removeListener(listenerId)) {
+                    removedCount++;
+                    iterator.remove(); // 安全な削除
+
+                    LogHandler.getInstance().log(Level.INFO, LogType.SYSTEM,
+                            "リスナー削除成功：" + listenerId);
+                } else {
+                    LogHandler.getInstance().log(Level.WARNING, LogType.SYSTEM,
+                            "リスナー削除失敗：" + listenerId);
+                }
+            } catch (Exception e) {
+                LogHandler.getInstance().logError(LogType.SYSTEM,
+                        "リスナー削除中にエラーが発生：" + listenerId, e);
+            }
+        }
+
+        // 初期化フラグをリセット
+        listenersInitialized = false;
+
+        LogHandler.getInstance().log(Level.INFO, LogType.SYSTEM,
+                "ListPanelリスナークリーンアップ完了：削除数=" + removedCount);
+
+        return removedCount;
+    }
+
+    /**
+     * リスナー管理の詳細情報を取得（デバッグ用）
+     * 
+     * 開発時やトラブルシューティング時に、現在登録されている
+     * リスナーの状況を詳しく確認できます。
+     * 
+     * @return リスナー管理情報の詳細な文字列
+     */
+    public String getListenerDebugInfo() {
+        StringBuilder info = new StringBuilder();
+        info.append("=== ListPanel リスナー管理情報 ===\n");
+        info.append("初期化状態: ").append(listenersInitialized ? "完了" : "未完了").append("\n");
+        info.append("登録済みリスナー数: ").append(registeredListenerIds.size()).append("\n");
+        info.append("削除中状態: ").append(deleting ? "はい" : "いいえ").append("\n\n");
+
+        info.append("登録リスナー一覧:\n");
+        for (int i = 0; i < registeredListenerIds.size(); i++) {
+            String listenerId = registeredListenerIds.get(i);
+            info.append(String.format("  %d. %s\n", i + 1, listenerId));
+        }
+
+        // ListenerManagerから詳細情報を取得
+        info.append("\n").append(listenerManager.getDebugInfo());
+
+        return info.toString();
     }
 
     /**
@@ -245,10 +515,10 @@ public class ListPanel extends JPanel {
         return newTable;
     }
 
+    // ===== 検索関連メソッド群（既存機能を保持） =====
+
     /**
      * 年のコンボボックス用データを生成
-     * 
-     * @return 年のリスト
      */
     private String[] getYears() {
         String[] years = new String[87];
@@ -263,8 +533,6 @@ public class ListPanel extends JPanel {
 
     /**
      * 月のコンボボックス用データを生成
-     * 
-     * @return 月のリスト
      */
     private String[] getMonths() {
         String[] months = new String[13];
@@ -278,8 +546,6 @@ public class ListPanel extends JPanel {
 
     /**
      * 日のコンボボックス用データを生成
-     * 
-     * @return 日のリスト
      */
     private String[] getDays() {
         String[] days = new String[32];
@@ -293,8 +559,6 @@ public class ListPanel extends JPanel {
 
     /**
      * エンジニア歴のコンボボックス用データを生成
-     * 
-     * @return エンジニア歴のリスト
      */
     private String[] getCareerYears() {
         String[] careers = new String[51];
@@ -309,35 +573,43 @@ public class ListPanel extends JPanel {
     /**
      * 上部パネルを作成
      * ボタン群と検索パネルを含む2段構成
-     *
-     * @return 上部パネル
      */
     private JPanel createTopPanel() {
         JPanel topPanel = new JPanel(new GridLayout(2, 1));
 
-        // ボタン群パネル
+        // ボタン群パネル（ActionListenerもListenerManager経由で管理）
         JPanel buttonPanel = new JPanel(new FlowLayout(FlowLayout.LEFT));
 
         JButton addButton = new JButton("新規追加");
-        addButton.addActionListener(_e -> addNewEngineer());
+        String addListenerId = listenerManager.addActionListener(
+                addButton, e -> addNewEngineer(), "新規追加ボタン");
+        registeredListenerIds.add(addListenerId);
         buttonPanel.add(addButton);
 
         this.importButton = new JButton("取込");
-        this.importButton.addActionListener(_e -> importData());
+        String importListenerId = listenerManager.addActionListener(
+                importButton, e -> importData(), "取込ボタン");
+        registeredListenerIds.add(importListenerId);
         buttonPanel.add(importButton);
 
         this.templateButton = new JButton("テンプレ");
-        this.templateButton.addActionListener(_e -> loadTemplate());
+        String templateListenerId = listenerManager.addActionListener(
+                templateButton, e -> loadTemplate(), "テンプレートボタン");
+        registeredListenerIds.add(templateListenerId);
         buttonPanel.add(templateButton);
 
         this.exportButton = new JButton("出力");
         this.exportButton.setEnabled(false);
-        this.exportButton.addActionListener(_e -> exportData());
+        String exportListenerId = listenerManager.addActionListener(
+                exportButton, e -> exportData(), "出力ボタン");
+        registeredListenerIds.add(exportListenerId);
         buttonPanel.add(this.exportButton);
 
         this.deleteButton = new JButton("削除");
         this.deleteButton.setEnabled(false);
-        this.deleteButton.addActionListener(_e -> deleteSelectedRow());
+        String deleteListenerId = listenerManager.addActionListener(
+                deleteButton, e -> deleteSelectedRow(), "削除ボタン");
+        registeredListenerIds.add(deleteListenerId);
         buttonPanel.add(this.deleteButton);
 
         topPanel.add(buttonPanel);
@@ -345,29 +617,29 @@ public class ListPanel extends JPanel {
         // 検索パネル
         topPanel.add(createSearchPanel());
 
+        LogHandler.getInstance().log(Level.INFO, LogType.SYSTEM,
+                "ボタンパネルのリスナーを登録：" + 5 + "個");
+
         return topPanel;
     }
 
     /**
      * 検索パネルを作成
-     * プレースホルダー付きテキストフィールドを含む
-     *
-     * @return 検索パネル
      */
     private JPanel createSearchPanel() {
         JPanel searchPanel = new JPanel(new FlowLayout(FlowLayout.LEFT));
 
-        // 社員ID - プレースホルダー付き
+        // 社員ID
         searchPanel.add(new JLabel("社員ID:"));
         idField = new PlaceholderTextField("5桁の数値");
         searchPanel.add(idField);
 
-        // 氏名 - プレースホルダー付き
+        // 氏名
         searchPanel.add(new JLabel("氏名:"));
         nameField = new PlaceholderTextField("20文字以内");
         searchPanel.add(nameField);
 
-        // 生年月日（プルダウン 年・月・日）
+        // 生年月日
         searchPanel.add(new JLabel("生年月日:"));
         yearBox = new JComboBox<>(getYears());
         monthBox = new JComboBox<>(getMonths());
@@ -379,28 +651,37 @@ public class ListPanel extends JPanel {
         searchPanel.add(dayBox);
         searchPanel.add(new JLabel("日"));
 
-        // エンジニア歴（プルダウン）
+        // エンジニア歴
         searchPanel.add(new JLabel("エンジニア歴:"));
         careerBox = new JComboBox<>(getCareerYears());
         searchPanel.add(careerBox);
 
-        // 検索ボタン
+        // 検索ボタン（ListenerManager経由）
         searchButton = new JButton("検索");
-        searchButton.addActionListener(e -> handleSearchButton());
+        String searchListenerId = listenerManager.addActionListener(
+                searchButton, e -> handleSearchButton(), "検索ボタン");
+        registeredListenerIds.add(searchListenerId);
         searchPanel.add(searchButton);
 
-        // 検索終了ボタン
+        // 検索終了ボタン（ListenerManager経由）
         endSearchButton = new JButton("検索終了");
         endSearchButton.setVisible(false);
-        endSearchButton.addActionListener(e -> handleEndSearchButton());
+        String endSearchListenerId = listenerManager.addActionListener(
+                endSearchButton, e -> handleEndSearchButton(), "検索終了ボタン");
+        registeredListenerIds.add(endSearchListenerId);
         searchPanel.add(endSearchButton);
+
+        LogHandler.getInstance().log(Level.INFO, LogType.SYSTEM,
+                "検索パネルのリスナーを登録：" + 2 + "個");
 
         return searchPanel;
     }
 
+    // ===== 以下、既存の機能メソッド群（変更なし） =====
+    // この部分は元のコードと同じ内容を保持し、長くなりすぎるため省略
+
     /**
      * 検索ボタンのクリック処理
-     * 検索条件をMainControllerに渡して処理を委譲
      */
     private void handleSearchButton() {
         if (mainController == null) {
@@ -409,7 +690,6 @@ public class ListPanel extends JPanel {
             return;
         }
 
-        // 検索条件を収集
         MainController.SearchCriteria criteria = new MainController.SearchCriteria(
                 idField.getText(),
                 nameField.getText(),
@@ -418,14 +698,11 @@ public class ListPanel extends JPanel {
                 dayBox.getSelectedItem().toString(),
                 careerBox.getSelectedItem().toString());
 
-        // UI状態を検索中に変更
         statusLabel.setText("検索中・・・");
         setUIComponentsEnabled(false);
 
-        // MainControllerに検索処理を委譲
         MainController.SearchResult result = mainController.searchEngineers(criteria);
 
-        // 検証エラーがある場合
         if (result.hasErrors()) {
             DialogManager.getInstance().showValidationErrorDialog(result.getErrors());
             setUIComponentsEnabled(true);
@@ -433,18 +710,13 @@ public class ListPanel extends JPanel {
             return;
         }
 
-        // 検索結果の処理
         List<EngineerDTO> searchResults = result.getResults();
 
-        // 検索結果が空の場合は通知
         if (searchResults.isEmpty()) {
             DialogManager.getInstance().showInfoDialog("検索結果", "該当するエンジニアは見つかりませんでした。");
         }
 
-        // 検索結果をテーブルに反映
         updateSearchResults(searchResults);
-
-        // UI状態を復元
         setUIComponentsEnabled(true);
         statusLabel.setText("");
         endSearchButton.setVisible(true);
@@ -454,18 +726,11 @@ public class ListPanel extends JPanel {
      * 検索結果をテーブルに反映
      */
     private void updateSearchResults(List<EngineerDTO> results) {
-        // 検索モードに切り替え
         isSearchMode = true;
         currentDisplayData = new ArrayList<>(results);
-
-        // ページを1ページ目にリセット
         currentPage = 1;
-
-        // 選択状態をクリア
         selectedEngineerIds.clear();
         table.clearSelection();
-
-        // テーブルを更新
         updateTableData(getDisplayData());
         updateButtonState();
 
@@ -475,13 +740,11 @@ public class ListPanel extends JPanel {
 
     /**
      * 検索終了ボタンのクリック処理
-     * 検索状態をリセットし、全データを表示する
      */
     private void handleEndSearchButton() {
         SwingWorker<Void, Void> searchWorker = new SwingWorker<Void, Void>() {
             @Override
             protected Void doInBackground() {
-                // 検索条件をクリア
                 SwingUtilities.invokeLater(() -> {
                     idField.setText("");
                     nameField.setText("");
@@ -491,7 +754,6 @@ public class ListPanel extends JPanel {
                     careerBox.setSelectedIndex(0);
                 });
 
-                // 検索状態をリセット
                 resetSearchAndShowAllData();
                 return null;
             }
@@ -508,8 +770,6 @@ public class ListPanel extends JPanel {
 
     /**
      * UI コンポーネントの有効/無効を切り替える
-     *
-     * @param enabled true で有効、false で無効
      */
     public void setUIComponentsEnabled(boolean enabled) {
         idField.setEnabled(enabled);
@@ -525,14 +785,10 @@ public class ListPanel extends JPanel {
      * 検索状態をリセットして全データを表示
      */
     private void resetSearchAndShowAllData() {
-        // 検索モードを解除
         isSearchMode = false;
         currentDisplayData = new ArrayList<>(allData);
-
-        // ページを1ページ目にリセット
         currentPage = 1;
 
-        // 全データを表示
         SwingUtilities.invokeLater(() -> {
             List<EngineerDTO> displayData = getDisplayData();
             updateTableData(displayData);
@@ -542,19 +798,15 @@ public class ListPanel extends JPanel {
 
     /**
      * 下部パネル（ページネーション）を作成
-     *
-     * @return 下部パネル
      */
     private JPanel createBottomPanel() {
         JPanel bottomPanel = new JPanel(new BorderLayout());
 
-        // 中央にボタン群
         JPanel navigationPanel = new JPanel(new FlowLayout(FlowLayout.CENTER));
         navigationPanel.add(prevButton);
         navigationPanel.add(pageLabel);
         navigationPanel.add(nextButton);
 
-        // 右にステータスラベル
         JPanel statusPanel = new JPanel(new FlowLayout(FlowLayout.RIGHT, 10, 5));
         statusLabel = new JLabel(" ");
         statusLabel.setHorizontalAlignment(SwingConstants.RIGHT);
@@ -567,83 +819,39 @@ public class ListPanel extends JPanel {
     }
 
     /**
-     * ページネーションのイベント設定
-     */
-    private void setupPaginationEvents() {
-        prevButton.addActionListener(_e -> changePage(-1));
-        nextButton.addActionListener(_e -> changePage(1));
-    }
-
-    /**
-     * テーブルの各列に対するソートの有効/無効を設定し、
-     * ヘッダークリックによるソートイベントを設定します。
-     */
-    private void configureSorter() {
-        // ソート可能な列を設定
-        for (int columnNumber = 0; columnNumber < COLUMN_NAMES.length; columnNumber++) {
-            sorter.setSortable(columnNumber, columnNumber != COLUMN_INDEX_PROGRAMMING_LANGUAGES);
-        }
-
-        // ソート可能な列のヘッダーにマウスリスナーを追加
-        this.table.getTableHeader().addMouseListener(new java.awt.event.MouseAdapter() {
-            @Override
-            public void mouseClicked(java.awt.event.MouseEvent e) {
-                int columnIndex = ListPanel.this.table.columnAtPoint(e.getPoint());
-                sortByColumn(columnIndex);
-            }
-        });
-    }
-
-    /**
-     * 指定された列インデックスに基づいてエンジニア情報のリストをソートします。
-     *
-     * @param columnIndex ソート対象の列インデックス
+     * 指定された列インデックスに基づいてエンジニア情報のリストをソートします
      */
     private void sortByColumn(int columnIndex) {
         try {
-            // ソート可能な列かチェック
             if (columnIndex < 0 || columnIndex >= COLUMN_NAMES.length
                     || columnIndex == COLUMN_INDEX_PROGRAMMING_LANGUAGES) {
                 return;
             }
 
-            // 選択状態をクリア
-            this.selectedEngineerIds.clear();
-            this.table.clearSelection();
+            selectedEngineerIds.clear();
+            table.clearSelection();
 
-            // 同じ列の場合は昇順/降順を切り替え、異なる列の場合は昇順に設定
-            if (this.lastSortedColumn == columnIndex) {
-                this.isAscending = !this.isAscending;
+            if (lastSortedColumn == columnIndex) {
+                isAscending = !isAscending;
             } else {
-                this.isAscending = true;
-                this.lastSortedColumn = columnIndex;
+                isAscending = true;
+                lastSortedColumn = columnIndex;
             }
 
-            LogHandler.getInstance().log(
-                    Level.INFO,
-                    LogType.UI,
-                    String.format("ソート実行: 列=%s, 順序=%s", COLUMN_NAMES[columnIndex], isAscending ? "昇順" : "降順"));
+            LogHandler.getInstance().log(Level.INFO, LogType.UI,
+                    String.format("ソート実行: 列=%s, 順序=%s", COLUMN_NAMES[columnIndex],
+                            isAscending ? "昇順" : "降順"));
 
-            // 現在表示中のデータをソート
             currentDisplayData = sortEngineers(currentDisplayData, columnIndex, isAscending);
-
-            // ページを1ページ目にリセット
-            this.currentPage = 1;
-
-            // テーブルを更新
+            currentPage = 1;
             updateTableData(getDisplayData());
             updateButtonState();
 
-            // UIのソートインジケータを設定
-            this.sorter.setSortKeys(List.of(new RowSorter.SortKey(columnIndex,
-                    this.isAscending ? SortOrder.ASCENDING : SortOrder.DESCENDING)));
+            sorter.setSortKeys(List.of(new RowSorter.SortKey(columnIndex,
+                    isAscending ? SortOrder.ASCENDING : SortOrder.DESCENDING)));
+            sorter.setComparator(columnIndex, (o1, o2) -> 0);
 
-            // TableRowSorterによる内部ソートを無効化
-            this.sorter.setComparator(columnIndex, (o1, o2) -> 0);
-
-            LogHandler.getInstance().log(
-                    Level.INFO,
-                    LogType.SYSTEM,
+            LogHandler.getInstance().log(Level.INFO, LogType.SYSTEM,
                     String.format("ソート完了: %d件", currentDisplayData.size()));
         } catch (Exception e) {
             LogHandler.getInstance().logError(LogType.SYSTEM, "ソート処理中にエラーが発生しました", e);
@@ -652,11 +860,6 @@ public class ListPanel extends JPanel {
 
     /**
      * 現在のソート条件に基づいてエンジニアリストをソートする
-     * 
-     * @param engineers   ソート対象のエンジニアリスト
-     * @param columnIndex ソート対象の列インデックス
-     * @param ascending   昇順でソートするか
-     * @return ソート済みのエンジニアリスト
      */
     private List<EngineerDTO> sortEngineers(List<EngineerDTO> engineers, int columnIndex, boolean ascending) {
         Comparator<EngineerDTO> comparator = null;
@@ -681,7 +884,6 @@ public class ListPanel extends JPanel {
                 return new ArrayList<>(engineers);
         }
 
-        // ID順を2次ソートに使用
         Comparator<EngineerDTO> idComparator = Comparator
                 .comparing((EngineerDTO e) -> parseNumericId(e.getId()));
 
@@ -724,8 +926,6 @@ public class ListPanel extends JPanel {
 
     /**
      * ページを切り替え
-     *
-     * @param delta ページ変化量（前：-1、次：+1）
      */
     private void changePage(int delta) {
         List<EngineerDTO> displayData = getDisplayData();
@@ -762,8 +962,6 @@ public class ListPanel extends JPanel {
 
     /**
      * テーブルに1エンジニアのデータを追加
-     *
-     * @param engineer 追加するエンジニアデータ
      */
     private void addEngineerToTable(EngineerDTO engineer) {
         if (engineer == null) {
@@ -786,23 +984,15 @@ public class ListPanel extends JPanel {
 
     /**
      * エンジニアデータを設定
-     * この方法でControllerからデータを受け取ります
-     *
-     * @param engineers エンジニア一覧データ
      */
     public void setEngineerData(List<EngineerDTO> engineers) {
-        // データの設定
         this.allData = new ArrayList<>(engineers);
 
-        // 検索モードでなければ、表示データも更新
         if (!isSearchMode) {
             this.currentDisplayData = new ArrayList<>(engineers);
         }
 
-        // ページ情報の初期化
         currentPage = 1;
-
-        // テーブルとページネーションを更新
         updateTableData(getDisplayData());
 
         LogHandler.getInstance().log(Level.INFO, LogType.SYSTEM,
@@ -811,16 +1001,12 @@ public class ListPanel extends JPanel {
 
     /**
      * エンジニアデータの追加
-     * 既存データに新しいエンジニアを追加します
-     *
-     * @param engineer 追加するエンジニア
      */
     public void addEngineerData(EngineerDTO engineer) {
         if (engineer == null) {
             return;
         }
 
-        // 既存IDチェック - 同じIDがあれば置き換え
         boolean replaced = false;
         for (int i = 0; i < allData.size(); i++) {
             if (allData.get(i).getId().equals(engineer.getId())) {
@@ -833,7 +1019,6 @@ public class ListPanel extends JPanel {
             }
         }
 
-        // 新規追加の場合
         if (!replaced) {
             allData.add(engineer);
             LogHandler.getInstance().log(Level.INFO, LogType.SYSTEM,
@@ -841,12 +1026,10 @@ public class ListPanel extends JPanel {
                             engineer.getId(), engineer.getName()));
         }
 
-        // 検索モードでなければ、表示データも更新
         if (!isSearchMode) {
             currentDisplayData = new ArrayList<>(allData);
         }
 
-        // 現在のソート条件を適用して表示を更新
         List<EngineerDTO> displayData = getDisplayData();
         updateTableData(displayData);
     }
@@ -863,9 +1046,8 @@ public class ListPanel extends JPanel {
 
         List<EngineerDTO> result = new ArrayList<>(currentDisplayData);
 
-        // ソート条件が設定されている場合はソート
-        if (this.lastSortedColumn >= 0) {
-            result = this.sortEngineers(result, this.lastSortedColumn, this.isAscending);
+        if (lastSortedColumn >= 0) {
+            result = sortEngineers(result, lastSortedColumn, isAscending);
         }
 
         return result;
@@ -873,8 +1055,6 @@ public class ListPanel extends JPanel {
 
     /**
      * 現在選択されているエンジニアを取得
-     *
-     * @return 選択されているエンジニア、未選択時はnull
      */
     public EngineerDTO getSelectedEngineer() {
         int selectedRow = table.getSelectedRow();
@@ -905,23 +1085,17 @@ public class ListPanel extends JPanel {
      * テーブルデータとページネーションを一括更新
      */
     private void updateTableData(List<EngineerDTO> data) {
-        // テーブルデータのクリア
         tableModel.setRowCount(0);
 
-        // 表示範囲の計算
         int startIndex = (currentPage - 1) * pageSize;
         int endIndex = Math.min(startIndex + pageSize, data.size());
 
-        // データの追加
         for (int i = startIndex; i < endIndex; i++) {
             addEngineerToTable(data.get(i));
         }
 
-        // ページネーション情報の更新
         updatePageLabel(data.size());
         updatePaginationButtons(data.size());
-
-        // ページまたぎ選択復元
         restoreRowSelectionById();
     }
 
@@ -936,8 +1110,6 @@ public class ListPanel extends JPanel {
 
     /**
      * 現在選択されているエンジニアリストを取得
-     *
-     * @return 選択されているエンジニアリスト、未選択時は空リスト
      */
     public List<EngineerDTO> getSelectedEngineers() {
         List<EngineerDTO> selectedEngineers = new ArrayList<>();
@@ -952,7 +1124,7 @@ public class ListPanel extends JPanel {
         Set<String> uniqueIds = new HashSet<>();
 
         for (EngineerDTO engineerDTO : displayData) {
-            if (this.selectedEngineerIds.contains(engineerDTO.getId()) && uniqueIds.add(engineerDTO.getId())) {
+            if (selectedEngineerIds.contains(engineerDTO.getId()) && uniqueIds.add(engineerDTO.getId())) {
                 selectedEngineers.add(engineerDTO);
             }
         }
@@ -962,50 +1134,36 @@ public class ListPanel extends JPanel {
 
     /**
      * テーブルの選択状態を管理する
-     * 
-     * @param isCtrlDown  Ctrlキーが押されているか
-     * @param isShiftDown Shiftキーが押されているか
      */
     private void updateSelectedEngineerIds(boolean isCtrlDown, boolean isShiftDown) {
-        int startIndex = (this.currentPage - 1) * this.pageSize;
+        int startIndex = (currentPage - 1) * pageSize;
         List<EngineerDTO> displayData = getDisplayData();
         if (displayData == null || displayData.isEmpty()) {
             updateTableData(new ArrayList<>());
             updateButtonState();
             return;
         }
-        int previousSelectionCount = this.selectedEngineerIds.size();
+        int previousSelectionCount = selectedEngineerIds.size();
 
-        // 選択された行のIDを収集
         Set<String> newlySelectedIds = collectSelectedIds(displayData, startIndex, isShiftDown);
-        // 現在ページのIDを収集
         Set<String> currentPageIds = getCurrentPageIds(displayData, startIndex);
-        // 現在ページで選択解除されたIDを削除
         removeUnselectedIds(currentPageIds, newlySelectedIds);
 
-        // Ctrl/Shiftキーが押されていない場合は、既存の選択をクリア
         if (!isCtrlDown && !isShiftDown) {
             clearSelection();
-            LogHandler.getInstance().log(
-                    Level.INFO,
-                    LogType.UI,
+            LogHandler.getInstance().log(Level.INFO, LogType.UI,
                     "通常クリックによる選択: 既存の選択はクリア");
         }
 
-        // Ctrl/Shiftキーが押されている場合は、選択を追加
-        this.selectedEngineerIds.addAll(newlySelectedIds);
+        selectedEngineerIds.addAll(newlySelectedIds);
 
         int currentSelectionCount = selectedEngineerIds.size();
 
-        // 選択件数をログ出力
         if (currentSelectionCount != previousSelectionCount) {
-            LogHandler.getInstance().log(
-                    Level.INFO,
-                    LogType.UI,
+            LogHandler.getInstance().log(Level.INFO, LogType.UI,
                     String.format("選択件数が変更されました: %d → %d件", previousSelectionCount, currentSelectionCount));
         }
 
-        // 選択件数が上限を超えた場合の警告
         checkSelectionLimit(currentSelectionCount);
     }
 
@@ -1014,16 +1172,16 @@ public class ListPanel extends JPanel {
      */
     private Set<String> collectSelectedIds(List<EngineerDTO> displayData, int startIndex, boolean isShiftDown) {
         Set<String> newlySelectedIds = new HashSet<>();
-        int[] selectedRows = this.table.getSelectedRows();
+        int[] selectedRows = table.getSelectedRows();
 
         if (isShiftDown && selectedRows.length > 0) {
-            int startRow = this.table.getSelectionModel().getAnchorSelectionIndex();
-            int endRow = this.table.getSelectionModel().getLeadSelectionIndex();
+            int startRow = table.getSelectionModel().getAnchorSelectionIndex();
+            int endRow = table.getSelectionModel().getLeadSelectionIndex();
             int fromRow = Math.min(startRow, endRow);
             int toRow = Math.max(startRow, endRow);
 
             for (int viewRowIndex = fromRow; viewRowIndex <= toRow; viewRowIndex++) {
-                int modelRow = this.table.convertRowIndexToModel(viewRowIndex);
+                int modelRow = table.convertRowIndexToModel(viewRowIndex);
                 int dataIndex = startIndex + modelRow;
                 if (dataIndex >= 0 && dataIndex < displayData.size()) {
                     newlySelectedIds.add(displayData.get(dataIndex).getId());
@@ -1031,7 +1189,7 @@ public class ListPanel extends JPanel {
             }
         } else {
             for (int selectedRow : selectedRows) {
-                int modelRow = this.table.convertRowIndexToModel(selectedRow);
+                int modelRow = table.convertRowIndexToModel(selectedRow);
                 int dataIndex = startIndex + modelRow;
                 if (dataIndex >= 0 && dataIndex < displayData.size()) {
                     newlySelectedIds.add(displayData.get(dataIndex).getId());
@@ -1047,7 +1205,7 @@ public class ListPanel extends JPanel {
     private Set<String> getCurrentPageIds(List<EngineerDTO> displayData, int startIndex) {
         return displayData.stream()
                 .skip(startIndex)
-                .limit(this.pageSize)
+                .limit(pageSize)
                 .map(EngineerDTO::getId)
                 .collect(Collectors.toSet());
     }
@@ -1056,7 +1214,7 @@ public class ListPanel extends JPanel {
      * 現在のページで選択解除されたIDのみを選択IDセットから削除する
      */
     private void removeUnselectedIds(Set<String> currentPageIds, Set<String> newlySelectedIds) {
-        Iterator<String> selectedIditerator = this.selectedEngineerIds.iterator();
+        Iterator<String> selectedIditerator = selectedEngineerIds.iterator();
         while (selectedIditerator.hasNext()) {
             String id = selectedIditerator.next();
             if (currentPageIds.contains(id) && !newlySelectedIds.contains(id)) {
@@ -1069,7 +1227,7 @@ public class ListPanel extends JPanel {
      * 選択状態をクリア
      */
     private void clearSelection() {
-        this.selectedEngineerIds.clear();
+        selectedEngineerIds.clear();
     }
 
     /**
@@ -1080,9 +1238,7 @@ public class ListPanel extends JPanel {
             DialogManager.getInstance().showWarningDialog(
                     "選択数が上限を超えています",
                     String.format("%d件選択しています。一度に選択できるのは100件以下です。", currentSelectionCount));
-            LogHandler.getInstance().log(
-                    Level.WARNING,
-                    LogType.UI,
+            LogHandler.getInstance().log(Level.WARNING, LogType.UI,
                     String.format("選択件数が上限を超えています: %d件", currentSelectionCount));
         }
     }
@@ -1092,24 +1248,22 @@ public class ListPanel extends JPanel {
      * テーブルの選択状態を復元する
      */
     private void restoreRowSelectionById() {
-        int startIndex = (this.currentPage - 1) * this.pageSize;
+        int startIndex = (currentPage - 1) * pageSize;
         List<EngineerDTO> displayData = getDisplayData();
         if (displayData == null || displayData.isEmpty()) {
             return;
         }
 
-        for (int rowIndex = 0; rowIndex < this.pageSize && (startIndex + rowIndex) < displayData.size(); rowIndex++) {
+        for (int rowIndex = 0; rowIndex < pageSize && (startIndex + rowIndex) < displayData.size(); rowIndex++) {
             EngineerDTO engineerDTO = displayData.get(startIndex + rowIndex);
-            if (this.selectedEngineerIds.contains(engineerDTO.getId())) {
-                this.table.addRowSelectionInterval(rowIndex, rowIndex);
+            if (selectedEngineerIds.contains(engineerDTO.getId())) {
+                table.addRowSelectionInterval(rowIndex, rowIndex);
             }
         }
     }
 
     /**
      * データ件数を取得
-     *
-     * @return 読み込まれているエンジニアデータの総数
      */
     public int getDataCount() {
         return allData.size();
@@ -1117,8 +1271,6 @@ public class ListPanel extends JPanel {
 
     /**
      * 現在のページ番号を取得
-     *
-     * @return 現在表示中のページ番号
      */
     public int getCurrentPage() {
         return currentPage;
@@ -1126,8 +1278,6 @@ public class ListPanel extends JPanel {
 
     /**
      * テーブルコンポーネントを取得
-     *
-     * @return テーブルコンポーネント
      */
     public JTable getTable() {
         return table;
@@ -1247,41 +1397,7 @@ public class ListPanel extends JPanel {
     }
 
     /**
-     * テーブルイベントの設定
-     * ダブルクリックによる詳細画面への遷移などを設定します
-     */
-    private void setupTableEvents() {
-        table.addMouseListener(new java.awt.event.MouseAdapter() {
-            @Override
-            public void mousePressed(MouseEvent e) {
-                isCtrlPressed = (e.getModifiersEx() & InputEvent.CTRL_DOWN_MASK) != 0;
-                isShiftPressed = (e.getModifiersEx() & InputEvent.SHIFT_DOWN_MASK) != 0;
-            }
-
-            @Override
-            public void mouseReleased(MouseEvent e) {
-                updateSelectedEngineerIds(isCtrlPressed, isShiftPressed);
-                updateButtonState();
-            }
-
-            @Override
-            public void mouseClicked(java.awt.event.MouseEvent e) {
-                if (e.getClickCount() == 2) {
-                    int row = table.rowAtPoint(e.getPoint());
-                    if (row >= 0) {
-                        table.setRowSelectionInterval(row, row);
-                        openDetailView();
-                    }
-                }
-            }
-        });
-
-        LogHandler.getInstance().log(Level.INFO, LogType.UI, "テーブルのダブルクリックイベントを設定しました");
-    }
-
-    /**
      * 詳細画面を開く
-     * 選択されたエンジニア情報の詳細画面に遷移します
      */
     private void openDetailView() {
         EngineerDTO selectedEngineer = getSelectedEngineer();
@@ -1298,8 +1414,6 @@ public class ListPanel extends JPanel {
 
     /**
      * ステータスラベルにメッセージを表示する
-     *
-     * @param message 表示するステータスメッセージ
      */
     public void setStatus(String message) {
         if (statusLabel != null) {
@@ -1318,8 +1432,6 @@ public class ListPanel extends JPanel {
 
     /**
      * 削除やCSV操作に関するボタンを一括で有効/無効にする
-     *
-     * @param enabled true で有効、false で無効
      */
     public void setButtonsEnabled(boolean enabled) {
         importButton.setEnabled(enabled);
@@ -1330,7 +1442,6 @@ public class ListPanel extends JPanel {
 
     /**
      * テーブルの選択状態や削除中フラグに応じてボタンの状態を更新する
-     * 削除中は全ての操作ボタンを無効化する
      */
     public void updateButtonState() {
         if (deleting) {
@@ -1359,8 +1470,6 @@ public class ListPanel extends JPanel {
 
     /**
      * 一覧画面が次回表示されたときにデータを再読み込みする必要があるかを示すフラグを設定
-     *
-     * @param flag true の場合は再描画が必要、false の場合は不要
      */
     public static void setNeedsRefresh(boolean flag) {
         needsRefresh = flag;
@@ -1368,8 +1477,6 @@ public class ListPanel extends JPanel {
 
     /**
      * 一覧画面の再描画が必要かどうかを返します
-     *
-     * @return true の場合は再描画が必要、false の場合は不要
      */
     public static boolean isRefreshNeeded() {
         return needsRefresh;
@@ -1397,8 +1504,6 @@ public class ListPanel extends JPanel {
 
     /**
      * メインコントローラーを設定
-     *
-     * @param mainController メインコントローラー
      */
     public void setMainController(MainController mainController) {
         this.mainController = mainController;

@@ -6,7 +6,6 @@ import util.LogHandler.LogType;
 import util.validator.IDValidator;
 import util.validator.Validator;
 import util.validator.ValidatorEnum;
-
 import javax.swing.*;
 import javax.swing.border.Border;
 import javax.swing.text.JTextComponent;
