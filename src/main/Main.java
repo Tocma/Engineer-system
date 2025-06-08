@@ -5,6 +5,7 @@ import test.TestCoreSystem;
 import util.LogHandler;
 import util.LogHandler.LogType;
 import util.ResourceManager;
+import util.Constants.SystemConstants;
 import view.MainFrame;
 import javax.swing.SwingUtilities;
 import java.io.IOException;
@@ -19,8 +20,6 @@ import java.util.logging.Level;
  * Main.javaは純粋にアプリケーションの起動処理のみに専念
  *
  * @author Nakano
- * @version 4.12.10
- * @since 2025-06-02
  */
 public class Main {
 
@@ -49,7 +48,7 @@ public class Main {
         }
 
         // 重複起動時のポート番号の確認
-        if (!acquireLock(54321)) {
+        if (!acquireLock(SystemConstants.LOCK_PORT)) {
             System.exit(0);
         }
 
@@ -180,6 +179,9 @@ public class Main {
                     System.err.println("シャットダウンフック開始時のログ記録に失敗: " + e.getMessage());
                 }
 
+                // ロックソケットのクリーンアップ
+                releaseLock();
+                System.out.println("アプリケーションロックを解放しました");
                 System.out.println("=== JVMシャットダウンフック実行完了 ===");
             }, "JVM-ShutdownHook-Thread"));
 
@@ -261,13 +263,61 @@ public class Main {
 
     /**
      * 重複起動を防ぐためのロックを取得
+     * SystemConstants.LOCK_PORTで指定されたポートにServerSocketを作成し、
+     * 重複起動を防止する。既にポートが使用されている場合は、
+     * アプリケーションが既に起動していると判断する。
+     *
+     * @param port ロック用ポート番号（SystemConstants.LOCK_PORT）
+     * @return ロック取得に成功した場合true、失敗した場合false
      */
     private static boolean acquireLock(int port) {
         try {
             lockSocket = new ServerSocket(port);
+            System.out.println("アプリケーションロックを取得しました（ポート: " + port + "）");
+
+            // ログシステムが利用可能な場合はログに記録
+            try {
+                LogHandler logHandler = LogHandler.getInstance();
+                if (logHandler.isInitialized()) {
+                    logHandler.log(Level.INFO, LogType.SYSTEM,
+                            "重複起動防止ロックを取得しました（ポート: " + port + "）");
+                }
+            } catch (Exception e) {
+                // ログ記録に失敗してもロック取得は成功とする
+            }
+
             return true;
         } catch (IOException e) {
+            System.err.println("ロック取得に失敗しました（ポート: " + port + "）: " + e.getMessage());
+            System.err.println("アプリケーションが既に起動している可能性があります");
             return false;
+        }
+    }
+
+    /**
+     * 取得したロックを解放
+     * アプリケーション終了時にServerSocketを適切にクローズする
+     */
+    private static void releaseLock() {
+        if (lockSocket != null && !lockSocket.isClosed()) {
+            try {
+                lockSocket.close();
+                System.out.println("アプリケーションロックを解放しました");
+
+                // ログシステムが利用可能な場合はログに記録
+                try {
+                    LogHandler logHandler = LogHandler.getInstance();
+                    if (logHandler.isInitialized()) {
+                        logHandler.log(Level.INFO, LogType.SYSTEM, "重複起動防止ロックを解放しました");
+                    }
+                } catch (Exception e) {
+                    // ログ記録に失敗してもロック解放は成功とする
+                }
+            } catch (IOException e) {
+                System.err.println("ロック解放中にエラーが発生しました: " + e.getMessage());
+            } finally {
+                lockSocket = null;
+            }
         }
     }
 }

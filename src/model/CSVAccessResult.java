@@ -14,8 +14,6 @@ import java.util.List;
  * </p>
  *
  * @author Nakano
- * @version 4.9.7
- * @since 2025-04-29
  */
 public class CSVAccessResult {
 

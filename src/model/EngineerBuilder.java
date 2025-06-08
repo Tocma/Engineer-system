@@ -33,8 +33,6 @@ import util.validator.IDValidator;
  * </pre>
  * 
  * @author Nakano
- * @version 4.2.2
- * @since 2025-04-25
  */
 public class EngineerBuilder {
     // 構築中のエンジニアDTOオブジェクト

@@ -6,7 +6,6 @@ import controller.MainController;
 import util.LogHandler;
 import util.LogHandler.LogType;
 import util.validator.IDValidator;
-
 import javax.swing.*;
 import java.awt.*;
 import java.time.LocalDate;
@@ -34,8 +33,6 @@ import java.util.logging.Level;
  * </p>
  *
  * @author Nakano
- * @version 4.11.7
- * @since 2025-05-30
  */
 public class AddPanel extends AbstractEngineerPanel {
 

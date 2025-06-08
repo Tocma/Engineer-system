@@ -6,6 +6,9 @@ import model.EngineerDTO;
 import util.LogHandler;
 import util.LogHandler.LogType;
 import util.ResourceManager;
+import util.Constants.PanelType;
+import util.Constants.EventType;
+import util.Constants.SystemConstants;
 import view.AddPanel;
 import view.DetailPanel;
 import view.DialogManager;
@@ -64,8 +67,6 @@ import javax.swing.filechooser.FileNameExtensionFilter;
  * </p>
  *
  * @author Nakano
- * @version 4.12.10
- * @since 2025-06-02
  */
 public class MainController {
 
@@ -84,9 +85,6 @@ public class MainController {
     /** リストパネル */
     private final ListPanel listPanel;
 
-    /** ダイアログマネージャー */
-    private final DialogManager dialogManager;
-
     /** 実行中非同期タスクの追跡マップ */
     private final ConcurrentMap<String, Thread> runningTasks;
 
@@ -99,7 +97,6 @@ public class MainController {
     private final Set<String> deletingIds = ConcurrentHashMap.newKeySet();
 
     // 最大レコード数の定数
-    private static final int MAX_RECORDS = 1000;
 
     /**
      * エンジニア検索条件を保持するクラス
@@ -219,7 +216,7 @@ public class MainController {
         this.screenController = new ScreenTransitionController(mainFrame);
         this.runningTasks = new ConcurrentHashMap<>();
         this.isShuttingDown = new AtomicBoolean(false);
-        this.dialogManager = DialogManager.getInstance();
+        DialogManager.getInstance();
 
         // 画面遷移コントローラーにメインコントローラーへの参照を設定
         this.screenController.setMainController(this);
@@ -453,65 +450,106 @@ public class MainController {
      * イベントを処理
      * アプリケーション全体のイベントをディスパッチします
      *
-     * @param event イベント種別（"REFRESH_VIEW", "CHANGE_PANEL", "SAVE_DATA", "LOAD_DATA",
-     *              "SEARCH_ENGINEERS", "SHUTDOWN"）
+     * @param event イベント種別（EventType列挙型または文字列）
      * @param data  イベントデータ（イベント種別に応じたデータ）
      */
-    public void handleEvent(String event, Object data) {
+    public void handleEvent(EventType eventType, Object data) {
         try {
             // シャットダウン中は新しいイベントを処理しない
             if (isShuttingDown.get()) {
                 LogHandler.getInstance().log(Level.WARNING, LogType.SYSTEM,
-                        "シャットダウン中のためイベントを無視します: " + event);
+                        "シャットダウン中のためイベントを無視します: " + eventType.getEventName());
                 return;
             }
 
-            switch (event) {
-                case "REFRESH_VIEW":
+            switch (eventType) {
+                case REFRESH_VIEW:
                     screenController.refreshView();
                     break;
-                case "CHANGE_PANEL":
-                    screenController.showPanel((String) data);
+
+                case CHANGE_PANEL:
+                    // データが文字列の場合はPanelTypeに変換
+                    if (data instanceof String) {
+                        PanelType panelType = PanelType.fromId((String) data);
+                        if (panelType != null) {
+                            screenController.showPanel(panelType);
+                        } else {
+                            LogHandler.getInstance().log(Level.WARNING, LogType.SYSTEM,
+                                    "未定義のパネルタイプ: " + data);
+                        }
+                    } else if (data instanceof PanelType) {
+                        screenController.showPanel((PanelType) data);
+                    }
                     break;
-                case "SAVE_DATA":
+
+                case SAVE_DATA:
                     handleSaveData(data);
                     break;
-                case "LOAD_DATA":
+
+                case LOAD_DATA:
                     handleLoadData();
                     break;
-                case "VIEW_DETAIL":
+
+                case VIEW_DETAIL:
                     handleViewDetail((String) data);
                     break;
-                case "SEARCH_ENGINEERS":
+
+                case SEARCH_ENGINEERS:
                     handleSearchEngineers(data);
                     break;
-                case "TEMPLATE":
+
+                case TEMPLATE:
                     handleTemplateExport();
                     break;
-                case "EXPORT_CSV":
+
+                case EXPORT_CSV:
                     handleExportCSV(data);
                     break;
-                case "IMPORT_CSV":
+
+                case IMPORT_CSV:
                     handleImportData();
                     break;
-                case "SHUTDOWN":
-                    initiateShutdown();
-                    break;
-                case "DELETE_ENGINEER":
+
+                case DELETE_ENGINEER:
                     handleDeleteEngineer(data);
                     break;
+
+                case SHUTDOWN:
+                    initiateShutdown();
+                    break;
+
                 default:
-                    handleUnknownEvent(event, data);
+                    LogHandler.getInstance().log(Level.WARNING, LogType.SYSTEM,
+                            "未処理のイベントタイプ: " + eventType.getEventName());
                     break;
             }
 
             LogHandler.getInstance().log(
                     Level.INFO, LogType.SYSTEM,
-                    String.format("イベントを処理しました: %s", event));
+                    String.format("イベントを処理しました: %s (%s)", eventType.getEventName(), eventType.getDescription()));
 
         } catch (Exception e) {
-            LogHandler.getInstance().logError(LogType.SYSTEM, "イベント処理に失敗しました: " + event, e);
+            LogHandler.getInstance().logError(LogType.SYSTEM, "イベント処理に失敗しました: " + eventType.getEventName(), e);
             handleError(e);
+        }
+    }
+
+    /**
+     * 文字列イベント名でイベントを処理（後方互換性のため）
+     *
+     * @param eventName イベント名文字列
+     * @param data      イベントデータ
+     */
+    public void handleEvent(String eventName, Object data) {
+        EventType eventType = EventType.fromEventName(eventName);
+
+        if (eventType != null) {
+            handleEvent(eventType, data);
+        } else {
+            // 未定義のイベントの場合
+            LogHandler.getInstance().log(Level.WARNING, LogType.SYSTEM,
+                    "未定義のイベント名: " + eventName);
+            handleUnknownEvent(eventName, data);
         }
     }
 
@@ -831,7 +869,8 @@ public class MainController {
                                     // エラーダイアログ表示
                                     DialogManager.getInstance().showErrorDialog(
                                             "登録制限エラー",
-                                            "登録件数の上限(" + MAX_RECORDS + "件)に達しています。これ以上登録できません。\n" +
+                                            "登録件数の上限(" + SystemConstants.MAX_ENGINEER_RECORDS
+                                                    + "件)に達しています。これ以上登録できません。\n" +
                                                     "不要なデータを削除してから再試行してください。");
 
                                     // 処理中状態を解除
@@ -1065,16 +1104,18 @@ public class MainController {
                 List<EngineerDTO> engineers = engineerController.loadEngineers();
 
                 // データ件数が上限を超えているかチェック
-                if (engineers.size() > MAX_RECORDS) {
+                if (engineers.size() > SystemConstants.MAX_ENGINEER_RECORDS) {
                     LogHandler.getInstance().log(Level.SEVERE, LogType.SYSTEM,
-                            "登録されているエンジニアデータが上限(" + MAX_RECORDS + "件)を超えています: " + engineers.size() + "件");
+                            "登録されているエンジニアデータが上限(" + SystemConstants.MAX_ENGINEER_RECORDS + "件)を超えています: "
+                                    + engineers.size() + "件");
 
                     // UI更新はSwingのEDTで実行
                     javax.swing.SwingUtilities.invokeLater(() -> {
                         // エラーダイアログを表示
                         DialogManager.getInstance().showErrorDialog(
                                 "データ制限エラー",
-                                "登録されているエンジニアデータが上限(" + MAX_RECORDS + "件)を超えています: " + engineers.size() + "件\n" +
+                                "登録されているエンジニアデータが上限(" + SystemConstants.MAX_ENGINEER_RECORDS + "件)を超えています: "
+                                        + engineers.size() + "件\n" +
                                         "アプリケーションを終了します。");
 
                         // アプリケーションの安全な終了処理を実行
@@ -1478,8 +1519,6 @@ public class MainController {
             // ResourceManagerを通じた追加的な検証
             // 例：データディレクトリ配下であることの確認など
             Path dataDir = resourceManager.getDataDirectoryPath();
-            Path filePath = file.toPath().toAbsolutePath();
-
             // データディレクトリの存在確認と作成
             if (dataDir != null && !dataDir.toFile().exists()) {
                 LogHandler.getInstance().log(Level.INFO, LogType.SYSTEM,
@@ -1796,18 +1835,17 @@ public class MainController {
         List<EngineerDTO> errorEngineers = importResult.getErrorData();
 
         // インポート後の総件数が上限を超えるかチェック
-        final int MAX_RECORDS = 1000;
         if (!importResult.isOverwriteConfirmed() &&
-                importedEngineers.size() + currentEngineers.size() > MAX_RECORDS) {
+                importedEngineers.size() + currentEngineers.size() > SystemConstants.MAX_ENGINEER_RECORDS) {
 
             LogHandler.getInstance().log(Level.WARNING, LogType.SYSTEM,
-                    "インポートすると登録件数の上限(" + MAX_RECORDS + "件)を超えます。" +
+                    "インポートすると登録件数の上限(" + SystemConstants.MAX_ENGINEER_RECORDS + "件)を超えます。" +
                             "現在: " + currentEngineers.size() + "件, インポート: " + importedEngineers.size() + "件");
 
             SwingUtilities.invokeLater(() -> {
                 DialogManager.getInstance().showErrorDialog(
                         "インポート制限エラー",
-                        "インポートすると登録件数の上限(" + MAX_RECORDS + "件)を超えます。\n" +
+                        "インポートすると登録件数の上限(" + SystemConstants.MAX_ENGINEER_RECORDS + "件)を超えます。\n" +
                                 "現在: " + currentEngineers.size() + "件, インポート: " + importedEngineers.size()
                                 + "件\n" +
                                 "不要なデータを削除してから再試行してください。");
@@ -1907,7 +1945,13 @@ public class MainController {
      * @param data  イベントデータ
      */
     private void handleUnknownEvent(String event, Object data) {
-        LogHandler.getInstance().log(Level.WARNING, LogType.SYSTEM, "未定義のイベントを検出: " + event);
+        LogHandler.getInstance().log(Level.WARNING, LogType.SYSTEM,
+                "未定義のイベントを検出: " + event + ", データ: " + (data != null ? data.toString() : "null"));
+
+        // 必要に応じてエラーダイアログを表示
+        DialogManager.getInstance().showWarningDialog(
+                "未定義のイベント",
+                "システムが認識できないイベントが発生しました: " + event);
     }
 
     /**

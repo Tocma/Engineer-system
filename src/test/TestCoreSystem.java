@@ -26,7 +26,6 @@ import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.logging.Level;
 import javax.swing.JFrame;
-import javax.swing.JMenuBar;
 import javax.swing.JPanel;
 import javax.swing.JTable;
 
@@ -98,8 +97,6 @@ import javax.swing.JTable;
  * </p>
  *
  * @author Nakano
- * @version 4.12.10
- * @since 2025-06-02
  */
 public class TestCoreSystem {
 

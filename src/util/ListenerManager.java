@@ -22,8 +22,6 @@ import java.util.logging.Level;
  * - 自動クリーンアップ機能
  * 
  * @author Nakano
- * @version 4.13.10
- * @since 2025-06-03
  */
 public class ListenerManager {
 
@@ -90,12 +88,10 @@ public class ListenerManager {
      * コンポーネント別のリスナー情報を管理するクラス
      */
     private static class ComponentListenerInfo {
-        private final Component component;
         private final Map<ListenerType, Set<String>> listenersByType = new EnumMap<>(ListenerType.class);
         private final Set<String> allListeners = new HashSet<>();
 
         public ComponentListenerInfo(Component component) {
-            this.component = component;
             // 各リスナータイプのセットを初期化
             for (ListenerType type : ListenerType.values()) {
                 listenersByType.put(type, new HashSet<>());

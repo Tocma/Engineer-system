@@ -36,8 +36,6 @@ import java.util.logging.Level;
  * </p>
  *
  * @author Nakano
- * @version 4.11.7
- * @since 2025-05-30
  */
 public class DetailPanel extends AbstractEngineerPanel {
 
@@ -58,9 +56,6 @@ public class DetailPanel extends AbstractEngineerPanel {
 
     /** 処理中フラグ */
     private boolean processing;
-
-    /** 完了処理の成功フラグ */
-    private boolean handleUpdateCompleteSuccess = false;
 
     /** 最新登録日表示ラベル */
     private JLabel registeredDateLabel;
@@ -615,7 +610,6 @@ public class DetailPanel extends AbstractEngineerPanel {
                         }
                     });
 
-            handleUpdateCompleteSuccess = true;
             LogHandler.getInstance().log(Level.INFO, LogType.SYSTEM,
                     "DetailPanel.handleUpdateComplete完了: ID=" + engineer.getId());
 
@@ -632,7 +626,6 @@ public class DetailPanel extends AbstractEngineerPanel {
             }
 
             setProcessing(false);
-            handleUpdateCompleteSuccess = false;
         } finally {
             if (processing) {
                 LogHandler.getInstance().log(Level.WARNING, LogType.SYSTEM,

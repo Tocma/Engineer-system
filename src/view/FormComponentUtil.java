@@ -11,8 +11,6 @@ import java.util.List;
  * 複数選択可能なコンボボックスとその関連クラスを定義
  * 
  * @author Nakano
- * @version 4.11.7
- * @since 2025-05-30
  */
 public final class FormComponentUtil {
 

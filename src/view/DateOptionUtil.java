@@ -9,8 +9,6 @@ import java.util.List;
  * 年、月、日、エンジニア歴、スキル評価の選択肢を統一的に提供
  * 
  * @author Nakano
- * @version 4.11.7
- * @since 2025-05-30
  */
 public final class DateOptionUtil {
 

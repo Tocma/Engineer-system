@@ -59,8 +59,6 @@ import java.util.stream.Collectors;
  * </p>
  *
  * @author Nakano
- * @version 4.9.7
- * @since 2025-05-29
  */
 public class DialogManager {
 

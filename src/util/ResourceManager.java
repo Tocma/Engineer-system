@@ -7,14 +7,13 @@ import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.logging.Level;
 import util.LogHandler.LogType;
+import util.Constants.FileConstants;
 
 /**
  * アプリケーションリソースを総合的に管理するシングルトンクラス
  * プロジェクトのsrcディレクトリ内に絶対パスでリソースを管理
  *
  * @author Nakano
- * @version 4.8.1
- * @since 2025-05-19
  */
 public class ResourceManager {
 
@@ -24,8 +23,6 @@ public class ResourceManager {
     /**
      * ディレクトリ構造の定義
      */
-    private static final String DATA_DIR_NAME = "data";
-    private static final String DEFAULT_ENGINEER_CSV = "engineers.csv";
 
     /**
      * CSVヘッダー定義
@@ -112,8 +109,8 @@ public class ResourceManager {
      * ディレクトリパスを設定
      */
     private void setDirectoryPaths() {
-        dataDirectoryPath = srcDirectoryPath.resolve(DATA_DIR_NAME);
-        engineerCsvPath = dataDirectoryPath.resolve(DEFAULT_ENGINEER_CSV);
+        dataDirectoryPath = srcDirectoryPath.resolve(FileConstants.DATA_DIR_NAME);
+        engineerCsvPath = dataDirectoryPath.resolve(FileConstants.DEFAULT_ENGINEER_CSV);
     }
 
     /**

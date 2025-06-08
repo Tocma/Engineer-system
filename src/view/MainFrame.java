@@ -13,6 +13,7 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
 import java.util.logging.Level;
+import util.Constants.SystemConstants;
 
 /**
  * アプリケーションのメインウィンドウを管理するクラス
@@ -22,8 +23,6 @@ import java.util.logging.Level;
  * このクラスは純粋にUI関連のリソース解放のみを担当
  *
  * @author Nakano
- * @version 4.12.10
- * @since 2025-06-02
  */
 public class MainFrame extends AbstractFrame {
 
@@ -41,9 +40,6 @@ public class MainFrame extends AbstractFrame {
 
     /** 終了処理登録済みのスレッド一覧 */
     private final List<Thread> managedThreads;
-
-    /** スレッド終了待機時間5秒（ミリ秒） */
-    private static final long THREAD_TERMINATION_TIMEOUT = 5000L;
 
     /** リストパネル */
     private ListPanel listPanel;
@@ -143,7 +139,8 @@ public class MainFrame extends AbstractFrame {
             LogHandler.getInstance().log(Level.INFO, LogType.SYSTEM, "ExecutorServiceを終了しています");
 
             executor.shutdown();
-            boolean terminated = executor.awaitTermination(THREAD_TERMINATION_TIMEOUT, TimeUnit.MILLISECONDS);
+            boolean terminated = executor.awaitTermination(SystemConstants.THREAD_TERMINATION_TIMEOUT,
+                    TimeUnit.MILLISECONDS);
 
             if (!terminated) {
                 LogHandler.getInstance().log(Level.WARNING, LogType.SYSTEM,
@@ -185,7 +182,7 @@ public class MainFrame extends AbstractFrame {
             // 全スレッドの終了を待機
             for (Thread thread : managedThreads) {
                 if (thread.isAlive()) {
-                    thread.join(THREAD_TERMINATION_TIMEOUT);
+                    thread.join(SystemConstants.THREAD_TERMINATION_TIMEOUT);
                     if (thread.isAlive()) {
                         LogHandler.getInstance().log(Level.WARNING, LogType.SYSTEM,
                                 "スレッド '" + thread.getName() + "' が時間内に終了しませんでした");

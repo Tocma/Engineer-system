@@ -8,14 +8,13 @@ import java.nio.file.Paths;
 import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
 import java.util.logging.*;
+import util.Constants.FileConstants;
 
 /**
  * エンジニア情報管理システムのログ管理を行うシングルトンクラス
  * 自動初期化機能と強化されたエラーハンドリング、詳細な呼び出し元情報を提供
  *
  * @author Nakano
- * @version 4.9.7
- * @since 2025-05-29
  */
 public class LogHandler {
 
@@ -44,9 +43,6 @@ public class LogHandler {
     private static final LogHandler INSTANCE = new LogHandler();
 
     /** ログ関連の定数定義 */
-    private static final String LOG_DIR_NAME = "logs";
-    private static final String LOG_FILE_FORMAT = "System-%s.log";
-    private static final int MAX_LOG_SIZE_BYTES = 10 * 1024 * 1024; // 10MB
 
     /** 拡張されたログフォーマット（クラス・メソッド・行番号を先頭に追加） */
     private static final String LOG_FORMAT = "[%1$tY-%1$tm-%1$td %1$tH:%1$tM:%1$tS] [%4$s] [%7$s] [%8$s.%9$s:%10$s] %5$s%6$s%n";
@@ -96,7 +92,7 @@ public class LogHandler {
         String projectDir = System.getProperty("user.dir");
 
         // src/logsへの絶対パスを構築
-        Path defaultLogDir = Paths.get(projectDir, "src", LOG_DIR_NAME).toAbsolutePath();
+        Path defaultLogDir = Paths.get(projectDir, "src", FileConstants.LOG_DIR_NAME).toAbsolutePath();
 
         System.out.println("ログディレクトリの絶対パス: " + defaultLogDir);
         initialize(defaultLogDir.toString());
@@ -182,11 +178,11 @@ public class LogHandler {
 
         // 現在の日付でログファイル名を生成
         String currentDate = LocalDate.now().format(DateTimeFormatter.ISO_LOCAL_DATE);
-        String logFileName = String.format(LOG_FILE_FORMAT, currentDate);
+        String logFileName = String.format(FileConstants.LOG_FILE_FORMAT, currentDate);
         String logFilePath = new File(logDirectory, logFileName).getAbsolutePath();
 
         // FileHandlerの設定
-        fileHandler = new FileHandler(logFilePath, MAX_LOG_SIZE_BYTES, 1, true);
+        fileHandler = new FileHandler(logFilePath, FileConstants.MAX_LOG_SIZE_BYTES, 1, true);
         fileHandler.setEncoding("UTF-8");
         fileHandler.setFormatter(new DetailedFormatter());
 
@@ -393,7 +389,7 @@ public class LogHandler {
      * @return 現在の日付に対応するログファイル名
      */
     public String getCurrentLogFileName() {
-        return String.format(LOG_FILE_FORMAT,
+        return String.format(FileConstants.LOG_FILE_FORMAT,
                 LocalDate.now().format(DateTimeFormatter.ISO_LOCAL_DATE));
     }
 

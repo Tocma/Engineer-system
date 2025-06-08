@@ -29,8 +29,6 @@ package util.Constants;
  * </pre>
  *
  * @author Nakano
- * @version 4.0.0
- * @since 2025-04-15
  */
 public enum MessageEnum {
 

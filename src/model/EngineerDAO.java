@@ -13,8 +13,6 @@ import java.util.List;
  * </p>
  *
  * @author Nakano
- * @version 4.0.0
- * @since 2025-04-15
  */
 public interface EngineerDAO {
 

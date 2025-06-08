@@ -5,13 +5,12 @@ import model.EngineerDAO;
 import model.EngineerCSVDAO;
 import util.LogHandler;
 import util.LogHandler.LogType;
+import util.Constants.SystemConstants;
 import view.DialogManager;
-
 import java.util.ArrayList;
 import java.util.List;
 import java.util.logging.Level;
 import java.util.stream.Collectors;
-
 import javax.swing.SwingUtilities;
 
 /**
@@ -29,8 +28,6 @@ import javax.swing.SwingUtilities;
  * </p>
  *
  * @author Nakano
- * @version 4.4.1
- * @since 2025-05-08
  */
 public class EngineerController {
 
@@ -38,7 +35,6 @@ public class EngineerController {
     private final EngineerDAO engineerDAO;
 
     // 最大レコード数の定数
-    private static final int MAX_RECORDS = 1000;
 
     /**
      * コンストラクタ
@@ -89,10 +85,11 @@ public class EngineerController {
             }
 
             // 新規追加の場合、登録後のレコード数をチェック
-            if (!isExisting && currentEngineers.size() >= MAX_RECORDS) {
+            if (!isExisting && currentEngineers.size() >= SystemConstants.MAX_ENGINEER_RECORDS) {
                 LogHandler.getInstance().log(Level.WARNING, LogType.SYSTEM,
-                        "登録件数が上限(" + MAX_RECORDS + "件)に達しています。これ以上登録できません。");
-                throw new TooManyRecordsException("登録件数が上限(" + MAX_RECORDS + "件)に達しています。これ以上登録できません。");
+                        "登録件数が上限(" + SystemConstants.MAX_ENGINEER_RECORDS + "件)に達しています。これ以上登録できません。");
+                throw new TooManyRecordsException(
+                        "登録件数が上限(" + SystemConstants.MAX_ENGINEER_RECORDS + "件)に達しています。これ以上登録できません。");
             }
 
             if (validateEngineer(engineer)) {

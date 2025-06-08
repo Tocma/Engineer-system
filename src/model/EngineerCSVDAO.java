@@ -4,7 +4,10 @@ import view.DialogManager;
 import util.LogHandler;
 import util.LogHandler.LogType;
 import util.validator.IDValidator;
-import util.ResourceManager; // ResourceManagerを追加
+import util.ResourceManager;
+import util.Constants.CSVConstants;
+import util.Constants.SystemConstants;
+
 import java.io.*;
 import java.nio.charset.StandardCharsets;
 import java.time.LocalDate;
@@ -25,8 +28,6 @@ import java.util.stream.Collectors;
  * - リソースリーク防止機能の強化
  *
  * @author Nakano
- * @version 4.9.7
- * @since 2025-05-29
  */
 public class EngineerCSVDAO implements EngineerDAO {
 
@@ -40,17 +41,9 @@ public class EngineerCSVDAO implements EngineerDAO {
     private static final DateTimeFormatter DATE_FORMATTER = DateTimeFormatter.ISO_LOCAL_DATE;
 
     /** CSVカラム定義 */
-    private static final String[] CSV_HEADERS = {
-            "社員ID(必須)", "氏名(必須)", "フリガナ(必須)", "生年月日(必須)",
-            "入社年月(必須)", "エンジニア歴(必須)", "扱える言語(必須)", "経歴,研修の受講歴",
-            "技術力", "受講態度", "コミュニケーション能力", "リーダーシップ", "備考", "登録日"
-    };
 
     /** DialogManagerインスタンス */
     private final DialogManager dialogManager;
-
-    // 最大レコード数の定数
-    private static final int MAX_RECORDS = 1000;
 
     /**
      * デフォルトコンストラクタ
@@ -171,7 +164,7 @@ public class EngineerCSVDAO implements EngineerDAO {
             resourceManager.registerResource(resourceKey, writer);
 
             // CSVヘッダーの書き込み
-            writer.write(String.join(",", CSV_HEADERS));
+            writer.write(String.join(",", CSVConstants.CSV_HEADERS));
             writer.newLine();
 
             // 処理完了後にResourceManagerからリソースを解除
@@ -200,10 +193,11 @@ public class EngineerCSVDAO implements EngineerDAO {
 
             // 読み込んだデータの件数をチェック
             List<EngineerDTO> successData = result.getSuccessData();
-            if (successData.size() > MAX_RECORDS) {
+            if (successData.size() > SystemConstants.MAX_ENGINEER_RECORDS) {
                 // 1000件を超える場合はエラーログを出力
                 LogHandler.getInstance().log(Level.SEVERE, LogType.SYSTEM,
-                        "登録されているエンジニアデータが上限(" + MAX_RECORDS + "件)を超えています: " + successData.size() + "件");
+                        "登録されているエンジニアデータが上限(" + SystemConstants.MAX_ENGINEER_RECORDS + "件)を超えています: "
+                                + successData.size() + "件");
 
                 // データ件数制限エラーをユーザーに通知する必要があるが、
                 // このタイミングではUIスレッドでの操作ができないため、MainControllerを介して行う
@@ -355,15 +349,13 @@ public class EngineerCSVDAO implements EngineerDAO {
         try {
             // ヘッダー行の追加
             List<String> csvLines = new ArrayList<>();
-            csvLines.add(String.join(",", CSV_HEADERS));
+            csvLines.add(String.join(",", CSVConstants.CSV_HEADERS));
 
             // エラーリストをCSV形式に変換
             for (EngineerDTO engineer : errorList) {
                 csvLines.add(convertToCSV(engineer));
             }
 
-            // CSVファイルに書き込み
-            File file = new File(filePath);
             CSVAccess csvAccess = new CSVAccess("write", csvLines);
             csvAccess.execute();
 
@@ -400,7 +392,7 @@ public class EngineerCSVDAO implements EngineerDAO {
                 new OutputStreamWriter(new FileOutputStream(filePath), StandardCharsets.UTF_8))) {
 
             // ヘッダー書き込み
-            writer.write(String.join(",", CSV_HEADERS));
+            writer.write(String.join(",", CSVConstants.CSV_HEADERS));
             writer.newLine();
 
             // データ書き込み
@@ -421,7 +413,7 @@ public class EngineerCSVDAO implements EngineerDAO {
         try (BufferedWriter writer = new BufferedWriter(
                 new OutputStreamWriter(new FileOutputStream(filePath), StandardCharsets.UTF_8))) {
 
-            writer.write(String.join(",", CSV_HEADERS)); // ヘッダーだけを書き込む
+            writer.write(String.join(",", CSVConstants.CSV_HEADERS)); // ヘッダーだけを書き込む
             writer.newLine();
 
             LogHandler.getInstance().log(Level.INFO, LogType.SYSTEM,
@@ -486,7 +478,7 @@ public class EngineerCSVDAO implements EngineerDAO {
         try {
             // ヘッダー行を含むCSV行リストを作成
             List<String> lines = new ArrayList<>();
-            lines.add(String.join(",", CSV_HEADERS));
+            lines.add(String.join(",", CSVConstants.CSV_HEADERS));
 
             // エンジニアデータをCSV形式に変換
             for (EngineerDTO engineer : engineers) {
@@ -494,8 +486,6 @@ public class EngineerCSVDAO implements EngineerDAO {
                 lines.add(line);
             }
 
-            // ResourceManagerから管理されているCSVファイルを使用
-            File file = new File(csvFilePath);
             CSVAccess csvAccess = new CSVAccess("write", lines);
             csvAccess.execute();
 
@@ -659,7 +649,7 @@ public class EngineerCSVDAO implements EngineerDAO {
      * @return 変換されたEngineerDTOオブジェクト
      */
     public EngineerDTO convertToDTO(String[] line) {
-        if (line == null || line.length < CSV_HEADERS.length) {
+        if (line == null || line.length < CSVConstants.CSV_HEADERS.length) {
             return null;
         }
 

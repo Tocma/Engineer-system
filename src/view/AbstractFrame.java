@@ -4,6 +4,7 @@ import javax.swing.*;
 import java.awt.*;
 import util.LogHandler;
 import util.LogHandler.LogType;
+import util.Constants.UIConstants;
 
 /**
  * フレームの基本機能を提供する抽象基底クラス
@@ -19,17 +20,11 @@ import util.LogHandler.LogType;
  * </p>
  *
  * @author Nakano
- * @version 4.0.0
- * @since 2025-04-15
  */
 public abstract class AbstractFrame {
 
     /** メインフレーム */
     protected final JFrame frame;
-
-    /** デフォルトのフレームサイズ */
-    protected static final int DEFAULT_WIDTH = 1000;
-    protected static final int DEFAULT_HEIGHT = 800;
 
     /**
      * コンストラクタ
@@ -42,7 +37,7 @@ public abstract class AbstractFrame {
 
     /**
      * フレームの初期化処理を実行
-     * templatemethodドパターンを使用
+     * templatemethodパターンを使用
      */
     protected void initialize() {
         try {
@@ -59,7 +54,7 @@ public abstract class AbstractFrame {
      */
     protected void initializeFrame() {
         frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
-        setFrameSize(DEFAULT_WIDTH, DEFAULT_HEIGHT);
+        setFrameSize(UIConstants.DEFAULT_WINDOW_WIDTH, UIConstants.DEFAULT_WINDOW_HEIGHT);
         frame.setLocationRelativeTo(null);
     }
 

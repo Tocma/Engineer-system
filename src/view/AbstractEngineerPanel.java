@@ -6,6 +6,7 @@ import util.LogHandler.LogType;
 import util.validator.IDValidator;
 import util.validator.Validator;
 import util.validator.ValidatorEnum;
+import util.Constants.UIConstants;
 import javax.swing.*;
 import javax.swing.border.Border;
 import javax.swing.text.JTextComponent;
@@ -38,8 +39,6 @@ import java.util.logging.Level;
  * </p>
  *
  * @author Nakano
- * @version 4.11.7
- * @since 2025-05-30
  */
 public abstract class AbstractEngineerPanel extends JPanel {
 
@@ -58,15 +57,6 @@ public abstract class AbstractEngineerPanel extends JPanel {
     /** パネルの初期化済みフラグ */
     protected boolean initialized;
 
-    /** ラベルとフィールド間のマージン */
-    protected static final int LABEL_FIELD_MARGIN = 5;
-
-    /** 必須項目を表すマーク */
-    protected static final String REQUIRED_MARK = " *";
-
-    /** エラーメッセージの色 */
-    protected static final Color ERROR_COLOR = new Color(204, 0, 0);
-
     /** エラー状態のコンポーネントを管理するマップ */
     protected final Map<String, Component> errorComponents;
 
@@ -74,7 +64,7 @@ public abstract class AbstractEngineerPanel extends JPanel {
     protected final Map<JComponent, Border> originalBorders;
 
     /** エラー表示用のボーダー */
-    protected static final Border ERROR_BORDER = BorderFactory.createLineBorder(ERROR_COLOR, 2);
+    protected static final Border ERROR_BORDER = BorderFactory.createLineBorder(UIConstants.ERROR_COLOR, 2);
 
     /** DialogManager参照 */
     protected final DialogManager dialogManager;
@@ -235,7 +225,7 @@ public abstract class AbstractEngineerPanel extends JPanel {
     private void setupErrorMessageLabel() {
         // エラーメッセージラベルの作成
         errorMessageLabel = new JLabel("");
-        errorMessageLabel.setForeground(ERROR_COLOR);
+        errorMessageLabel.setForeground(UIConstants.ERROR_COLOR);
         errorMessageLabel.setVisible(false);
 
         // 下部パネルの作成 - BorderLayoutに変更
@@ -389,7 +379,7 @@ public abstract class AbstractEngineerPanel extends JPanel {
     protected void createLanguageSection(JPanel container) {
         // セクションタイトル
         JLabel languageTitle = createSectionTitle("扱える言語");
-        JLabel requiredMark = new JLabel(REQUIRED_MARK);
+        JLabel requiredMark = new JLabel(UIConstants.REQUIRED_MARK);
         JLabel errorLabel = createFieldErrorLabel("languages");
 
         JPanel titlePanel = new JPanel(new FlowLayout(FlowLayout.LEFT, 10, 0));
@@ -398,7 +388,7 @@ public abstract class AbstractEngineerPanel extends JPanel {
         titlePanel.add(requiredMark);
 
         errorLabel.setVisible(false);
-        errorLabel.setForeground(ERROR_COLOR);
+        errorLabel.setForeground(UIConstants.ERROR_COLOR);
         errorLabel.setFont(errorLabel.getFont().deriveFont(Font.PLAIN, 11f));
         titlePanel.add(Box.createHorizontalStrut(10));
         titlePanel.add(errorLabel);
@@ -654,7 +644,7 @@ public abstract class AbstractEngineerPanel extends JPanel {
      */
     protected JLabel createFieldErrorLabel(String fieldName) {
         JLabel errorLabel = new JLabel(" ");
-        errorLabel.setForeground(ERROR_COLOR);
+        errorLabel.setForeground(UIConstants.ERROR_COLOR);
         errorLabel.setVisible(false);
         errorLabel.setFont(errorLabel.getFont().deriveFont(Font.PLAIN, 11f));
         errorLabel.setPreferredSize(new Dimension(300, 15));
@@ -706,7 +696,7 @@ public abstract class AbstractEngineerPanel extends JPanel {
      * 必須項目のラベルを作成
      */
     protected JLabel createFieldLabel(String labelText, boolean required) {
-        JLabel label = new JLabel(labelText + (required ? REQUIRED_MARK : ""));
+        JLabel label = new JLabel(labelText + (required ? UIConstants.REQUIRED_MARK : ""));
         return label;
     }
 
@@ -740,7 +730,7 @@ public abstract class AbstractEngineerPanel extends JPanel {
         fieldPanel.add(field, BorderLayout.CENTER);
 
         rowPanel.add(topPanel);
-        rowPanel.add(Box.createVerticalStrut(LABEL_FIELD_MARGIN));
+        rowPanel.add(Box.createVerticalStrut(UIConstants.LABEL_FIELD_MARGIN));
         rowPanel.add(fieldPanel);
 
         return rowPanel;

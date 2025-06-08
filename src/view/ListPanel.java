@@ -4,6 +4,7 @@ import model.EngineerDTO;
 import util.LogHandler;
 import util.LogHandler.LogType;
 import util.ListenerManager;
+import util.Constants.SystemConstants;
 import javax.swing.*;
 import javax.swing.table.DefaultTableModel;
 import javax.swing.table.TableRowSorter;
@@ -39,8 +40,6 @@ import java.awt.event.InputEvent;
  * UI表示とユーザーインタラクションのみに集中する設計に変更
  *
  * @author Nakano
- * @version 4.13.10
- * @since 2025-06-03
  */
 public class ListPanel extends JPanel {
 
@@ -54,9 +53,6 @@ public class ListPanel extends JPanel {
 
     /** テーブルモデル */
     private final DefaultTableModel tableModel;
-
-    /** 検索フィールド */
-    private final JTextField searchField;
 
     /** ページネーション関連コンポーネント */
     private final JLabel pageLabel;
@@ -77,9 +73,6 @@ public class ListPanel extends JPanel {
 
     /** 一覧画面が次回表示時に再描画すべきかどうかのフラグ */
     private static boolean needsRefresh = false;
-
-    /** ページサイズ（1ページあたりの表示件数） */
-    private final int pageSize = 100;
 
     /** 現在のページ番号 */
     private int currentPage = 1;
@@ -123,7 +116,7 @@ public class ListPanel extends JPanel {
     /** メインコントローラー参照 */
     private MainController mainController;
 
-    //ListenerManager統合による新機能
+    // ListenerManager統合による新機能
 
     /** リスナー管理システムのインスタンス */
     private final ListenerManager listenerManager;
@@ -191,8 +184,7 @@ public class ListPanel extends JPanel {
         this.tableModel = createTableModel();
         this.table = createTable();
 
-        // 検索フィールド
-        this.searchField = new JTextField(20);
+        new JTextField(20);
 
         // ページネーションコンポーネント
         this.pageLabel = new JLabel("ページ: 0 / 0");
@@ -937,7 +929,7 @@ public class ListPanel extends JPanel {
             return;
         }
 
-        int totalPages = (int) Math.ceil((double) displayData.size() / pageSize);
+        int totalPages = (int) Math.ceil((double) displayData.size() / SystemConstants.PAGE_SIZE);
         int newPage = currentPage + delta;
 
         if (newPage < 1 || newPage > totalPages) {
@@ -955,7 +947,7 @@ public class ListPanel extends JPanel {
      * ページラベルを更新
      */
     private void updatePageLabel(int dataSize) {
-        int totalPages = (int) Math.ceil((double) dataSize / pageSize);
+        int totalPages = (int) Math.ceil((double) dataSize / SystemConstants.PAGE_SIZE);
         totalPages = Math.max(1, totalPages);
         pageLabel.setText(String.format("ページ: %d / %d", currentPage, totalPages));
     }
@@ -1071,7 +1063,7 @@ public class ListPanel extends JPanel {
         }
 
         int modelRow = table.convertRowIndexToModel(selectedRow);
-        int startIndex = (currentPage - 1) * pageSize;
+        int startIndex = (currentPage - 1) * SystemConstants.PAGE_SIZE;
         int dataIndex = startIndex + modelRow;
 
         if (dataIndex >= 0 && dataIndex < displayData.size()) {
@@ -1087,8 +1079,8 @@ public class ListPanel extends JPanel {
     private void updateTableData(List<EngineerDTO> data) {
         tableModel.setRowCount(0);
 
-        int startIndex = (currentPage - 1) * pageSize;
-        int endIndex = Math.min(startIndex + pageSize, data.size());
+        int startIndex = (currentPage - 1) * SystemConstants.PAGE_SIZE;
+        int endIndex = Math.min(startIndex + SystemConstants.PAGE_SIZE, data.size());
 
         for (int i = startIndex; i < endIndex; i++) {
             addEngineerToTable(data.get(i));
@@ -1103,7 +1095,7 @@ public class ListPanel extends JPanel {
      * ページネーションボタンの状態を更新
      */
     private void updatePaginationButtons(int dataSize) {
-        int totalPages = (int) Math.ceil((double) dataSize / pageSize);
+        int totalPages = (int) Math.ceil((double) dataSize / SystemConstants.PAGE_SIZE);
         prevButton.setEnabled(currentPage > 1);
         nextButton.setEnabled(currentPage < totalPages);
     }
@@ -1136,7 +1128,7 @@ public class ListPanel extends JPanel {
      * テーブルの選択状態を管理する
      */
     private void updateSelectedEngineerIds(boolean isCtrlDown, boolean isShiftDown) {
-        int startIndex = (currentPage - 1) * pageSize;
+        int startIndex = (currentPage - 1) * SystemConstants.PAGE_SIZE;
         List<EngineerDTO> displayData = getDisplayData();
         if (displayData == null || displayData.isEmpty()) {
             updateTableData(new ArrayList<>());
@@ -1205,7 +1197,7 @@ public class ListPanel extends JPanel {
     private Set<String> getCurrentPageIds(List<EngineerDTO> displayData, int startIndex) {
         return displayData.stream()
                 .skip(startIndex)
-                .limit(pageSize)
+                .limit(SystemConstants.PAGE_SIZE)
                 .map(EngineerDTO::getId)
                 .collect(Collectors.toSet());
     }
@@ -1248,13 +1240,14 @@ public class ListPanel extends JPanel {
      * テーブルの選択状態を復元する
      */
     private void restoreRowSelectionById() {
-        int startIndex = (currentPage - 1) * pageSize;
+        int startIndex = (currentPage - 1) * SystemConstants.PAGE_SIZE;
         List<EngineerDTO> displayData = getDisplayData();
         if (displayData == null || displayData.isEmpty()) {
             return;
         }
 
-        for (int rowIndex = 0; rowIndex < pageSize && (startIndex + rowIndex) < displayData.size(); rowIndex++) {
+        for (int rowIndex = 0; rowIndex < SystemConstants.PAGE_SIZE
+                && (startIndex + rowIndex) < displayData.size(); rowIndex++) {
             EngineerDTO engineerDTO = displayData.get(startIndex + rowIndex);
             if (selectedEngineerIds.contains(engineerDTO.getId())) {
                 table.addRowSelectionInterval(rowIndex, rowIndex);

@@ -4,6 +4,7 @@ import util.LogHandler;
 import util.LogHandler.LogType;
 import util.validator.IDValidator;
 import util.ResourceManager;
+import util.Constants.CSVConstants;
 import java.io.*;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
@@ -47,8 +48,6 @@ import java.util.logging.Level;
  * </p>
  *
  * @author Nakano
- * @version 4.9.5
- * @since 2025-04-29
  */
 public class CSVAccess extends AccessThread {
 
@@ -74,11 +73,6 @@ public class CSVAccess extends AccessThread {
     private final boolean useResourceManager;
 
     /** CSVのヘッダー行 */
-    private static final String[] CSV_HEADERS = {
-            "社員ID(必須)", "氏名(必須)", "フリガナ(必須)", "生年月日(必須)",
-            "入社年月(必須)", "エンジニア歴(必須)", "扱える言語(必須)", "経歴,研修の受講歴",
-            "技術力", "受講態度", "コミュニケーション能力", "リーダーシップ", "備考", "登録日"
-    };
 
     /** 上書きモードフラグ（追記モードで書き込む場合はtrue） */
     private final boolean appendMode;
@@ -275,7 +269,7 @@ public class CSVAccess extends AccessThread {
 
             try {
                 // 行の最低カラム数チェック
-                if (row.length < CSV_HEADERS.length) {
+                if (row.length < CSVConstants.CSV_HEADERS.length) {
                     EngineerDTO errorEngineer = createErrorEngineer(row, "カラム数が不足しています (行 " + lineNumber + ")");
                     errorData.add(errorEngineer);
                     continue;
@@ -457,8 +451,6 @@ public class CSVAccess extends AccessThread {
     private EngineerDTO convertToDTO(String[] row) {
         // EngineerBuilderを使用してDTOを構築
         try {
-            EngineerBuilder builder = new EngineerBuilder();
-
             // EngineerBuilderを使用してCSVからDTOを構築
             return new EngineerCSVDAO().convertToDTO(row);
 
