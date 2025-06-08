@@ -21,10 +21,6 @@ public class ResourceManager {
     private static final ResourceManager INSTANCE = new ResourceManager();
 
     /**
-     * ディレクトリ構造の定義
-     */
-
-    /**
      * CSVヘッダー定義
      */
     private static final String DEFAULT_CSV_HEADER = "社員ID(必須),氏名(必須),フリガナ(必須),生年月日(必須),入社年月(必須),エンジニア歴(必須),扱える言語(必須),経歴,研修の受講歴,技術力,受講態度,コミュニケーション能力,リーダーシップ,備考";

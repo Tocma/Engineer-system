@@ -1275,22 +1275,8 @@ public class MainController {
         File selectedFile = null;
 
         while (true) {
-            JFileChooser fileChooser = new JFileChooser();
+            JFileChooser fileChooser = new JFileChooser(System.getProperty("user.dir"));
             fileChooser.setDialogTitle("テンプレートCSV出力先");
-
-            // ResourceManagerからデータディレクトリを取得して初期ディレクトリに設定
-            // これにより、ユーザーは適切なディレクトリから開始できます
-            try {
-                Path dataDir = resourceManager.getDataDirectoryPath();
-                if (dataDir != null && dataDir.toFile().exists()) {
-                    fileChooser.setCurrentDirectory(dataDir.toFile());
-                    LogHandler.getInstance().log(Level.INFO, LogType.SYSTEM,
-                            "ファイル選択ダイアログの初期ディレクトリを設定: " + dataDir);
-                }
-            } catch (Exception e) {
-                LogHandler.getInstance().log(Level.WARNING, LogType.SYSTEM,
-                        "初期ディレクトリの設定に失敗しましたが、処理を続行します: " + e.getMessage());
-            }
 
             fileChooser.setSelectedFile(new File(defaultFileName));
 
@@ -1443,21 +1429,8 @@ public class MainController {
         File selectedFile = null;
 
         while (true) {
-            JFileChooser fileChooser = new JFileChooser();
+            JFileChooser fileChooser = new JFileChooser(System.getProperty("user.dir"));
             fileChooser.setDialogTitle("CSVファイルの保存先");
-
-            // ResourceManagerからデータディレクトリを初期ディレクトリに設定
-            try {
-                Path dataDir = resourceManager.getDataDirectoryPath();
-                if (dataDir != null && dataDir.toFile().exists()) {
-                    fileChooser.setCurrentDirectory(dataDir.toFile());
-                    LogHandler.getInstance().log(Level.INFO, LogType.SYSTEM,
-                            "CSVエクスポートダイアログの初期ディレクトリを設定: " + dataDir);
-                }
-            } catch (Exception e) {
-                LogHandler.getInstance().log(Level.WARNING, LogType.SYSTEM,
-                        "初期ディレクトリの設定に失敗しましたが、処理を続行します: " + e.getMessage());
-            }
 
             fileChooser.setSelectedFile(new File(defaultFileName));
 
@@ -1722,22 +1695,9 @@ public class MainController {
         }
 
         // ResourceManagerを活用したファイル選択ダイアログの表示
-        JFileChooser fileChooser = new JFileChooser();
+        JFileChooser fileChooser = new JFileChooser(System.getProperty("user.dir"));
         fileChooser.setDialogTitle("インポートするCSVファイルを選択");
         fileChooser.setFileFilter(new FileNameExtensionFilter("CSVファイル (*.csv)", "csv"));
-
-        // ResourceManagerからデータディレクトリを初期ディレクトリに設定
-        try {
-            Path dataDir = resourceManager.getDataDirectoryPath();
-            if (dataDir != null && dataDir.toFile().exists()) {
-                fileChooser.setCurrentDirectory(dataDir.toFile());
-                LogHandler.getInstance().log(Level.INFO, LogType.SYSTEM,
-                        "CSVインポートダイアログの初期ディレクトリを設定: " + dataDir);
-            }
-        } catch (Exception e) {
-            LogHandler.getInstance().log(Level.WARNING, LogType.SYSTEM,
-                    "初期ディレクトリの設定に失敗しましたが、処理を続行します: " + e.getMessage());
-        }
 
         int result = fileChooser.showOpenDialog(mainFrame.getJFrame());
         if (result != JFileChooser.APPROVE_OPTION) {
