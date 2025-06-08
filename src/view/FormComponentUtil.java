@@ -118,7 +118,7 @@ public final class FormComponentUtil {
             });
 
             // 選択時の処理（選択された項目のチェック状態をトグル）
-            addActionListener(e -> {
+            addActionListener(_e -> {
                 Object selected = getSelectedItem();
                 if (selected instanceof CheckableItem item) {
                     item.setSelected(!item.isSelected());

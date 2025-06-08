@@ -1867,7 +1867,7 @@ public class MainController {
                         "重複IDのエンジニア情報を上書きしました: " + importResult.getDuplicateIds().size() + "件");
             } else {
                 for (EngineerDTO engineer : importedEngineers) {
-                    if (!currentEngineers.stream().anyMatch(e -> e.getId().equals(engineer.getId()))) {
+                    if (!currentEngineers.stream().anyMatch(_e -> _e.getId().equals(engineer.getId()))) {
                         engineerController.addEngineer(engineer);
                     }
                 }

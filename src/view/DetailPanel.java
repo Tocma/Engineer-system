@@ -185,7 +185,7 @@ public class DetailPanel extends AbstractEngineerPanel {
 
         // 戻るボタン
         backButton = new JButton("一覧へ戻る");
-        backButton.addActionListener(e -> {
+        backButton.addActionListener(_e -> {
             if (!processing) {
                 goBack();
             }
@@ -195,7 +195,7 @@ public class DetailPanel extends AbstractEngineerPanel {
         // 更新ボタン
         updateButton = new JButton("保存");
         updateButton.setEnabled(false); // 初期状態では無効化
-        updateButton.addActionListener(e -> {
+        updateButton.addActionListener(_e -> {
             if (!processing) {
                 updateEngineer();
             }
@@ -234,7 +234,7 @@ public class DetailPanel extends AbstractEngineerPanel {
         noteArea.getDocument().addDocumentListener(documentListener);
 
         // コンボボックスにリスナー追加
-        ActionListener comboListener = e -> setFormModified(true);
+        ActionListener comboListener = _e -> setFormModified(true);
 
         birthYearComboBox.addActionListener(comboListener);
         birthMonthComboBox.addActionListener(comboListener);
@@ -248,7 +248,7 @@ public class DetailPanel extends AbstractEngineerPanel {
         leadershipComboBox.addActionListener(comboListener);
 
         // 言語選択コンボボックスのリスナー設定
-        languageComboBox.addActionListener(e -> setFormModified(true));
+        languageComboBox.addActionListener(_e -> setFormModified(true));
 
         LogHandler.getInstance().log(Level.INFO, LogType.UI,
                 "フォーム変更リスナーを設定しました。保存ボタン状態: " + (updateButton.isEnabled() ? "有効" : "無効"));
