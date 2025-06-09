@@ -3,7 +3,6 @@ package util.validator;
 import util.LogHandler;
 import util.LogHandler.LogType;
 import java.util.Map;
-import java.util.HashMap;
 import java.util.logging.Level;
 
 /**

@@ -54,7 +54,7 @@ public class IDValidator extends AbstractValidator {
         }
 
         // 全角数字を半角に変換
-        String converted = StringUtil.convertFullWidthToHalfWidth(trimmed);
+        String converted = convertFullWidthToHalfWidth(trimmed);
 
         // ID標準形式への変換
         String standardized = standardizeId(converted);
@@ -91,7 +91,7 @@ public class IDValidator extends AbstractValidator {
         }
 
         // 禁止IDチェック
-        if (checkForbiddenId(value)) {
+        if (isForbiddenId(value)) {
             logWarning("ID検証失敗: 禁止ID - " + value);
             return false;
         }
@@ -104,56 +104,6 @@ public class IDValidator extends AbstractValidator {
 
         logDebug("ID検証成功: " + value);
         return true;
-    }
-
-    /**
-     * ID値から数字部分を抽出
-     * 
-     * @param value 対象のID値
-     * @return 数字部分の文字列
-     */
-    private String extractNumericPart(String value) {
-        if (value == null) {
-            return "";
-        }
-
-        if (value.toUpperCase().startsWith("ID")) {
-            return value.substring(2);
-        }
-        return value;
-    }
-
-    /**
-     * 社員IDを標準形式（ID00000）に変換
-     * 
-     * @param idValue 元の社員ID
-     * @return 標準化されたID
-     */
-    private String standardizeId(String idValue) {
-        if (idValue == null || idValue.trim().isEmpty()) {
-            return "";
-        }
-
-        try {
-            // IDプレフィックス有無の確認と数値部分の抽出
-            String numericPart = extractNumericPart(idValue);
-
-            // 数値部分のみかチェック
-            if (!ID_PATTERN.matcher(numericPart).matches()) {
-                logWarning("ID標準化失敗: 数字以外を含むか5桁超過 - " + idValue);
-                return idValue; // 変換に失敗した場合は元の値を返す
-            }
-
-            // 数値部分を左部0埋めして5桁に
-            String paddedId = String.format("%05d", Integer.parseInt(numericPart));
-
-            // IDプレフィックスを付加
-            return "ID" + paddedId;
-
-        } catch (NumberFormatException e) {
-            logWarning("ID標準化失敗: 数値変換エラー - " + idValue);
-            return idValue;
-        }
     }
 
     /**
@@ -176,16 +126,6 @@ public class IDValidator extends AbstractValidator {
     }
 
     /**
-     * 禁止IDのチェック
-     * 
-     * @param value チェック対象のID値
-     * @return 禁止IDの場合true
-     */
-    private boolean checkForbiddenId(String value) {
-        return FORBIDDEN_ID.equals(value);
-    }
-
-    /**
      * ID重複チェック
      * 
      * @param value チェック対象のID値
@@ -204,5 +144,95 @@ public class IDValidator extends AbstractValidator {
         if (id != null && !id.trim().isEmpty()) {
             existingIds.add(standardizeId(id));
         }
+    }
+
+    // ========== 静的ユーティリティメソッド ==========
+
+    /**
+     * 全角数字を半角に変換（静的メソッド）
+     * 
+     * @param value 変換対象の文字列
+     * @return 変換後の文字列
+     */
+    public static String convertFullWidthToHalfWidth(String value) {
+        if (value == null) {
+            return null;
+        }
+        return StringUtil.convertFullWidthToHalfWidth(value);
+    }
+
+    /**
+     * 社員IDを標準形式（ID00000）に変換（静的メソッド）
+     * 
+     * @param idValue 元の社員ID
+     * @return 標準化されたID
+     */
+    public static String standardizeId(String idValue) {
+        if (idValue == null || idValue.trim().isEmpty()) {
+            return "";
+        }
+
+        try {
+            // IDプレフィックス有無の確認と数値部分の抽出
+            String numericPart = extractNumericPart(idValue);
+
+            // 数値部分のみかチェック
+            if (!ID_PATTERN.matcher(numericPart).matches()) {
+                return idValue; // 変換に失敗した場合は元の値を返す
+            }
+
+            // 数値部分を左部0埋めして5桁に
+            String paddedId = String.format("%05d", Integer.parseInt(numericPart));
+
+            // IDプレフィックスを付加
+            return "ID" + paddedId;
+
+        } catch (NumberFormatException e) {
+            return idValue;
+        }
+    }
+
+    /**
+     * 禁止IDのチェック（静的メソッド）
+     * 
+     * @param value チェック対象のID値
+     * @return 禁止IDの場合true
+     */
+    public static boolean isForbiddenId(String value) {
+        return FORBIDDEN_ID.equals(value);
+    }
+
+    /**
+     * ID値から数字部分を抽出（静的メソッド）
+     * 
+     * @param value 対象のID値
+     * @return 数字部分の文字列
+     */
+    private static String extractNumericPart(String value) {
+        if (value == null) {
+            return "";
+        }
+
+        if (value.toUpperCase().startsWith("ID")) {
+            return value.substring(2);
+        }
+        return value;
+    }
+
+    /**
+     * ID形式が正しいかチェック（静的メソッド）
+     * 数字のみで5桁以内かを確認
+     * 
+     * @param idValue チェック対象の値
+     * @return 形式が正しい場合true
+     */
+    public static boolean checkIdFormat(String idValue) {
+        if (idValue == null || idValue.isEmpty()) {
+            return false;
+        }
+
+        // IDプレフィックスを除去して数字部分のみチェック
+        String numericPart = extractNumericPart(idValue);
+        return ID_PATTERN.matcher(numericPart).matches();
     }
 }

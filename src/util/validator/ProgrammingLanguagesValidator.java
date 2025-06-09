@@ -2,7 +2,6 @@ package util.validator;
 
 import java.util.List;
 import java.util.ArrayList;
-import java.util.Arrays;
 
 /**
  * プログラミング言語選択検証用バリデータ

@@ -3,19 +3,15 @@ package view;
 import util.LogHandler;
 import util.Constants.MessageEnum;
 import util.LogHandler.LogType;
-import util.validator.IDValidator;
-import util.validator.Validator;
-import util.validator.ValidatorEnum;
+import util.validator.*;
 import util.Constants.UIConstants;
 import javax.swing.*;
 import javax.swing.border.Border;
 import javax.swing.text.JTextComponent;
 import java.awt.*;
 import java.time.LocalDate;
-import java.util.ArrayList;
-import java.util.HashMap;
+import java.util.*;
 import java.util.List;
-import java.util.Map;
 import java.util.logging.Level;
 
 /**
@@ -131,6 +127,15 @@ public abstract class AbstractEngineerPanel extends JPanel {
     /** フィールド名と表示名のマッピング */
     protected Map<String, String> fieldDisplayNames;
 
+    /** バリデーションサービス */
+    private final ValidationService validationService;
+
+    /** バリデータマップ */
+    private Map<String, FieldValidator> validators;
+
+    /** バリデーション結果 */
+    private ValidationResult lastValidationResult;
+
     /**
      * コンストラクタ
      * パネルの基本設定とコンポーネントマップの初期化
@@ -144,8 +149,42 @@ public abstract class AbstractEngineerPanel extends JPanel {
         this.initialized = false;
         this.dialogManager = DialogManager.getInstance();
         this.fieldDisplayNames = new HashMap<>();
+        this.validationService = ValidationService.getInstance();
         initializeFieldDisplayNames();
-        LogHandler.getInstance().log(Level.INFO, LogType.SYSTEM, "AbstractEngineerPanelを初期化しました");
+        initializeValidators();
+        LogHandler.getInstance().log(Level.INFO, LogType.SYSTEM,
+                "AbstractEngineerPanelを初期化しました（新バリデーションシステム統合）");
+    }
+
+    /**
+     * バリデータの初期化
+     * 既存のIDセットを収集してバリデータを作成
+     */
+    private void initializeValidators() {
+        try {
+            // 既存のIDセットを取得（重複チェック用）
+            Set<String> existingIds = getExistingEngineerIds();
+
+            // バリデータマップを生成
+            this.validators = ValidatorFactory.createEngineerValidators(existingIds);
+
+            LogHandler.getInstance().log(Level.INFO, LogType.SYSTEM,
+                    "バリデータを初期化しました: " + validators.size() + "個");
+        } catch (Exception e) {
+            LogHandler.getInstance().logError(LogType.SYSTEM,
+                    "バリデータの初期化中にエラーが発生しました", e);
+            // フォールバック用の空マップ
+            this.validators = new HashMap<>();
+        }
+    }
+
+    /**
+     * 既存のエンジニアIDセットを取得
+     * サブクラスでオーバーライドして実装
+     */
+    protected Set<String> getExistingEngineerIds() {
+        // デフォルトは空セット（サブクラスで実装）
+        return new HashSet<>();
     }
 
     /**
@@ -518,91 +557,195 @@ public abstract class AbstractEngineerPanel extends JPanel {
     // === 共通バリデーション機能（重複削減） ===
 
     /**
-     * 共通入力検証を実行
-     * サブクラスでオーバーライドして追加の検証を実装可能
-     *
+     * 共通入力検証を実行（新バリデーションシステム使用）
+     * 
      * @return 検証成功の場合true、失敗の場合false
      */
     protected boolean validateCommonInput() {
-        boolean isValid = true;
+        try {
+            // フォームデータを収集
+            Map<String, String> formData = collectFormData();
 
-        // 氏名の検証
-        if (isEmpty(nameField)) {
-            showFieldError("nameField", MessageEnum.VALIDATION_ERROR_NAME.getMessage());
-            isValid = false;
-        } else if (nameField.getText().length() > 20) {
-            showFieldError("nameField", MessageEnum.VALIDATION_ERROR_NAME.getMessage());
-            isValid = false;
-        }
+            // バリデーション実行
+            lastValidationResult = validationService.validateForm(formData, validators);
 
-        // 氏名 (カナ)の検証
-        Validator kanaValidator = ValidatorEnum.NAME_KANA.getValidator();
-        if (!kanaValidator.validate(nameKanaField.getText())) {
-            showFieldError("nameKanaField", kanaValidator.getErrorMessage());
-            isValid = false;
-        }
+            // エラー表示をクリア
+            clearAllComponentErrors();
 
-        // 社員IDの検証（詳細画面では編集不可のためスキップ）
-        if (idField.isEditable()) {
-            if (isEmpty(idField)) {
-                showFieldError("idField", MessageEnum.VALIDATION_ERROR_EMPLOYEE_ID.getMessage());
-                isValid = false;
+            if (lastValidationResult.isValid()) {
+                LogHandler.getInstance().log(Level.INFO, LogType.SYSTEM,
+                        "フォームバリデーション成功");
+                return true;
             } else {
-                String idValue = IDValidator.convertFullWidthToHalfWidth(idField.getText().trim());
-                if (!IDValidator.checkIdFormat(idValue)) {
-                    showFieldError("idField", "社員IDは5桁以内の数字で入力してください");
-                    isValid = false;
-                } else if (IDValidator.isForbiddenId(idValue)) {
-                    showFieldError("idField", "ID00000は使用できません");
-                    isValid = false;
-                }
+                // エラーを表示
+                displayValidationErrors(lastValidationResult);
+                LogHandler.getInstance().log(Level.WARNING, LogType.SYSTEM,
+                        "フォームバリデーション失敗: エラー数=" + lastValidationResult.getErrorCount());
+                return false;
+            }
+
+        } catch (Exception e) {
+            LogHandler.getInstance().logError(LogType.SYSTEM,
+                    "バリデーション実行中にエラーが発生しました", e);
+            showErrorMessage("入力検証中にエラーが発生しました: " + e.getMessage());
+            return false;
+        }
+    }
+
+    /**
+     * フォームデータを収集
+     * 
+     * @return フィールド名と値のマップ
+     */
+    private Map<String, String> collectFormData() {
+        Map<String, String> formData = new HashMap<>();
+
+        // 基本情報
+        formData.put("name", nameField.getText());
+        formData.put("nameKana", nameKanaField.getText());
+        formData.put("id", idField.getText());
+
+        // 生年月日
+        formData.put("birthDate", getDateString(birthYearComboBox, birthMonthComboBox, birthDayComboBox));
+
+        // 入社年月
+        formData.put("joinDate", getDateString(joinYearComboBox, joinMonthComboBox, null));
+
+        // エンジニア歴
+        formData.put("career", getComboBoxValue(careerComboBox));
+
+        // 扱える言語（セミコロン区切り）
+        if (languageComboBox != null) {
+            List<String> languages = languageComboBox.getSelectedItems();
+            formData.put("programmingLanguages", String.join(";", languages));
+        }
+
+        // 経歴・研修・備考
+        formData.put("careerHistory", careerHistoryArea.getText());
+        formData.put("trainingHistory", trainingHistoryArea.getText());
+        formData.put("note", noteArea.getText());
+
+        // スキル評価
+        formData.put("technicalSkill", getComboBoxValue(technicalSkillComboBox));
+        formData.put("learningAttitude", getComboBoxValue(learningAttitudeComboBox));
+        formData.put("communicationSkill", getComboBoxValue(communicationSkillComboBox));
+        formData.put("leadership", getComboBoxValue(leadershipComboBox));
+
+        return formData;
+    }
+
+    /**
+     * 日付コンポーネントから日付文字列を生成
+     */
+    private String getDateString(JComboBox<String> yearCombo, JComboBox<String> monthCombo,
+            JComboBox<String> dayCombo) {
+        String year = getComboBoxValue(yearCombo);
+        String month = getComboBoxValue(monthCombo);
+
+        if (year.isEmpty() || month.isEmpty()) {
+            return "";
+        }
+
+        // 月を2桁にパディング
+        month = String.format("%02d", Integer.parseInt(month));
+
+        if (dayCombo != null) {
+            String day = getComboBoxValue(dayCombo);
+            if (day.isEmpty()) {
+                return "";
+            }
+            // 日を2桁にパディング
+            day = String.format("%02d", Integer.parseInt(day));
+            return year + "-" + month + "-" + day;
+        } else {
+            // 入社年月の場合は日を01に設定
+            return year + "-" + month + "-01";
+        }
+    }
+
+    /**
+     * コンボボックスの値を取得
+     */
+    private String getComboBoxValue(JComboBox<String> comboBox) {
+        if (comboBox == null) {
+            return "";
+        }
+        Object selected = comboBox.getSelectedItem();
+        return selected != null ? selected.toString() : "";
+    }
+
+    /**
+     * バリデーションエラーを表示
+     */
+    private void displayValidationErrors(ValidationResult result) {
+        Map<String, String> errors = result.getErrors();
+
+        for (Map.Entry<String, String> entry : errors.entrySet()) {
+            String fieldName = entry.getKey();
+            String errorMessage = entry.getValue();
+
+            // 特殊なフィールドの処理
+            if ("birthDate".equals(fieldName)) {
+                showFieldError(fieldName, errorMessage);
+                markComponentError("birthYearComboBox", null);
+                markComponentError("birthMonthComboBox", null);
+                markComponentError("birthDayComboBox", null);
+            } else if ("joinDate".equals(fieldName)) {
+                showFieldError(fieldName, errorMessage);
+                markComponentError("joinYearComboBox", null);
+                markComponentError("joinMonthComboBox", null);
+            } else if ("programmingLanguages".equals(fieldName)) {
+                showFieldError("languages", errorMessage);
+                markComponentError("languageComboBox", null);
+            } else {
+                // 通常のフィールド
+                showFieldError(fieldName, errorMessage);
+                markComponentError(fieldName, null);
             }
         }
 
-        // 生年月日の検証
-        if (!validateDateComponents("birthYearComboBox", "birthMonthComboBox", "birthDayComboBox",
-                "birthDate", true, MessageEnum.VALIDATION_ERROR_BIRTH_DATE.getMessage())) {
-            isValid = false;
-        }
+        // 最初のエラーフィールドにフォーカス
+        focusFirstErrorField();
+    }
 
-        // 入社年月の検証
-        if (!validateDateComponents("joinYearComboBox", "joinMonthComboBox", null,
-                "joinDate", true, MessageEnum.VALIDATION_ERROR_JOIN_DATE.getMessage())) {
-            isValid = false;
+    /**
+     * 最初のエラーフィールドにフォーカスを設定
+     */
+    private void focusFirstErrorField() {
+        if (!errorComponents.isEmpty()) {
+            Component firstErrorComponent = errorComponents.values().iterator().next();
+            if (firstErrorComponent instanceof JComponent) {
+                JComponent jComponent = (JComponent) firstErrorComponent;
+                SwingUtilities.invokeLater(() -> jComponent.requestFocusInWindow());
+            }
         }
+    }
 
-        // エンジニア歴の検証
-        if (isEmptyComboBox(careerComboBox)) {
-            showFieldError("careerComboBox", MessageEnum.VALIDATION_ERROR_CAREER.getMessage());
-            isValid = false;
+    /**
+     * 最後のバリデーション結果を取得
+     * 
+     * @return バリデーション結果（まだ実行されていない場合はnull）
+     */
+    protected ValidationResult getLastValidationResult() {
+        return lastValidationResult;
+    }
+
+    /**
+     * 既存のIDセットを更新（動的な重複チェック用）
+     * 
+     * @param existingIds 新しい既存IDセット
+     */
+    protected void updateExistingIds(Set<String> existingIds) {
+        if (validators != null && validators.containsKey("id")) {
+            FieldValidator idValidator = validators.get("id");
+            if (idValidator instanceof IDValidator) {
+                // 新しいIDValidatorインスタンスを作成
+                validators.put("id", new IDValidator("id",
+                        MessageEnum.VALIDATION_ERROR_EMPLOYEE_ID.getMessage(), existingIds));
+                LogHandler.getInstance().log(Level.INFO, LogType.SYSTEM,
+                        "既存IDセットを更新しました: " + existingIds.size() + "件");
+            }
         }
-
-        // 扱える言語の検証
-        if (languageComboBox.getSelectedItems().isEmpty()) {
-            showFieldError("languages", MessageEnum.VALIDATION_ERROR_PROGRAMMING_LANGUAGES.getMessage());
-            markComponentError("languageComboBox", null);
-            isValid = false;
-        }
-
-        // 経歴の文字数検証
-        if (careerHistoryArea.getText().length() > 200) {
-            showFieldError("careerHistoryArea", MessageEnum.VALIDATION_ERROR_CAREER_HISTORY.getMessage());
-            isValid = false;
-        }
-
-        // 研修の受講歴の文字数検証
-        if (trainingHistoryArea.getText().length() > 200) {
-            showFieldError("trainingHistoryArea", MessageEnum.VALIDATION_ERROR_TRAINING_HISTORY.getMessage());
-            isValid = false;
-        }
-
-        // 備考の文字数検証
-        if (noteArea.getText().length() > 500) {
-            showFieldError("noteArea", MessageEnum.VALIDATION_ERROR_NOTE.getMessage());
-            isValid = false;
-        }
-
-        return isValid;
     }
 
     /**

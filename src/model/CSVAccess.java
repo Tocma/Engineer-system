@@ -2,15 +2,13 @@ package model;
 
 import util.LogHandler;
 import util.LogHandler.LogType;
-import util.validator.IDValidator;
+import util.validator.*;
 import util.ResourceManager;
 import util.Constants.CSVConstants;
 import java.io.*;
 import java.nio.charset.StandardCharsets;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.time.LocalDate;
+import java.util.*;
 import java.util.concurrent.locks.ReadWriteLock;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
 import java.util.logging.Level;
@@ -80,29 +78,24 @@ public class CSVAccess extends AccessThread {
     /** 既存のIDマップ（重複チェック用） */
     private final Map<String, Integer> existingIds;
 
+    /** バリデーションサービス */
+    private final ValidationService validationService;
+
+    /** CSVバリデータマップ */
+    private Map<String, FieldValidator> csvValidators;
+
     /**
-     * デフォルトコンストラクタ
-     * ResourceManagerから標準のエンジニアCSVファイルを使用して初期化
-     * 
-     * @param operation 操作種別（"read"または"write"）
-     * @param data      操作対象データ（書き込み時のみ使用）
-     * @throws IllegalStateException ResourceManagerが初期化されていない場合
+     * デフォルトコンストラクタ（更新版）
      */
     public CSVAccess(String operation, Object data) {
         this(operation, data, false);
     }
 
     /**
-     * ResourceManager統合コンストラクタ（上書きモード指定）
-     * ResourceManagerから標準のエンジニアCSVファイルパスを取得して初期化
-     * 
-     * @param operation  操作種別（"read"または"write"）
-     * @param data       操作対象データ（書き込み時のみ使用）
-     * @param appendMode 追記モードの場合はtrue
-     * @throws IllegalStateException ResourceManagerが初期化されていない場合
+     * ResourceManager統合コンストラクタ（更新版）
      */
     public CSVAccess(String operation, Object data, boolean appendMode) {
-        // ResourceManagerから標準CSVファイルパスを取得
+        // 既存の初期化処理...
         this.resourceManager = ResourceManager.getInstance();
         if (!resourceManager.isInitialized()) {
             throw new IllegalStateException("ResourceManagerが初期化されていません");
@@ -116,8 +109,169 @@ public class CSVAccess extends AccessThread {
         this.existingIds = new HashMap<>();
         this.useResourceManager = true;
 
+        // バリデーションシステムの初期化
+        this.validationService = ValidationService.getInstance();
+        this.csvValidators = ValidatorFactory.createCSVValidators();
+
         LogHandler.getInstance().log(Level.INFO, LogType.SYSTEM,
-                "CSVAccess初期化完了（ResourceManager統合）: " + csvFile.getPath());
+                "CSVAccess初期化完了（新バリデーションシステム統合）: " + csvFile.getPath());
+    }
+
+    /**
+     * CSV行データをEngineerDTOに変換（新バリデーションシステム使用）
+     * 
+     * @param row        CSV行データ
+     * @param lineNumber 行番号（エラー報告用）
+     * @return 変換されたEngineerDTOオブジェクト、変換エラー時はnull
+     */
+    private EngineerDTO convertToDTOWithValidation(String[] row, int lineNumber) {
+        if (row == null || row.length < CSVConstants.CSV_HEADERS.length) {
+            LogHandler.getInstance().log(Level.WARNING, LogType.SYSTEM,
+                    "CSV行データが不正です（行 " + lineNumber + "）: カラム数不足");
+            return null;
+        }
+
+        try {
+            // CSV行データをフィールドマップに変換
+            Map<String, String> formData = createFormDataFromCSVRow(row);
+
+            // バリデーション実行
+            ValidationResult validationResult = validationService.validateForm(formData, csvValidators);
+
+            if (!validationResult.isValid()) {
+                // エラーログ出力
+                logCSVValidationErrors(lineNumber, validationResult);
+                return createErrorEngineer(row, lineNumber, validationResult);
+            }
+
+            // バリデーション成功：前処理済みデータでDTOを構築
+            return buildEngineerFromValidatedData(validationResult.getProcessedValues());
+
+        } catch (Exception e) {
+            LogHandler.getInstance().logError(LogType.SYSTEM,
+                    "CSV行の変換中にエラーが発生しました（行 " + lineNumber + "）", e);
+            return null;
+        }
+    }
+
+    /**
+     * CSVバリデーションエラーをログ出力
+     */
+    private void logCSVValidationErrors(int lineNumber, ValidationResult result) {
+        StringBuilder errorMessage = new StringBuilder();
+        errorMessage.append("CSV行のバリデーションエラー（行 ").append(lineNumber).append("）: ");
+
+        for (Map.Entry<String, String> error : result.getErrors().entrySet()) {
+            errorMessage.append("\n  - ").append(error.getKey()).append(": ").append(error.getValue());
+        }
+
+        LogHandler.getInstance().log(Level.WARNING, LogType.SYSTEM, errorMessage.toString());
+    }
+
+    /**
+     * CSV行データからフォームデータマップを作成
+     */
+    private Map<String, String> createFormDataFromCSVRow(String[] row) {
+        Map<String, String> formData = new HashMap<>();
+
+        // CSVヘッダーの順序に従ってマッピング
+        formData.put("id", row[CSVConstants.COLUMN_INDEX_ID]);
+        formData.put("name", row[CSVConstants.COLUMN_INDEX_NAME]);
+        formData.put("nameKana", row[CSVConstants.COLUMN_INDEX_NAME_KANA]);
+        formData.put("birthDate", row[CSVConstants.COLUMN_INDEX_BIRTH_DATE]);
+        formData.put("joinDate", row[CSVConstants.COLUMN_INDEX_JOIN_DATE]);
+        formData.put("career", row[CSVConstants.COLUMN_INDEX_CAREER]);
+        formData.put("programmingLanguages", row[CSVConstants.COLUMN_INDEX_LANGUAGES]);
+        formData.put("careerHistory", row[CSVConstants.COLUMN_INDEX_CAREER_HISTORY]);
+        formData.put("trainingHistory", row[CSVConstants.COLUMN_INDEX_TRAINING_HISTORY]);
+        formData.put("technicalSkill", row[CSVConstants.COLUMN_INDEX_TECHNICAL_SKILL]);
+        formData.put("learningAttitude", row[CSVConstants.COLUMN_INDEX_LEARNING_ATTITUDE]);
+        formData.put("communicationSkill", row[CSVConstants.COLUMN_INDEX_COMMUNICATION_SKILL]);
+        formData.put("leadership", row[CSVConstants.COLUMN_INDEX_LEADERSHIP]);
+        formData.put("note", row[CSVConstants.COLUMN_INDEX_NOTE]);
+
+        // 登録日（オプション）
+        if (row.length > CSVConstants.COLUMN_INDEX_REGISTERED_DATE) {
+            formData.put("registeredDate", row[CSVConstants.COLUMN_INDEX_REGISTERED_DATE]);
+        }
+
+        return formData;
+    }
+
+    /**
+     * バリデーション済みデータからEngineerDTOを構築
+     */
+    private EngineerDTO buildEngineerFromValidatedData(Map<String, String> validatedData) {
+        EngineerBuilder builder = new EngineerBuilder();
+
+        // 基本情報
+        builder.setId(validatedData.get("id"));
+        builder.setName(validatedData.get("name"));
+        builder.setNameKana(validatedData.get("nameKana"));
+
+        // 日付
+        String birthDate = validatedData.get("birthDate");
+        if (birthDate != null && !birthDate.isEmpty()) {
+            builder.setBirthDate(LocalDate.parse(birthDate));
+        }
+
+        String joinDate = validatedData.get("joinDate");
+        if (joinDate != null && !joinDate.isEmpty()) {
+            builder.setJoinDate(LocalDate.parse(joinDate));
+        }
+
+        // エンジニア歴
+        String career = validatedData.get("career");
+        if (career != null && !career.isEmpty()) {
+            builder.setCareer(Integer.parseInt(career));
+        }
+
+        // プログラミング言語
+        String languages = validatedData.get("programmingLanguages");
+        if (languages != null && !languages.isEmpty()) {
+            builder.setProgrammingLanguages(Arrays.asList(languages.split(";")));
+        }
+
+        // テキストフィールド
+        builder.setCareerHistory(validatedData.get("careerHistory"));
+        builder.setTrainingHistory(validatedData.get("trainingHistory"));
+        builder.setNote(validatedData.get("note"));
+
+        // スキル評価
+        setValidatedSkillRatings(builder, validatedData);
+
+        // 登録日
+        String registeredDate = validatedData.get("registeredDate");
+        if (registeredDate != null && !registeredDate.isEmpty()) {
+            builder.setRegisteredDate(LocalDate.parse(registeredDate));
+        }
+
+        return builder.build();
+    }
+
+    /**
+     * バリデーション済みスキル評価を設定
+     */
+    private void setValidatedSkillRatings(EngineerBuilder builder, Map<String, String> validatedData) {
+        String technicalSkill = validatedData.get("technicalSkill");
+        if (technicalSkill != null && !technicalSkill.isEmpty()) {
+            builder.setTechnicalSkill(Double.parseDouble(technicalSkill));
+        }
+
+        String learningAttitude = validatedData.get("learningAttitude");
+        if (learningAttitude != null && !learningAttitude.isEmpty()) {
+            builder.setLearningAttitude(Double.parseDouble(learningAttitude));
+        }
+
+        String communicationSkill = validatedData.get("communicationSkill");
+        if (communicationSkill != null && !communicationSkill.isEmpty()) {
+            builder.setCommunicationSkill(Double.parseDouble(communicationSkill));
+        }
+
+        String leadership = validatedData.get("leadership");
+        if (leadership != null && !leadership.isEmpty()) {
+            builder.setLeadership(Double.parseDouble(leadership));
+        }
     }
 
     /**
@@ -176,12 +330,10 @@ public class CSVAccess extends AccessThread {
     }
 
     /**
-     * CSVファイルを読み込んでエンジニアデータを取得
-     * ResourceManager統合により、エラーハンドリングとリソース管理を強化
-     * 
-     * @return CSV読み込み結果を格納したCSVAccessResultオブジェクト
+     * CSVファイルを読み込み（更新版）
+     * 新しいバリデーションシステムを使用
      */
-    private CSVAccessResult readCSV() {
+    public CSVAccessResult readCSV() {
         // 正常データリスト
         List<EngineerDTO> successData = new ArrayList<>();
         // エラーデータリスト
@@ -192,37 +344,34 @@ public class CSVAccess extends AccessThread {
         // 読み込んだCSV行データ
         List<String[]> csvRows = new ArrayList<>();
 
-        // ロックを取得
         lock.readLock().lock();
 
-        // ResourceManagerを使用している場合のリソース登録
         String resourceKey = null;
         if (useResourceManager && resourceManager != null) {
             resourceKey = "csv_reader_" + System.currentTimeMillis();
         }
 
         try {
-            LogHandler.getInstance().log(Level.INFO, LogType.SYSTEM, "CSVファイル読み込み開始: " + csvFile.getPath());
+            LogHandler.getInstance().log(Level.INFO, LogType.SYSTEM,
+                    "CSVファイル読み込み開始（新バリデーションシステム使用）: " + csvFile.getPath());
 
             // ファイルが存在しない場合の処理
             if (!csvFile.exists()) {
                 if (useResourceManager) {
-                    // ResourceManager使用時は、ファイルの自動作成を試行
                     LogHandler.getInstance().log(Level.INFO, LogType.SYSTEM,
                             "CSVファイルが存在しないため、ResourceManager経由で作成を試行します");
-                    // この場合は空のデータセットとして返す（ResourceManagerが適切にファイルを管理）
                     return new CSVAccessResult(successData, errorData, false, null);
                 } else {
-                    LogHandler.getInstance().log(Level.WARNING, LogType.SYSTEM, "CSVファイルが存在しません: " + csvFile.getPath());
+                    LogHandler.getInstance().log(Level.WARNING, LogType.SYSTEM,
+                            "CSVファイルが存在しません: " + csvFile.getPath());
                     return new CSVAccessResult(successData, errorData, false, "CSVファイルが存在しません");
                 }
             }
 
-            // ファイルを読み込む、try-with-resources文を使用してリソース管理を強化
+            // ファイル読み込み
             try (BufferedReader reader = new BufferedReader(
                     new InputStreamReader(new FileInputStream(csvFile), StandardCharsets.UTF_8))) {
 
-                // ResourceManagerにリソースを登録（リソースリーク防止）
                 if (useResourceManager && resourceManager != null) {
                     resourceManager.registerResource(resourceKey, reader);
                 }
@@ -230,19 +379,15 @@ public class CSVAccess extends AccessThread {
                 String line;
                 int lineNumber = 0;
 
-                // 全行を読み込む
                 while ((line = reader.readLine()) != null) {
                     lineNumber++;
 
-                    // 行を解析
-                    String[] values = line.split(",", -1); // 空フィールドも保持
+                    String[] values = line.split(",", -1);
 
-                    // ヘッダー行（1行目）はスキップ
                     if (lineNumber == 1) {
-                        continue;
+                        continue; // ヘッダー行をスキップ
                     }
 
-                    // 行データを追加
                     csvRows.add(values);
                 }
             }
@@ -251,106 +396,84 @@ public class CSVAccess extends AccessThread {
                     "CSVファイル読み込み完了: " + csvFile.getPath() + ", " + csvRows.size() + "行");
 
         } catch (IOException e) {
-            LogHandler.getInstance().logError(LogType.SYSTEM, "CSVファイルの読み込みに失敗しました: " + csvFile.getPath(), e);
-            return new CSVAccessResult(successData, errorData, true, "CSVファイルの読み込みに失敗しました: " + e.getMessage());
+            LogHandler.getInstance().logError(LogType.SYSTEM,
+                    "CSVファイルの読み込みに失敗しました: " + csvFile.getPath(), e);
+            return new CSVAccessResult(successData, errorData, true,
+                    "CSVファイルの読み込みに失敗しました: " + e.getMessage());
         } finally {
-            // リソースのクリーンアップ
             if (useResourceManager && resourceManager != null && resourceKey != null) {
                 resourceManager.releaseResource(resourceKey);
             }
-            // ロックを解放
             lock.readLock().unlock();
         }
 
-        // CSV行データをEngineerDTOに変換し、バリデーションを実行
+        // CSV行データをEngineerDTOに変換（新バリデーションシステム使用）
         for (int i = 0; i < csvRows.size(); i++) {
             String[] row = csvRows.get(i);
             int lineNumber = i + 2; // ヘッダー行も含めた行番号
 
             try {
-                // 行の最低カラム数チェック
-                if (row.length < CSVConstants.CSV_HEADERS.length) {
-                    EngineerDTO errorEngineer = createErrorEngineer(row, "カラム数が不足しています (行 " + lineNumber + ")");
-                    errorData.add(errorEngineer);
-                    continue;
-                }
+                // 新しいバリデーションシステムを使用して変換
+                EngineerDTO engineer = convertToDTOWithValidation(row, lineNumber);
 
-                // EngineerDTOに変換
-                EngineerDTO engineer = convertToDTO(row);
-
-                // nullの場合は変換エラー
                 if (engineer == null) {
-                    EngineerDTO errorEngineer = createErrorEngineer(row, "データ変換エラー (行 " + lineNumber + ")");
-                    errorData.add(errorEngineer);
                     continue;
                 }
 
-                // IDの重複チェック
-                String id = engineer.getId();
-                if (id != null && !id.isEmpty()) {
-                    // 標準形式に変換
-                    String standardizedId = IDValidator.standardizeId(IDValidator.convertFullWidthToHalfWidth(id));
-
-                    // 禁止ID（ID00000）チェック
-                    if ("ID00000".equals(standardizedId)) {
-                        EngineerDTO errorEngineer = createErrorEngineer(row, "ID00000は使用できません (行 " + lineNumber + ")");
-                        errorData.add(errorEngineer);
-                        continue;
-                    }
-
-                    // 既存のIDマップを確認
-                    if (existingIds.containsKey(standardizedId)) {
-                        // 重複ID発見
-                        duplicateIds.add(standardizedId);
-                    } else {
-                        // IDを記録
-                        existingIds.put(standardizedId, lineNumber);
-                    }
-
-                    // 標準化したIDをEngineerDTOに設定
-                    engineer.setId(standardizedId);
+                // エラーチェック（備考欄にエラーメッセージが含まれる場合）
+                if (engineer.getNote() != null && engineer.getNote().startsWith("バリデーションエラー")) {
+                    errorData.add(engineer);
+                    continue;
                 }
 
-                // 成功リストに追加
+                // ID重複チェック
+                String id = engineer.getId();
+                if (id != null && !id.isEmpty() && existingIds.containsKey(id)) {
+                    duplicateIds.add(id);
+                } else if (id != null && !id.isEmpty()) {
+                    existingIds.put(id, lineNumber);
+                }
+
                 successData.add(engineer);
 
             } catch (Exception e) {
-                LogHandler.getInstance().logError(LogType.SYSTEM, "CSV行の処理中にエラーが発生しました (行 " + lineNumber + ")", e);
-                EngineerDTO errorEngineer = createErrorEngineer(row, "処理エラー (行 " + lineNumber + "): " + e.getMessage());
+                LogHandler.getInstance().logError(LogType.SYSTEM,
+                        "CSV行の処理中にエラーが発生しました (行 " + lineNumber + ")", e);
+                ValidationResult errorResult = new ValidationResult();
+                errorResult.addError("error", "処理エラー (行 " + lineNumber + "): " + e.getMessage());
+                EngineerDTO errorEngineer = createErrorEngineer(row, lineNumber, errorResult);
                 errorData.add(errorEngineer);
             }
         }
 
-        // 結果を返却
         return new CSVAccessResult(successData, errorData, duplicateIds, false, null);
     }
 
     /**
-     * エラー情報を含むエンジニアDTOを作成
-     * エラー発生時にエラーリストに追加するためのDTOを生成します
-     * 
-     * @param row          元のCSV行データ
-     * @param errorMessage エラーメッセージ
-     * @return エラー情報を含むEngineerDTO
+     * エラー情報を含むエンジニアDTOを作成（改良版）
      */
-    private EngineerDTO createErrorEngineer(String[] row, String errorMessage) {
+    private EngineerDTO createErrorEngineer(String[] row, int lineNumber, ValidationResult result) {
         EngineerDTO engineer = new EngineerDTO();
 
         // 利用可能なデータを設定
         if (row.length > 0 && row[0] != null && !row[0].isEmpty()) {
             engineer.setId(row[0]);
         } else {
-            engineer.setId("ERROR");
+            engineer.setId("ERROR_LINE_" + lineNumber);
         }
 
         if (row.length > 1 && row[1] != null && !row[1].isEmpty()) {
             engineer.setName(row[1]);
         } else {
-            engineer.setName("不明");
+            engineer.setName("エラー（行 " + lineNumber + "）");
         }
 
         // エラーメッセージを備考欄に設定
-        engineer.setNote(errorMessage);
+        StringBuilder errorSummary = new StringBuilder("バリデーションエラー（行 " + lineNumber + "）:");
+        for (String error : result.getErrors().values()) {
+            errorSummary.append(" ").append(error).append(";");
+        }
+        engineer.setNote(errorSummary.toString());
 
         return engineer;
     }
@@ -438,25 +561,6 @@ public class CSVAccess extends AccessThread {
             }
             // 書き込みロックを解放
             lock.writeLock().unlock();
-        }
-    }
-
-    /**
-     * CSV行データをEngineerDTOに変換
-     * CSV形式のデータをエンジニア情報オブジェクトに変換します
-     * 
-     * @param row CSV行データ
-     * @return 変換されたEngineerDTOオブジェクト、変換エラー時はnull
-     */
-    private EngineerDTO convertToDTO(String[] row) {
-        // EngineerBuilderを使用してDTOを構築
-        try {
-            // EngineerBuilderを使用してCSVからDTOを構築
-            return new EngineerCSVDAO().convertToDTO(row);
-
-        } catch (Exception e) {
-            LogHandler.getInstance().logError(LogType.SYSTEM, "EngineerDTOへの変換に失敗しました", e);
-            return null;
         }
     }
 
