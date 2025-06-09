@@ -1,222 +1,169 @@
 package util.validator;
 
-import java.text.ParseException;
-import java.text.SimpleDateFormat;
-import java.util.Date;
-
-import util.Constants.MessageEnum;
+import java.time.LocalDate;
+import java.time.format.DateTimeFormatter;
+import java.time.format.DateTimeParseException;
 
 /**
- * 日付入力を検証するための {@link Validator} インターフェース実装クラス。
- * <p>
- * このクラスは、文字列として入力された日付情報に対して以下の検証を行います：
- * <ol>
- * <li>指定された形式（フォーマット）に従って日付に変換可能かどうか</li>
- * <li>指定された期間（最小日付から最大日付まで）の範囲内にあるかどうか</li>
- * </ol>
- * </p>
+ * 日付検証用の基底バリデータ
+ * 生年月日と入社年月の検証で共通利用される日付検証ロジックを提供します
  * 
- * <p>
- * 日付フォーマットには、{@link SimpleDateFormat} で定義されるパターン文字列を
- * 使用します。例えば、「yyyy/MM/dd」（年/月/日）や「yyyy/MM」（年/月）などが
- * 一般的に使用されます。
- * </p>
- * 
- * <p>
- * 最小日付または最大日付として null を指定した場合、その方向への制限は適用されません。
- * つまり、最小日付に null を指定すると過去のどの日付も有効と判断され、
- * 最大日付に null を指定すると未来のどの日付も有効と判断されます。
- * </p>
- * 
- * <p>
- * このクラスは、{@link ValidationEnum} と組み合わせて使用されることを想定しており、
- * エラーメッセージは {@link MessageEnum} から取得することを推奨します。
- * </p>
- * 
- * <p>
- * 使用例：
- * 
- * <pre>
- * // 生年月日フィールド（1950年1月1日から現在まで）の検証
- * Calendar cal = Calendar.getInstance();
- * cal.set(1950, 0, 1, 0, 0, 0);
- * Date minDate = cal.getTime();
- * Date maxDate = new Date(); // 現在日時
- * 
- * DateValidator birthDateValidator = new DateValidator(
- *         minDate, // 最小日付：1950/01/01
- *         maxDate, // 最大日付：現在
- *         "yyyy/MM/dd", // 日付フォーマット
- *         MessageEnum.VALIDATION_ERROR_BIRTH_DATE.getMessage() // エラーメッセージ
- * );
- * 
- * boolean isValid = birthDateValidator.validate("2000/01/01");
- * if (!isValid) {
- *     String errorMessage = birthDateValidator.getErrorMessage();
- *     // エラー処理...
- * }
- * 
- * // 入社年月フィールド（年月のみ）の検証
- * DateValidator joinDateValidator = new DateValidator(
- *         minDate, // 最小日付：1950/01/01
- *         maxDate, // 最大日付：現在
- *         "yyyy/MM", // 年月のフォーマット
- *         MessageEnum.VALIDATION_ERROR_JOIN_DATE.getMessage() // エラーメッセージ
- * );
- * </pre>
- * </p>
- *
  * @author Nakano
- * @version 4.0.0
- * @since 2025-04-15
- * @see Validator
- * @see ValidationEnum
- * @see MessageEnum
- * @see SimpleDateFormat
- * @see Date
  */
-public class DateValidator implements Validator {
+public abstract class DateValidator extends AbstractValidator {
+
+    /** 日付フォーマット */
+    protected static final DateTimeFormatter DATE_FORMATTER = DateTimeFormatter.ofPattern("yyyy-MM-dd");
+
+    /** 最小日付 */
+    protected final LocalDate minDate;
+
+    /** 最大日付 */
+    protected final LocalDate maxDate;
 
     /**
-     * 許容される最小日付（この日付以降が有効）
-     */
-    private final Date minDate;
-
-    /**
-     * 許容される最大日付（この日付以前が有効）
-     */
-    private final Date maxDate;
-
-    /**
-     * 日付フォーマット（SimpleDateFormatで使用するパターン文字列）
-     */
-    private final SimpleDateFormat dateFormat;
-
-    /**
-     * 検証失敗時のエラーメッセージ
-     */
-    private final String errorMessage;
-
-    /**
-     * DateValidator のコンストラクタ。
-     * <p>
-     * 最小日付、最大日付、日付フォーマット、エラーメッセージを指定して
-     * バリデーターを初期化します。最小日付または最大日付に null を指定すると、
-     * その方向の制限は適用されません。
-     * </p>
+     * コンストラクタ
      * 
-     * @param minDate      許容される最小日付（null可）
-     * @param maxDate      許容される最大日付（null可）
-     * @param format       日付フォーマットパターン（SimpleDateFormatで使用する形式）
-     * @param errorMessage 検証失敗時のエラーメッセージ
-     * @throws IllegalArgumentException formatがnullまたは不正なフォーマットパターンの場合
+     * @param fieldName    フィールド名
+     * @param errorMessage エラーメッセージ
+     * @param minDate      最小日付
+     * @param maxDate      最大日付
      */
-    public DateValidator(Date minDate, Date maxDate, String format, String errorMessage) {
-        if (format == null) {
-            throw new IllegalArgumentException("日付フォーマットにnullは指定できません");
-        }
-
+    protected DateValidator(String fieldName, String errorMessage,
+            LocalDate minDate, LocalDate maxDate) {
+        super(fieldName, errorMessage);
         this.minDate = minDate;
         this.maxDate = maxDate;
-        this.dateFormat = new SimpleDateFormat(format);
-        this.dateFormat.setLenient(false); // 厳密な日付解釈を設定（例：2月30日などの無効な日付をエラーとする）
-        this.errorMessage = errorMessage;
     }
 
     /**
-     * 指定された日付文字列を検証します。
-     * <p>
-     * 以下の条件をすべて満たす場合に true を返します。
-     * <ol>
-     * <li>値が null でなく、空文字列でもない</li>
-     * <li>値が指定されたフォーマットに従って有効な日付に変換できる</li>
-     * <li>変換された日付が、最小日付以降である（最小日付が null の場合は制限なし）</li>
-     * <li>変換された日付が、最大日付以前である（最大日付が null の場合は制限なし）</li>
-     * </ol>
-     * </p>
+     * 日付の前処理を実行
+     * 日付文字列を標準フォーマット（YYYY-MM-DD）に正規化します
      * 
-     * @param value 検証する日付文字列
-     * @return 値が条件を満たす場合は true、そうでなければ false
+     * @param value 入力値
+     * @return 前処理済みの日付文字列
+     */
+    @Override
+    public String preprocess(String value) {
+        if (value == null) {
+            return null;
+        }
+
+        // 前後の空白を除去
+        String trimmed = value.trim();
+        if (trimmed.isEmpty()) {
+            return "";
+        }
+
+        // 日付フォーマットの正規化を試行
+        String normalized = normalizeDateFormat(trimmed);
+
+        logDebug("日付前処理: " + value + " -> " + normalized);
+
+        return normalized;
+    }
+
+    /**
+     * 日付フォーマットの正規化
+     * 
+     * @param value 日付文字列
+     * @return 正規化された日付文字列
+     */
+    protected String normalizeDateFormat(String value) {
+        // 既に正しいフォーマットの場合はそのまま返す
+        if (value.matches("\\d{4}-\\d{2}-\\d{2}")) {
+            return value;
+        }
+
+        // スラッシュ区切りをハイフン区切りに変換
+        if (value.matches("\\d{4}/\\d{2}/\\d{2}")) {
+            return value.replace('/', '-');
+        }
+
+        // その他のフォーマットは変換せずに返す
+        return value;
+    }
+
+    /**
+     * 日付の検証を実行
+     * 
+     * @param value 検証対象の値（前処理済み）
+     * @return 検証成功の場合true
      */
     @Override
     public boolean validate(String value) {
-        // null または空文字列のチェック
-        if (value == null || value.trim().isEmpty()) {
+        // nullチェック
+        if (value == null) {
+            logWarning("日付検証失敗: null値");
             return false;
         }
 
+        // 空文字チェック
+        if (value.isEmpty()) {
+            logWarning("日付検証失敗: 空文字");
+            return false;
+        }
+
+        // 日付形式チェックと変換
+        LocalDate date;
         try {
-            // 文字列を日付に変換
-            Date date = parseDate(value);
-
-            // 最小日付のチェック
-            if (minDate != null && date.before(minDate)) {
-                return false;
-            }
-
-            // 最大日付のチェック
-            if (maxDate != null && date.after(maxDate)) {
-                return false;
-            }
-
-            return true;
-        } catch (ParseException e) {
-            // 日付変換に失敗した場合
+            date = parseDate(value);
+        } catch (DateTimeParseException e) {
+            logWarning("日付検証失敗: 無効な日付形式 - " + value);
             return false;
         }
+
+        // 範囲チェック
+        if (!checkDateRange(date)) {
+            logWarning("日付検証失敗: 範囲外 - " + value);
+            return false;
+        }
+
+        // 存在する日付かチェック
+        if (!checkValidDate(date)) {
+            logWarning("日付検証失敗: 存在しない日付 - " + value);
+            return false;
+        }
+
+        logDebug("日付検証成功: " + value);
+        return true;
     }
 
     /**
-     * 検証失敗時のエラーメッセージを返します。
-     * このメッセージは通常、コンストラクタで指定された {@link MessageEnum} からの
-     * エラーメッセージです。
+     * 日付文字列を解析
      * 
-     * @return エラーメッセージ
+     * @param value 日付文字列
+     * @return 解析されたLocalDate
+     * @throws DateTimeParseException 解析失敗時
      */
-    @Override
-    public String getErrorMessage() {
-        return this.errorMessage;
+    protected LocalDate parseDate(String value) throws DateTimeParseException {
+        return LocalDate.parse(value, DATE_FORMATTER);
     }
 
     /**
-     * 文字列を日付に変換します。
+     * 日付範囲チェック
      * 
-     * @param value 変換対象の文字列
-     * @return 変換された日付オブジェクト
-     * @throws ParseException 文字列が指定されたフォーマットに従った有効な日付でない場合
+     * @param date チェック対象の日付
+     * @return 範囲内の場合true
      */
-    private Date parseDate(String value) throws ParseException {
-        // SimpleDateFormat は同期化されていないため、このメソッド内でのみ使用する
-        return this.dateFormat.parse(value);
+    protected boolean checkDateRange(LocalDate date) {
+        if (minDate != null && date.isBefore(minDate)) {
+            return false;
+        }
+        if (maxDate != null && date.isAfter(maxDate)) {
+            return false;
+        }
+        return true;
     }
 
     /**
-     * このバリデーターの最小日付を取得します。
-     * テスト時やデバッグ時に有用です。
+     * 存在する日付かチェック
      * 
-     * @return 設定されている最小日付、または null（制限なしの場合）
+     * @param date チェック対象の日付
+     * @return 存在する日付の場合true
      */
-    public Date getMinDate() {
-        return this.minDate;
-    }
-
-    /**
-     * このバリデーターの最大日付を取得します。
-     * テスト時やデバッグ時に有用です。
-     * 
-     * @return 設定されている最大日付、または null（制限なしの場合）
-     */
-    public Date getMaxDate() {
-        return this.maxDate;
-    }
-
-    /**
-     * このバリデーターの日付フォーマットパターンを取得します。
-     * テスト時やデバッグ時に有用です。
-     * 
-     * @return 日付フォーマットパターン
-     */
-    public String getDateFormatPattern() {
-        return this.dateFormat.toPattern();
+    protected boolean checkValidDate(LocalDate date) {
+        // LocalDateは存在しない日付を生成できないため、常にtrue
+        return true;
     }
 }
