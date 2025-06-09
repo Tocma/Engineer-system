@@ -192,20 +192,59 @@ public abstract class AbstractEngineerPanel extends JPanel {
      * バリデーションエラー表示時に使用
      */
     private void initializeFieldDisplayNames() {
-        fieldDisplayNames.put("nameField", "氏名");
-        fieldDisplayNames.put("nameKanaField", "氏名 (カナ)");
-        fieldDisplayNames.put("idField", "社員ID");
+        fieldDisplayNames.put("name", "氏名");
+        fieldDisplayNames.put("nameKana", "氏名 (カナ)");
+        fieldDisplayNames.put("id", "社員ID");
         fieldDisplayNames.put("birthDate", "生年月日");
         fieldDisplayNames.put("joinDate", "入社年月");
-        fieldDisplayNames.put("careerComboBox", "エンジニア歴");
-        fieldDisplayNames.put("languages", "扱える言語");
-        fieldDisplayNames.put("careerHistoryArea", "経歴");
-        fieldDisplayNames.put("trainingHistoryArea", "研修の受講歴");
-        fieldDisplayNames.put("technicalSkillComboBox", "技術力");
-        fieldDisplayNames.put("learningAttitudeComboBox", "受講態度");
-        fieldDisplayNames.put("communicationSkillComboBox", "コミュニケーション能力");
-        fieldDisplayNames.put("leadershipComboBox", "リーダーシップ");
-        fieldDisplayNames.put("noteArea", "備考");
+        fieldDisplayNames.put("career", "エンジニア歴");
+        fieldDisplayNames.put("programmingLanguages", "扱える言語");
+        fieldDisplayNames.put("careerHistory", "経歴");
+        fieldDisplayNames.put("trainingHistory", "研修の受講歴");
+        fieldDisplayNames.put("technicalSkill", "技術力");
+        fieldDisplayNames.put("learningAttitude", "受講態度");
+        fieldDisplayNames.put("communicationSkill", "コミュニケーション能力");
+        fieldDisplayNames.put("leadership", "リーダーシップ");
+        fieldDisplayNames.put("note", "備考");
+    }
+
+    /**
+     * フィールド名からコンポーネント名へのマッピングを取得
+     * バリデーションエラー表示で使用
+     */
+    private String getComponentNameFromFieldName(String fieldName) {
+        switch (fieldName) {
+            case "name":
+                return "nameField";
+            case "nameKana":
+                return "nameKanaField";
+            case "id":
+                return "idField";
+            case "career":
+                return "careerComboBox";
+            case "careerHistory":
+                return "careerHistoryArea";
+            case "trainingHistory":
+                return "trainingHistoryArea";
+            case "technicalSkill":
+                return "technicalSkillComboBox";
+            case "learningAttitude":
+                return "learningAttitudeComboBox";
+            case "communicationSkill":
+                return "communicationSkillComboBox";
+            case "leadership":
+                return "leadershipComboBox";
+            case "note":
+                return "noteArea";
+            case "programmingLanguages":
+                return "languages"; // 特別なマッピング
+            case "birthDate":
+                return "birthDate"; // 日付コンポーネント群
+            case "joinDate":
+                return "joinDate"; // 日付コンポーネント群
+            default:
+                return fieldName; // デフォルトはそのまま返す
+        }
     }
 
     /**
@@ -293,24 +332,21 @@ public abstract class AbstractEngineerPanel extends JPanel {
     // === 共通フォーム作成メソッド（重複削減） ===
 
     /**
-     * 基本情報セクションの作成
-     * 氏名、社員ID、生年月日などの基本情報入力フィールドを配置
-     *
-     * @param container    配置先のコンテナ
-     * @param isDetailMode 詳細モードかどうか（社員IDを編集不可にするか）
+     * 基本情報セクションの作成（エラーラベル対応版）
+     * 氏名、氏名(カナ)、社員IDフィールドで適切なエラー表示を実装
      */
     protected void createBasicInfoSection(JPanel container, boolean isDetailMode) {
         // 氏名フィールド（必須）
         JLabel nameLabel = createFieldLabel("氏名", true);
         nameField = new JTextField(20);
         registerComponent("nameField", nameField);
-        container.add(createFormRow(nameLabel, nameField, "nameField"));
+        container.add(createFormRow(nameLabel, nameField, "name"));
 
         // 氏名 (カナ)フィールド（必須）
         JLabel nameKanaLabel = createFieldLabel("氏名 (カナ)", true);
         nameKanaField = new JTextField(20);
         registerComponent("nameKanaField", nameKanaField);
-        container.add(createFormRow(nameKanaLabel, nameKanaField, "nameKanaField"));
+        container.add(createFormRow(nameKanaLabel, nameKanaField, "nameKana"));
 
         // 社員IDフィールド（必須）
         JLabel idLabel = createFieldLabel("社員ID", true);
@@ -320,7 +356,7 @@ public abstract class AbstractEngineerPanel extends JPanel {
             idField.setBackground(new Color(240, 240, 240));
         }
         registerComponent("idField", idField);
-        container.add(createFormRow(idLabel, idField, "idField"));
+        container.add(createFormRow(idLabel, idField, "id"));
 
         // 生年月日（必須）
         createBirthDateSection(container);
@@ -675,14 +711,21 @@ public abstract class AbstractEngineerPanel extends JPanel {
     }
 
     /**
-     * バリデーションエラーを表示
+     * バリデーションエラーを表示（エラーラベル対応版）
+     * フィールド名とエラーラベルの適切なマッピングを実装
      */
     private void displayValidationErrors(ValidationResult result) {
         Map<String, String> errors = result.getErrors();
 
+        LogHandler.getInstance().log(Level.INFO, LogType.SYSTEM,
+                "バリデーションエラー表示開始: " + errors.size() + "個のエラー");
+
         for (Map.Entry<String, String> entry : errors.entrySet()) {
             String fieldName = entry.getKey();
             String errorMessage = entry.getValue();
+
+            LogHandler.getInstance().log(Level.INFO, LogType.SYSTEM,
+                    "バリデーションエラー処理: フィールド=" + fieldName + ", メッセージ=" + errorMessage);
 
             // 特殊なフィールドの処理
             if ("birthDate".equals(fieldName)) {
@@ -698,14 +741,20 @@ public abstract class AbstractEngineerPanel extends JPanel {
                 showFieldError("languages", errorMessage);
                 markComponentError("languageComboBox", null);
             } else {
-                // 通常のフィールド
+                // 通常のフィールド（氏名、氏名カナ、社員IDなど）
+                // フィールド名をそのまま使用してエラーラベルに表示
                 showFieldError(fieldName, errorMessage);
-                markComponentError(fieldName, null);
+                
+                LogHandler.getInstance().log(Level.INFO, LogType.SYSTEM,
+                        "通常フィールドエラー表示完了: " + fieldName);
             }
         }
 
         // 最初のエラーフィールドにフォーカス
         focusFirstErrorField();
+        
+        LogHandler.getInstance().log(Level.INFO, LogType.SYSTEM,
+                "バリデーションエラー表示完了");
     }
 
     /**
@@ -780,20 +829,26 @@ public abstract class AbstractEngineerPanel extends JPanel {
         }
     }
 
-    // === 既存の共通機能（保持） ===
-
     /**
-     * フィールドのエラーメッセージラベルを作成
+     * フィールドのエラーメッセージラベルを作成（改良版）
+     * ラベルの右部に表示されるエラーメッセージラベルを作成します
      */
     protected JLabel createFieldErrorLabel(String fieldName) {
-        JLabel errorLabel = new JLabel(" ");
+        JLabel errorLabel = new JLabel("");
         errorLabel.setForeground(UIConstants.ERROR_COLOR);
         errorLabel.setVisible(false);
-        errorLabel.setFont(errorLabel.getFont().deriveFont(Font.PLAIN, 11f));
+        errorLabel.setFont(errorLabel.getFont().deriveFont(Font.PLAIN, UIConstants.ERROR_MESSAGE_FONT_SIZE));
+        errorLabel.setHorizontalAlignment(SwingConstants.LEFT);
+        
+        // エラーラベルの幅を制限して適切な表示を確保
         errorLabel.setPreferredSize(new Dimension(300, 15));
+        errorLabel.setMaximumSize(new Dimension(300, 15));
 
         fieldErrorLabels.put(fieldName, errorLabel);
         registerComponent(fieldName + "ErrorLabel", errorLabel);
+
+        LogHandler.getInstance().log(Level.INFO, LogType.UI,
+                "フィールドエラーラベルを作成しました: " + fieldName);
 
         return errorLabel;
     }
@@ -853,25 +908,34 @@ public abstract class AbstractEngineerPanel extends JPanel {
     }
 
     /**
-     * フォーム行パネルを作成
+     * フォーム行パネルを作成（エラーラベル右側表示対応版）
+     * フィールドラベルの右側にエラーメッセージを表示するレイアウトを実装
      */
     protected JPanel createFormRow(JLabel label, Component field, String fieldName) {
         JPanel rowPanel = new JPanel();
         rowPanel.setLayout(new BoxLayout(rowPanel, BoxLayout.Y_AXIS));
         rowPanel.setBackground(Color.WHITE);
 
+        // 上部パネル：ラベルとエラーメッセージを水平配置
         JPanel topPanel = new JPanel(new BorderLayout(10, 0));
         topPanel.setBackground(Color.WHITE);
 
+        // ラベルを左側に配置
         topPanel.add(label, BorderLayout.WEST);
 
+        // エラーラベルを作成して右側に配置
         JLabel errorLabel = createFieldErrorLabel(fieldName);
-        topPanel.add(errorLabel, BorderLayout.CENTER);
+        JPanel errorPanel = new JPanel(new FlowLayout(FlowLayout.LEFT, 0, 0));
+        errorPanel.setBackground(Color.WHITE);
+        errorPanel.add(errorLabel);
+        topPanel.add(errorPanel, BorderLayout.CENTER);
 
+        // フィールドパネル：入力コンポーネントを配置
         JPanel fieldPanel = new JPanel(new BorderLayout());
         fieldPanel.setBackground(Color.WHITE);
-        fieldPanel.add(field, BorderLayout.CENTER);
+        fieldPanel.add(field, BorderLayout.WEST);
 
+        // 行パネルに上部パネルとフィールドパネルを追加
         rowPanel.add(topPanel);
         rowPanel.add(Box.createVerticalStrut(UIConstants.LABEL_FIELD_MARGIN));
         rowPanel.add(fieldPanel);
@@ -896,24 +960,35 @@ public abstract class AbstractEngineerPanel extends JPanel {
     }
 
     /**
-     * フィールド固有のエラーメッセージを表示
+     * フィールド固有のエラーメッセージを表示（改良版）
+     * createFieldErrorLabelで作成されたラベルに適切にエラーメッセージを表示
      */
     protected void showFieldError(String fieldName, String errorMessage) {
         JLabel errorLabel = fieldErrorLabels.get(fieldName);
 
+        LogHandler.getInstance().log(Level.INFO, LogType.UI,
+                "フィールドエラー表示: フィールド=" + fieldName + ", エラーラベル存在=" + (errorLabel != null));
+
         if (errorLabel != null) {
+            // エラーメッセージをラベルに設定
             errorLabel.setText(errorMessage);
             errorLabel.setVisible(true);
-            markComponentError(fieldName, null);
+            
+            // 対応するコンポーネントにもエラーマークを設定
+            String componentName = getComponentNameFromFieldName(fieldName);
+            markComponentError(componentName, null);
 
-            LogHandler.getInstance().log(Level.WARNING, LogType.UI,
-                    "フィールドエラーを表示: " + fieldName + " - " + errorMessage);
+            LogHandler.getInstance().log(Level.INFO, LogType.UI,
+                    "フィールドエラーラベルにメッセージを設定しました: " + fieldName + " - " + errorMessage);
         } else {
-            showErrorMessage(errorMessage);
-            markComponentError(fieldName, null);
-
+            // エラーラベルが見つからない場合は全体エラーメッセージにフォールバック
             LogHandler.getInstance().log(Level.WARNING, LogType.UI,
                     "フィールドエラーラベルが見つからないため全体エラーに表示: " + fieldName);
+            showErrorMessage(errorMessage);
+            
+            // コンポーネントのエラーマークは設定
+            String componentName = getComponentNameFromFieldName(fieldName);
+            markComponentError(componentName, null);
         }
     }
 
@@ -926,34 +1001,70 @@ public abstract class AbstractEngineerPanel extends JPanel {
     }
 
     /**
-     * すべてのフィールドエラーメッセージをクリア
+     * すべてのフィールドエラーメッセージをクリア（改良版）
+     * エラーラベルの状態を確実にリセット
      */
     protected void clearAllFieldErrors() {
-        for (JLabel errorLabel : fieldErrorLabels.values()) {
-            errorLabel.setText(" ");
-            errorLabel.setVisible(false);
+        LogHandler.getInstance().log(Level.INFO, LogType.UI,
+                "全フィールドエラーをクリアします: " + fieldErrorLabels.size() + "個");
+
+        for (Map.Entry<String, JLabel> entry : fieldErrorLabels.entrySet()) {
+            String fieldName = entry.getKey();
+            JLabel errorLabel = entry.getValue();
+            
+            if (errorLabel != null) {
+                errorLabel.setText("");
+                errorLabel.setVisible(false);
+                
+                LogHandler.getInstance().log(Level.FINE, LogType.UI,
+                        "フィールドエラーラベルをクリアしました: " + fieldName);
+            }
         }
+        
+        // 全体エラーメッセージもクリア
         clearErrorMessage();
+        
+        LogHandler.getInstance().log(Level.INFO, LogType.UI,
+                "全フィールドエラークリア完了");
     }
 
     /**
-     * コンポーネントにエラー表示を設定
+     * コンポーネントにエラー表示を設定（改良版）
+     * より詳細なログ出力と、テキストフィールドの赤枠表示を強化
      */
     protected void markComponentError(String componentName, String errorMessage) {
         Component component = getComponent(componentName);
+
+        LogHandler.getInstance().log(Level.INFO, LogType.SYSTEM,
+                "markComponentError呼び出し: コンポーネント=" + componentName +
+                        ", 存在=" + (component != null));
+
         if (component == null) {
+            LogHandler.getInstance().log(Level.WARNING, LogType.SYSTEM,
+                    "エラー表示対象のコンポーネントが見つかりません: " + componentName);
             return;
         }
 
         if (component instanceof JComponent) {
             JComponent jComponent = (JComponent) component;
 
+            // 元のボーダーを保存
             if (!originalBorders.containsKey(jComponent)) {
                 originalBorders.put(jComponent, jComponent.getBorder());
+                LogHandler.getInstance().log(Level.INFO, LogType.SYSTEM,
+                        "元のボーダーを保存しました: " + componentName);
             }
 
+            // エラーボーダーを設定
             jComponent.setBorder(ERROR_BORDER);
             errorComponents.put(componentName, component);
+
+            LogHandler.getInstance().log(Level.INFO, LogType.SYSTEM,
+                    "エラーボーダーを設定しました: " + componentName +
+                            " (" + component.getClass().getSimpleName() + ")");
+
+            // コンポーネントを再描画
+            jComponent.repaint();
 
             if (errorMessage != null) {
                 showErrorMessage(errorMessage);
@@ -967,14 +1078,24 @@ public abstract class AbstractEngineerPanel extends JPanel {
             }
             languageComboBox.setBorder(ERROR_BORDER);
             errorComponents.put("languageComboBox", languageComboBox);
+            languageComboBox.repaint();
+
+            LogHandler.getInstance().log(Level.INFO, LogType.SYSTEM,
+                    "言語選択コンボボックスにエラーボーダーを設定しました");
         }
     }
 
     /**
-     * コンポーネントのエラー表示をクリア
+     * コンポーネントのエラー表示をクリア（エラーラベル対応版）
+     * ボーダーとエラーラベルの両方を確実にクリア
      */
     protected void clearComponentError(String componentName) {
+        // コンポーネントのボーダーをクリア
         Component component = errorComponents.remove(componentName);
+        
+        LogHandler.getInstance().log(Level.INFO, LogType.SYSTEM,
+                "コンポーネントエラークリア: " + componentName);
+        
         if (component instanceof JComponent) {
             JComponent jComponent = (JComponent) component;
 
@@ -984,12 +1105,21 @@ public abstract class AbstractEngineerPanel extends JPanel {
             } else {
                 jComponent.setBorder(null);
             }
+            
+            jComponent.repaint();
         }
 
-        JLabel errorLabel = fieldErrorLabels.get(componentName);
-        if (errorLabel != null) {
-            errorLabel.setText(" ");
-            errorLabel.setVisible(false);
+        // 対応するフィールドエラーラベルもクリア
+        String fieldName = getFieldNameFromComponentName(componentName);
+        if (fieldName != null) {
+            JLabel errorLabel = fieldErrorLabels.get(fieldName);
+            if (errorLabel != null) {
+                errorLabel.setText("");
+                errorLabel.setVisible(false);
+                
+                LogHandler.getInstance().log(Level.INFO, LogType.SYSTEM,
+                        "対応するエラーラベルもクリアしました: " + fieldName);
+            }
         }
 
         // MultiSelectComboBoxの特別処理
@@ -1001,21 +1131,132 @@ public abstract class AbstractEngineerPanel extends JPanel {
                 languageComboBox.setBorder(null);
             }
             errorComponents.remove("languageComboBox");
+            languageComboBox.repaint();
         }
     }
 
     /**
-     * すべてのコンポーネントのエラー表示をクリア
+     * コンポーネント名からフィールド名への逆マッピングを取得
+     * エラークリア時に対応するエラーラベルを特定するために使用
+     */
+    private String getFieldNameFromComponentName(String componentName) {
+        switch (componentName) {
+            case "nameField":
+                return "name";
+            case "nameKanaField":
+                return "nameKana";
+            case "idField":
+                return "id";
+            case "careerComboBox":
+                return "career";
+            case "careerHistoryArea":
+                return "careerHistory";
+            case "trainingHistoryArea":
+                return "trainingHistory";
+            case "technicalSkillComboBox":
+                return "technicalSkill";
+            case "learningAttitudeComboBox":
+                return "learningAttitude";
+            case "communicationSkillComboBox":
+                return "communicationSkill";
+            case "leadershipComboBox":
+                return "leadership";
+            case "noteArea":
+                return "note";
+            case "languageComboBox":
+                return "languages";
+            case "birthDate":
+                return "birthDate";
+            case "joinDate":
+                return "joinDate";
+            default:
+                return null;
+        }
+    }
+
+    /**
+     * すべてのコンポーネントのエラー表示をクリア（改良版）
+     * より確実なエラー状態のリセットを実装
      */
     protected void clearAllComponentErrors() {
+        LogHandler.getInstance().log(Level.INFO, LogType.SYSTEM,
+                "全コンポーネントのエラー表示をクリアします: " + errorComponents.size() + "個");
+
+        // エラーコンポーネントのリストをコピーして安全にクリア
         List<String> componentNames = new ArrayList<>(errorComponents.keySet());
 
         for (String componentName : componentNames) {
             clearComponentError(componentName);
         }
 
+        // フィールドエラーラベルもすべてクリア
         clearAllFieldErrors();
+
+        // 全体エラーメッセージもクリア
         clearErrorMessage();
+
+        LogHandler.getInstance().log(Level.INFO, LogType.SYSTEM,
+                "全コンポーネントのエラー表示クリアが完了しました");
+    }
+
+    /**
+     * テキストフィールドの赤枠表示を強制的に適用
+     * 特に氏名、氏名(カナ)、社員IDフィールド用
+     */
+    protected void forceTextFieldErrorDisplay(String fieldName, String errorMessage) {
+        String componentName = getComponentNameFromFieldName(fieldName);
+        Component component = getComponent(componentName);
+
+        LogHandler.getInstance().log(Level.INFO, LogType.SYSTEM,
+                "テキストフィールドエラー表示強制適用: " + fieldName + " -> " + componentName);
+
+        if (component instanceof JTextField) {
+            JTextField textField = (JTextField) component;
+
+            // 元のボーダーを保存
+            if (!originalBorders.containsKey(textField)) {
+                originalBorders.put(textField, textField.getBorder());
+            }
+
+            // 赤枠ボーダーを設定
+            textField.setBorder(ERROR_BORDER);
+            errorComponents.put(componentName, textField);
+
+            // フィールドエラーラベルも設定
+            showFieldError(fieldName, errorMessage);
+
+            // 再描画を強制
+            textField.repaint();
+            textField.revalidate();
+
+            LogHandler.getInstance().log(Level.INFO, LogType.SYSTEM,
+                    "テキストフィールドに赤枠を設定しました: " + componentName);
+        }
+    }
+    
+
+    /**
+     * バリデーションエラーの詳細なデバッグ情報を出力
+     */
+    protected void debugValidationErrors(ValidationResult result) {
+        LogHandler.getInstance().log(Level.INFO, LogType.SYSTEM,
+                "=== バリデーションエラー詳細情報 ===");
+        LogHandler.getInstance().log(Level.INFO, LogType.SYSTEM,
+                "有効: " + result.isValid() + ", エラー数: " + result.getErrorCount());
+
+        for (Map.Entry<String, String> error : result.getErrors().entrySet()) {
+            String fieldName = error.getKey();
+            String componentName = getComponentNameFromFieldName(fieldName);
+            Component component = getComponent(componentName);
+
+            LogHandler.getInstance().log(Level.INFO, LogType.SYSTEM,
+                    "フィールド: " + fieldName +
+                            " -> コンポーネント: " + componentName +
+                            " -> 存在: " + (component != null) +
+                            " -> エラー: " + error.getValue());
+        }
+        LogHandler.getInstance().log(Level.INFO, LogType.SYSTEM,
+                "=== バリデーションエラー詳細情報終了 ===");
     }
 
     /**

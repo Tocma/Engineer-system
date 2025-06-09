@@ -33,7 +33,7 @@ public final class FormComponentUtil {
         }
 
         MultiSelectComboBox comboBox = new MultiSelectComboBox(items);
-        comboBox.setPreferredSize(new Dimension(300, 25));
+        comboBox.setPreferredSize(new Dimension(100, 25));
         return comboBox;
     }
 

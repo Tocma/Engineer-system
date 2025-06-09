@@ -5,11 +5,15 @@ import model.EngineerBuilder;
 import controller.MainController;
 import util.LogHandler;
 import util.LogHandler.LogType;
-import util.validator.IDValidator;
+import util.validator.*;
 import javax.swing.*;
 import java.awt.*;
 import java.time.LocalDate;
 import java.util.List;
+import java.util.Map;
+import java.util.Set;
+import java.util.Arrays;
+import java.util.HashSet;
 import java.util.logging.Level;
 
 /**
@@ -232,108 +236,101 @@ public class AddPanel extends AbstractEngineerPanel {
     }
 
     /**
-     * エンジニア情報DTOを構築
-     * 入力フィールドの値を取得してEngineerDTOオブジェクトを構築
-     *
+     * 既存のエンジニアIDセットを取得（重複チェック用）
+     */
+    @Override
+    protected Set<String> getExistingEngineerIds() {
+        try {
+            if (mainController != null) {
+                List<EngineerDTO> engineers = mainController.getEngineerController().loadEngineers();
+                Set<String> ids = new HashSet<>();
+                for (EngineerDTO engineer : engineers) {
+                    ids.add(engineer.getId());
+                }
+                return ids;
+            }
+        } catch (Exception e) {
+            LogHandler.getInstance().logError(LogType.SYSTEM,
+                    "既存IDの取得中にエラーが発生しました", e);
+        }
+        return new HashSet<>();
+    }
+
+    /**
+     * エンジニア情報DTOを構築（バリデーション済みデータを使用）
+     * 
      * @return 構築したEngineerDTOオブジェクト
      */
     private EngineerDTO buildEngineerDTO() {
+        ValidationResult validationResult = getLastValidationResult();
+        if (validationResult == null || !validationResult.isValid()) {
+            throw new IllegalStateException("バリデーションが実行されていないか、失敗しています");
+        }
+
+        Map<String, String> processedValues = validationResult.getProcessedValues();
         EngineerBuilder builder = new EngineerBuilder();
 
-        // 基本情報の設定
-        String idValue = IDValidator.convertFullWidthToHalfWidth(idField.getText().trim());
-        String normalizedId = IDValidator.standardizeId(idValue);
-        builder.setId(normalizedId);
-        builder.setName(nameField.getText().trim());
-        builder.setNameKana(nameKanaField.getText().trim());
+        // 前処理済みの値を使用してDTOを構築
+        builder.setId(processedValues.get("id"));
+        builder.setName(processedValues.get("name"));
+        builder.setNameKana(processedValues.get("nameKana"));
 
-        // 生年月日の設定
-        LocalDate birthDate = getDateFromComponents(birthYearComboBox, birthMonthComboBox, birthDayComboBox);
-        if (birthDate != null) {
-            builder.setBirthDate(birthDate);
+        // 日付の解析
+        String birthDateStr = processedValues.get("birthDate");
+        if (birthDateStr != null && !birthDateStr.isEmpty()) {
+            builder.setBirthDate(LocalDate.parse(birthDateStr));
         }
 
-        // 入社年月の設定
-        LocalDate joinDate = getDateFromComponents(joinYearComboBox, joinMonthComboBox, null);
-        if (joinDate != null) {
-            builder.setJoinDate(joinDate);
+        String joinDateStr = processedValues.get("joinDate");
+        if (joinDateStr != null && !joinDateStr.isEmpty()) {
+            builder.setJoinDate(LocalDate.parse(joinDateStr));
         }
 
-        // エンジニア歴の設定
-        String careerText = (String) careerComboBox.getSelectedItem();
-        if (careerText != null && !careerText.isEmpty()) {
-            try {
-                int career = Integer.parseInt(careerText);
-                builder.setCareer(career);
-            } catch (NumberFormatException e) {
-                builder.setCareer(0);
-            }
-        } else {
-            builder.setCareer(0);
+        // エンジニア歴
+        String careerStr = processedValues.get("career");
+        if (careerStr != null && !careerStr.isEmpty()) {
+            builder.setCareer(Integer.parseInt(careerStr));
         }
 
-        // 扱える言語の設定
-        List<String> languages = languageComboBox.getSelectedItems();
-        builder.setProgrammingLanguages(languages);
-
-        // 経歴の設定
-        String careerHistory = careerHistoryArea.getText().trim();
-        if (!careerHistory.isEmpty()) {
-            builder.setCareerHistory(careerHistory);
+        // 扱える言語
+        String languagesStr = processedValues.get("programmingLanguages");
+        if (languagesStr != null && !languagesStr.isEmpty()) {
+            builder.setProgrammingLanguages(Arrays.asList(languagesStr.split(";")));
         }
 
-        // 研修の受講歴の設定
-        String trainingHistory = trainingHistoryArea.getText().trim();
-        if (!trainingHistory.isEmpty()) {
-            builder.setTrainingHistory(trainingHistory);
-        }
+        // テキストフィールド
+        builder.setCareerHistory(processedValues.get("careerHistory"));
+        builder.setTrainingHistory(processedValues.get("trainingHistory"));
+        builder.setNote(processedValues.get("note"));
 
-        // スキル評価の設定
-        setSkillRating(builder);
-
-        // 備考の設定
-        String note = noteArea.getText().trim();
-        if (!note.isEmpty()) {
-            builder.setNote(note);
-        }
+        // スキル評価
+        setProcessedSkillRating(builder, processedValues);
 
         return builder.build();
     }
 
     /**
-     * スキル評価をビルダーに設定
-     * コンボボックスから選択された評価値をビルダーに設定
-     *
-     * @param builder エンジニアビルダー
+     * 前処理済みスキル評価をビルダーに設定
      */
-    private void setSkillRating(EngineerBuilder builder) {
-        // 技術力
-        setSkillRatingField(technicalSkillComboBox, builder::setTechnicalSkill);
+    private void setProcessedSkillRating(EngineerBuilder builder, Map<String, String> processedValues) {
+        String technicalSkill = processedValues.get("technicalSkill");
+        if (technicalSkill != null && !technicalSkill.isEmpty()) {
+            builder.setTechnicalSkill(Double.parseDouble(technicalSkill));
+        }
 
-        // 受講態度
-        setSkillRatingField(learningAttitudeComboBox, builder::setLearningAttitude);
+        String learningAttitude = processedValues.get("learningAttitude");
+        if (learningAttitude != null && !learningAttitude.isEmpty()) {
+            builder.setLearningAttitude(Double.parseDouble(learningAttitude));
+        }
 
-        // コミュニケーション能力
-        setSkillRatingField(communicationSkillComboBox, builder::setCommunicationSkill);
+        String communicationSkill = processedValues.get("communicationSkill");
+        if (communicationSkill != null && !communicationSkill.isEmpty()) {
+            builder.setCommunicationSkill(Double.parseDouble(communicationSkill));
+        }
 
-        // リーダーシップ
-        setSkillRatingField(leadershipComboBox, builder::setLeadership);
-    }
-
-    /**
-     * 個別のスキル評価フィールドを設定するヘルパーメソッド
-     */
-    private void setSkillRatingField(JComboBox<String> comboBox, java.util.function.Consumer<Double> setter) {
-        String skillText = (String) comboBox.getSelectedItem();
-        if (skillText != null && !skillText.isEmpty()) {
-            try {
-                double skill = Double.parseDouble(skillText);
-                setter.accept(skill);
-            } catch (NumberFormatException e) {
-                setter.accept(null);
-            }
-        } else {
-            setter.accept(null);
+        String leadership = processedValues.get("leadership");
+        if (leadership != null && !leadership.isEmpty()) {
+            builder.setLeadership(Double.parseDouble(leadership));
         }
     }
 
