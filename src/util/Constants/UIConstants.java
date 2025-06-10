@@ -68,7 +68,7 @@ public final class UIConstants {
 
     // ========== コンポーネントサイズ ==========
     /** テキストフィールド標準幅 */
-    public static final int TEXT_FIELD_WIDTH = 20;
+    public static final int TEXT_FIELD_WIDTH = 40;
 
     /** コンボボックス（年）幅 */
     public static final int YEAR_COMBO_WIDTH = 80;

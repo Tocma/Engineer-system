@@ -1313,13 +1313,14 @@ public class ListPanel extends JPanel {
     }
 
     /**
-     * 出力ボタンのイベントハンドラ
+     * 出力ボタンのイベントハンドラ（修正版）
      */
     private void exportData() {
         if (mainController != null) {
             LogHandler.getInstance().log(Level.INFO, LogType.UI, "出力ボタンが押されました");
-            int[] selectedRows = table.getSelectedRows();
-            if (selectedRows.length > 0) {
+
+            // 修正：selectedEngineerIdsを使用して全ページの選択状態をチェック
+            if (!selectedEngineerIds.isEmpty()) { // ←修正ポイント
                 List<EngineerDTO> selectedEngineers = getSelectedEngineers();
 
                 setButtonsEnabled(false);
@@ -1330,7 +1331,7 @@ public class ListPanel extends JPanel {
                         .collect(Collectors.toList());
 
                 LogHandler.getInstance().log(Level.INFO, LogType.UI,
-                        String.format("%d件の行が出力対象に選択されました", selectedRows.length));
+                        String.format("%d件の項目が出力対象に選択されました", selectedEngineers.size()));
 
                 boolean confirmed = DialogManager.getInstance()
                         .showScrollableListDialog("CSV出力確認", "以下の項目を出力しますか？", selectedTargets);
@@ -1358,11 +1359,11 @@ public class ListPanel extends JPanel {
 
     /**
      * テーブルで選択された行を削除対象として確認ダイアログを表示し、
-     * ユーザーが確認すれば削除処理を開始する
+     * ユーザーが確認すれば削除処理を開始する（修正版）
      */
     private void deleteSelectedRow() {
-        int[] selectedRows = table.getSelectedRows();
-        if (selectedRows.length > 0) {
+        // 修正：selectedEngineerIdsを使用して全ページの選択状態をチェック
+        if (!selectedEngineerIds.isEmpty()) { // ←修正ポイント
             List<EngineerDTO> selectedEngineers = getSelectedEngineers();
 
             deleting = true;
@@ -1385,7 +1386,7 @@ public class ListPanel extends JPanel {
             }
 
             LogHandler.getInstance().log(Level.INFO, LogType.UI,
-                    String.format("%d件の行が削除対象に選択されました", selectedRows.length));
+                    String.format("%d件の項目が削除対象に選択されました", selectedEngineers.size()));
         }
     }
 
