@@ -1290,12 +1290,53 @@ public class ListPanel extends JPanel {
     }
 
     /**
+     * インポート処理開始時の状態設定
+     * ボタンを無効化し、処理中であることを示す
+     */
+    public void setImportProcessing(boolean processing) {
+        if (processing) {
+            // インポート処理中はボタンを無効化
+            setButtonsEnabled(false);
+            setStatus("CSVファイル読み込み中...");
+
+            // 検索機能も無効化
+            setUIComponentsEnabled(false);
+
+            LogHandler.getInstance().log(Level.INFO, LogType.UI,
+                    "インポート処理開始：UIコンポーネントを無効化");
+        } else {
+            // インポート処理完了後はボタンを有効化
+            setButtonsEnabled(true);
+            clearStatus();
+
+            // 検索機能も有効化
+            setUIComponentsEnabled(true);
+
+            // ボタン状態を再評価（選択状態に応じて）
+            updateButtonState();
+
+            LogHandler.getInstance().log(Level.INFO, LogType.UI,
+                    "インポート処理完了：UIコンポーネントを有効化");
+        }
+    }
+
+    /**
      * 取込ボタンのイベントハンドラ
      */
     private void importData() {
         LogHandler.getInstance().log(Level.INFO, LogType.UI, "取込ボタンが押されました");
         if (mainController != null) {
-            mainController.handleImportData();
+            // インポート処理開始前に状態を設定
+            setImportProcessing(true);
+
+            try {
+                mainController.handleImportData();
+            } catch (Exception e) {
+                // エラー時は状態をリセット
+                setImportProcessing(false);
+                LogHandler.getInstance().logError(LogType.UI,
+                        "インポート処理の開始に失敗しました", e);
+            }
         } else {
             LogHandler.getInstance().log(Level.WARNING, LogType.UI,
                     "MainControllerが設定されていないためCSVインポートできません");

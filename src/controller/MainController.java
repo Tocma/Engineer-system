@@ -1687,41 +1687,50 @@ public class MainController {
      * ResourceManagerを活用したファイル操作の統合版
      */
     public void handleImportData() {
-        // シャットダウン中は処理しない
         if (isShuttingDown.get()) {
             LogHandler.getInstance().log(Level.WARNING, LogType.SYSTEM,
                     "シャットダウン中のためインポート処理をスキップします");
             return;
         }
 
-        // ResourceManagerを活用したファイル選択ダイアログの表示
+        // 現在のパネルを取得（状態管理用）
+        final JPanel currentPanel = screenController.getCurrentPanel();
+
+        // ListPanelの場合、インポート処理中状態を設定
+        if (currentPanel instanceof ListPanel) {
+            ((ListPanel) currentPanel).setImportProcessing(true);
+        }
+
+        // ファイル選択ダイアログの表示
         JFileChooser fileChooser = new JFileChooser(System.getProperty("user.dir"));
         fileChooser.setDialogTitle("インポートするCSVファイルを選択");
         fileChooser.setFileFilter(new FileNameExtensionFilter("CSVファイル (*.csv)", "csv"));
 
         int result = fileChooser.showOpenDialog(mainFrame.getJFrame());
         if (result != JFileChooser.APPROVE_OPTION) {
-            return; // キャンセル
+            // キャンセル時は状態をリセット
+            if (currentPanel instanceof ListPanel) {
+                ((ListPanel) currentPanel).setImportProcessing(false);
+            }
+            return;
         }
 
-        // 選択されたファイル
         final File selectedFile = fileChooser.getSelectedFile();
         if (selectedFile == null || !selectedFile.exists()) {
             DialogManager.getInstance().showErrorDialog("エラー", "ファイルが見つかりません。");
+            if (currentPanel instanceof ListPanel) {
+                ((ListPanel) currentPanel).setImportProcessing(false);
+            }
             return;
         }
 
-        // ResourceManagerを活用したファイル検証
         FileValidationResult validation = validateImportFileWithResourceManager(selectedFile);
         if (!validation.isValid()) {
             DialogManager.getInstance().showErrorDialog("ファイル検証エラー", validation.getErrorMessage());
+            if (currentPanel instanceof ListPanel) {
+                ((ListPanel) currentPanel).setImportProcessing(false);
+            }
             return;
-        }
-
-        // 現在のパネルを取得（ステータス表示用）
-        final JPanel currentPanel = screenController.getCurrentPanel();
-        if (currentPanel instanceof ListPanel) {
-            ((ListPanel) currentPanel).setStatus("インポート中...");
         }
 
         // 非同期処理でCSVインポートを実行
@@ -1795,7 +1804,6 @@ public class MainController {
     private void processImportResultWithResourceManager(CSVAccessResult importResult,
             List<EngineerDTO> currentEngineers, JPanel currentPanel) {
 
-        // インポート結果の基本情報を取得
         List<EngineerDTO> importedEngineers = importResult.getSuccessData();
         List<EngineerDTO> errorEngineers = importResult.getErrorData();
 
@@ -1804,11 +1812,28 @@ public class MainController {
                         importedEngineers.size(), currentEngineers.size(), errorEngineers.size(),
                         importResult.getDuplicateIds().size()));
 
-        // ステップ1: CSVAccessResultの拡張機能を使用してインポート分析を実行
-        // この処理により、実際の追加・更新・スキップ件数が正確に計算されます
+        // エラーデータがある場合の詳細表示
+        if (!errorEngineers.isEmpty()) {
+            showImportErrorDetails(errorEngineers, currentPanel);
+        }
+
+        // 致命的エラーの場合は処理を中断
+        if (importResult.isFatalError()) {
+            SwingUtilities.invokeLater(() -> {
+                DialogManager.getInstance().showErrorDialog(
+                        "インポートエラー",
+                        "CSV読み込み中に致命的なエラーが発生しました:\n" + importResult.getErrorMessage());
+
+                if (currentPanel instanceof ListPanel) {
+                    ((ListPanel) currentPanel).setImportProcessing(false);
+                }
+            });
+            return;
+        }
+
+        // 既存の分析処理を継続
         try {
             importResult.performImportAnalysis(currentEngineers);
-
             LogHandler.getInstance().log(Level.INFO, LogType.SYSTEM,
                     "インポート分析完了: " + importResult.getAnalysisDetailInfo());
 
@@ -1820,53 +1845,40 @@ public class MainController {
                 DialogManager.getInstance().showErrorDialog(
                         "分析エラー", "インポートデータの分析中にエラーが発生しました: " + e.getMessage());
                 if (currentPanel instanceof ListPanel) {
-                    ((ListPanel) currentPanel).clearStatus();
+                    ((ListPanel) currentPanel).setImportProcessing(false);
                 }
             });
             return;
         }
 
-        // ステップ2: 分析結果に基づく上限チェック
-        // CSVAccessResultの新機能を使用して正確な上限チェックを実行
+        // 上限チェック
         if (importResult.willExceedLimit()) {
-
             LogHandler.getInstance().log(Level.WARNING, LogType.SYSTEM,
                     String.format("インポート上限エラー: %s, 上限: %d件, 超過: %d件",
                             importResult.getAnalysisDetailInfo(),
                             SystemConstants.MAX_ENGINEER_RECORDS,
                             importResult.getExcessCount()));
 
-            // UI更新で詳細なエラーメッセージを表示
             SwingUtilities.invokeLater(() -> {
-                // CSVAccessResultの新機能を使用して詳細なエラーメッセージを生成
                 String errorMessage = importResult.buildDetailedLimitErrorMessage();
-
                 DialogManager.getInstance().showErrorDialog("インポート制限エラー", errorMessage);
 
-                // ステータス表示をクリア
                 if (currentPanel instanceof ListPanel) {
-                    ((ListPanel) currentPanel).clearStatus();
+                    ((ListPanel) currentPanel).setImportProcessing(false);
                 }
             });
-
-            return; // 上限エラーの場合は処理を中断
+            return;
         }
 
-        // ステップ3: 重複IDの処理確認（既存のロジックを保持）
-        // 重複IDがある場合の処理は、DialogManagerで既に確認済みの前提
+        // 重複ID処理
         if (importResult.hasDuplicateIds()) {
-            LogHandler.getInstance().log(Level.INFO, LogType.SYSTEM,
-                    String.format("重複ID処理: %s, 件数=%d件",
-                            (importResult.isOverwriteConfirmed() ? "上書き" : "スキップ"),
-                            importResult.getDuplicateIds().size()));
+            handleDuplicateIds(importResult);
         }
 
-        // ステップ4: 実際のデータ更新処理
-        // 分析結果に基づいて、データベースの更新を実行
+        // データ更新処理
         try {
             performDataUpdateWithAnalysis(importResult, importedEngineers, currentEngineers);
 
-            // ステップ5: UI更新と結果表示
             SwingUtilities.invokeLater(() -> {
                 try {
                     updateUIAfterImportWithAnalysis(importResult, currentPanel);
@@ -1882,6 +1894,57 @@ public class MainController {
                     "インポートデータの処理中にエラーが発生しました", e);
             SwingUtilities.invokeLater(() -> handleImportError(e, currentPanel));
         }
+    }
+
+    /**
+     * エラーデータの詳細表示（新規メソッド）
+     * エラーになったエンジニアデータの詳細情報を表示
+     */
+    private void showImportErrorDetails(List<EngineerDTO> errorEngineers, JPanel currentPanel) {
+        SwingUtilities.invokeLater(() -> {
+            List<String> errorDetails = new ArrayList<>();
+            errorDetails.add("以下のデータに問題が見つかりました：");
+            errorDetails.add("");
+
+            for (EngineerDTO errorEngineer : errorEngineers) {
+                StringBuilder detail = new StringBuilder();
+
+                // エラー行の基本情報
+                detail.append("【");
+                if (errorEngineer.getId() != null && !errorEngineer.getId().isEmpty()) {
+                    detail.append("ID: ").append(errorEngineer.getId());
+                } else {
+                    detail.append("ID: 未設定");
+                }
+
+                if (errorEngineer.getName() != null && !errorEngineer.getName().isEmpty()) {
+                    detail.append(", 氏名: ").append(errorEngineer.getName());
+                }
+                detail.append("】");
+
+                // エラー内容（備考欄に格納されている）
+                if (errorEngineer.getNote() != null) {
+                    detail.append("\n  エラー: ").append(errorEngineer.getNote());
+                }
+
+                errorDetails.add(detail.toString());
+                errorDetails.add(""); // 空行
+            }
+
+            errorDetails.add("これらのデータはスキップされました。");
+            errorDetails.add("修正後、再度インポートしてください。");
+
+            // スクロール可能なダイアログで表示
+            boolean understood = DialogManager.getInstance().showScrollableListDialog(
+                    "インポートエラー詳細",
+                    "一部のデータに問題がありました",
+                    errorDetails);
+
+            if (understood) {
+                LogHandler.getInstance().log(Level.INFO, LogType.UI,
+                        "ユーザーがエラー詳細を確認しました");
+            }
+        });
     }
 
     /**
@@ -2007,16 +2070,18 @@ public class MainController {
      * @param currentPanel ステータス表示用パネル
      */
     private void updateUIAfterImportWithAnalysis(CSVAccessResult importResult, JPanel currentPanel) {
-
         // 最新データでListPanelを更新
         List<EngineerDTO> updatedEngineers = engineerController.loadEngineers();
 
         if (currentPanel instanceof ListPanel) {
-            ((ListPanel) currentPanel).setEngineerData(updatedEngineers);
-            ((ListPanel) currentPanel).clearStatus();
+            ListPanel listPanel = (ListPanel) currentPanel;
+            listPanel.setEngineerData(updatedEngineers);
+
+            // インポート処理完了状態をリセット
+            listPanel.setImportProcessing(false);
         }
 
-        // CSVAccessResultの新機能を使用して詳細な完了メッセージを表示
+        // 詳細な完了メッセージを表示
         showDetailedImportResultWithAnalysis(importResult);
 
         LogHandler.getInstance().log(Level.INFO, LogType.SYSTEM,
@@ -2063,8 +2128,24 @@ public class MainController {
                 "インポート処理中にエラーが発生しました：" + e.getMessage());
 
         if (currentPanel instanceof ListPanel) {
-            ((ListPanel) currentPanel).clearStatus();
+            ((ListPanel) currentPanel).setImportProcessing(false);
         }
+    }
+
+    /**
+     * 重複ID処理（新規メソッド）
+     * CSVAccessResultの重複ID確認を実行
+     */
+    private void handleDuplicateIds(CSVAccessResult importResult) {
+        boolean overwrite = DialogManager.getInstance().showDuplicateIdConfirmDialog(
+                importResult.getDuplicateIds());
+
+        importResult.setOverwriteConfirmed(overwrite);
+
+        LogHandler.getInstance().log(Level.INFO, LogType.SYSTEM,
+                String.format("重複ID処理: %s, 件数=%d件",
+                        (overwrite ? "上書き" : "スキップ"),
+                        importResult.getDuplicateIds().size()));
     }
 
     /**

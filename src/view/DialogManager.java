@@ -1,6 +1,8 @@
 package view;
 
 import javax.swing.*;
+import javax.swing.table.DefaultTableModel;
+
 import model.EngineerDTO;
 import util.LogHandler;
 import util.LogHandler.LogType;
@@ -789,5 +791,98 @@ public class DialogManager {
         }
 
         return null;
+    }
+
+    /**
+     * インポートエラーの詳細表示ダイアログ（新規メソッド）
+     * エラーになったデータの詳細情報を構造化して表示
+     * 
+     * @param errorEngineers エラーになったエンジニアデータのリスト
+     * @return ユーザーが確認した場合はtrue
+     */
+    public boolean showImportErrorDetailDialog(List<EngineerDTO> errorEngineers) {
+        if (errorEngineers == null || errorEngineers.isEmpty()) {
+            return true;
+        }
+
+        try {
+            // エラー詳細パネルの作成
+            JPanel errorPanel = new JPanel(new BorderLayout());
+
+            // ヘッダーメッセージ
+            JLabel headerLabel = new JLabel(
+                    String.format("インポート時に %d 件のエラーが発生しました：", errorEngineers.size()));
+            headerLabel.setBorder(BorderFactory.createEmptyBorder(10, 10, 10, 10));
+            errorPanel.add(headerLabel, BorderLayout.NORTH);
+
+            // エラーテーブルの作成
+            String[] columnNames = { "行", "社員ID", "氏名", "エラー内容" };
+            DefaultTableModel tableModel = new DefaultTableModel(columnNames, 0) {
+                @Override
+                public boolean isCellEditable(int row, int column) {
+                    return false;
+                }
+            };
+
+            for (EngineerDTO errorEngineer : errorEngineers) {
+                String id = errorEngineer.getId() != null ? errorEngineer.getId() : "未設定";
+                String name = errorEngineer.getName() != null ? errorEngineer.getName() : "未設定";
+                String error = errorEngineer.getNote() != null ? errorEngineer.getNote() : "不明なエラー";
+
+                // エラーメッセージから行番号を抽出（例：「バリデーションエラー（行 5）:」）
+                String rowInfo = "不明";
+                if (error.contains("行 ")) {
+                    int startIndex = error.indexOf("行 ") + 2;
+                    int endIndex = error.indexOf("）", startIndex);
+                    if (endIndex > startIndex) {
+                        rowInfo = error.substring(startIndex, endIndex);
+                    }
+                }
+
+                tableModel.addRow(new Object[] { rowInfo, id, name, error });
+            }
+
+            JTable errorTable = new JTable(tableModel);
+            errorTable.setAutoResizeMode(JTable.AUTO_RESIZE_LAST_COLUMN);
+            errorTable.getColumnModel().getColumn(0).setPreferredWidth(50); // 行
+            errorTable.getColumnModel().getColumn(1).setPreferredWidth(100); // ID
+            errorTable.getColumnModel().getColumn(2).setPreferredWidth(150); // 氏名
+            errorTable.getColumnModel().getColumn(3).setPreferredWidth(400); // エラー
+
+            JScrollPane scrollPane = new JScrollPane(errorTable);
+            scrollPane.setPreferredSize(new Dimension(700, 300));
+            errorPanel.add(scrollPane, BorderLayout.CENTER);
+
+            // フッターメッセージ
+            JLabel footerLabel = new JLabel(
+                    "これらのデータはインポートされませんでした。修正後、再度インポートしてください。");
+            footerLabel.setBorder(BorderFactory.createEmptyBorder(10, 10, 10, 10));
+            errorPanel.add(footerLabel, BorderLayout.SOUTH);
+
+            // ダイアログ表示
+            int result = JOptionPane.showConfirmDialog(
+                    getActiveFrame(),
+                    errorPanel,
+                    "インポートエラー詳細",
+                    JOptionPane.OK_CANCEL_OPTION,
+                    JOptionPane.WARNING_MESSAGE);
+
+            return result == JOptionPane.OK_OPTION;
+
+        } catch (Exception e) {
+            LogHandler.getInstance().logError(LogType.SYSTEM,
+                    "エラー詳細ダイアログの表示中にエラーが発生しました", e);
+
+            // フォールバック：シンプルなリスト表示
+            return showScrollableListDialog(
+                    "インポートエラー",
+                    "以下のデータにエラーがありました：",
+                    errorEngineers.stream()
+                            .map(eng -> String.format("ID: %s, 氏名: %s - %s",
+                                    eng.getId() != null ? eng.getId() : "未設定",
+                                    eng.getName() != null ? eng.getName() : "未設定",
+                                    eng.getNote() != null ? eng.getNote() : "エラー"))
+                            .collect(Collectors.toList()));
+        }
     }
 }
