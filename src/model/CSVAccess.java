@@ -117,6 +117,29 @@ public class CSVAccess extends AccessThread {
                 "CSVAccess初期化完了（新バリデーションシステム統合）: " + csvFile.getPath());
     }
 
+    // CSVAccessクラスに、ファイルを指定できるコンストラクタを追加
+    public CSVAccess(String operation, Object data, File targetFile) {
+        this.resourceManager = ResourceManager.getInstance();
+        this.operation = operation;
+        this.data = data;
+
+        // ターゲットファイルが指定されている場合はそれを使用
+        if (targetFile != null) {
+            this.csvFile = targetFile;
+            this.useResourceManager = false; // 外部ファイルの場合
+        } else {
+            // デフォルトのCSVファイルを使用
+            this.csvFile = resourceManager.getEngineerCsvPath().toFile();
+            this.useResourceManager = true;
+        }
+
+        this.lock = new ReentrantReadWriteLock();
+        this.appendMode = false;
+        this.existingIds = new HashMap<>();
+        this.validationService = ValidationService.getInstance();
+        this.csvValidators = ValidatorFactory.createCSVValidators();
+    }
+
     /**
      * CSV行データをEngineerDTOに変換（新バリデーションシステム使用）
      * 

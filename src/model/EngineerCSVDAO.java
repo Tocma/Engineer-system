@@ -45,6 +45,9 @@ public class EngineerCSVDAO implements EngineerDAO {
     /** DialogManagerインスタンス */
     private final DialogManager dialogManager;
 
+    // インポート用の一時的なファイルパスを保持
+    private File importFile = null;
+
     /**
      * デフォルトコンストラクタ
      * ResourceManagerから標準のCSVファイルパスを取得して初期化
@@ -97,8 +100,14 @@ public class EngineerCSVDAO implements EngineerDAO {
         this.csvFilePath = csvFilePath;
         this.dialogManager = DialogManager.getInstance();
 
-        // 指定されたパスでもCSVファイルの存在確認を実行
-        ensureCsvFileExists();
+        // インポート用ファイルとして設定
+        this.importFile = new File(csvFilePath);
+
+        // ファイルの存在確認（インポート時は作成しない）
+        if (!this.importFile.exists()) {
+            LogHandler.getInstance().log(Level.WARNING, LogType.SYSTEM,
+                    "指定されたインポートファイルが存在しません: " + csvFilePath);
+        }
     }
 
     /**
@@ -437,9 +446,18 @@ public class EngineerCSVDAO implements EngineerDAO {
      */
     public CSVAccessResult readCSV() {
         try {
-            // ResourceManagerから管理されているCSVファイルを使用
-            File file = new File(csvFilePath);
-            CSVAccess csvAccess = new CSVAccess("read", file);
+            CSVAccess csvAccess;
+            
+            // インポートファイルが設定されている場合は、それを使用
+            if (importFile != null && importFile.exists()) {
+                csvAccess = new CSVAccess("read", null, importFile);
+                LogHandler.getInstance().log(Level.INFO, LogType.SYSTEM,
+                    "インポートファイルから読み込みを開始: " + importFile.getPath());
+            } else {
+                // 通常の読み込み（システムファイル）
+                File file = new File(csvFilePath);
+                csvAccess = new CSVAccess("read", file);
+            }
             csvAccess.execute();
 
             // CSVAccessの結果を取得
