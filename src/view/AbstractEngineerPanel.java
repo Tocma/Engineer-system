@@ -272,7 +272,7 @@ public abstract class AbstractEngineerPanel extends JPanel {
         // メインパネルの作成
         panel = new JPanel();
         panel.setLayout(new BoxLayout(panel, BoxLayout.Y_AXIS));
-        panel.setBorder(BorderFactory.createEmptyBorder(20, 20, 20, 20));
+        panel.setBorder(BorderFactory.createEmptyBorder(30, 50, 30, 0));
         panel.setBackground(Color.WHITE);
 
         // スクロールパネルに配置

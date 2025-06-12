@@ -48,7 +48,7 @@ public final class UIConstants {
 
     // ========== フォントサイズ ==========
     /** セクションタイトルフォントサイズ */
-    public static final float SECTION_TITLE_FONT_SIZE = 14f;
+    public static final float SECTION_TITLE_FONT_SIZE = 15f;
 
     /** エラーメッセージフォントサイズ */
     public static final float ERROR_MESSAGE_FONT_SIZE = 11f;
