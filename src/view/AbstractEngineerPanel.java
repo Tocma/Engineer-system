@@ -815,10 +815,12 @@ public abstract class AbstractEngineerPanel extends JPanel {
         errorLabel.setVisible(false);
         errorLabel.setFont(errorLabel.getFont().deriveFont(Font.PLAIN, UIConstants.ERROR_MESSAGE_FONT_SIZE));
         errorLabel.setHorizontalAlignment(SwingConstants.LEFT);
+        errorLabel.setVerticalAlignment(SwingConstants.CENTER);
 
-        // エラーラベルの幅を制限して適切な表示を確保
-        errorLabel.setPreferredSize(new Dimension(300, 15));
-        errorLabel.setMaximumSize(new Dimension(300, 15));
+        // 最大幅のみ設定し、高さは内容に応じて自動調整
+        errorLabel.setMaximumSize(new Dimension(400, Integer.MAX_VALUE));
+        // 最小サイズを設定して、短いメッセージでもレイアウトが崩れないようにする
+        errorLabel.setMinimumSize(new Dimension(100, 15));
 
         fieldErrorLabels.put(fieldName, errorLabel);
         registerComponent(fieldName + "ErrorLabel", errorLabel);
