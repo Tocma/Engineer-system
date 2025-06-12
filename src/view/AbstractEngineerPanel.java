@@ -440,31 +440,19 @@ public abstract class AbstractEngineerPanel extends JPanel {
      * @param container 配置先のコンテナ
      */
     protected void createLanguageSection(JPanel container) {
-        // セクションタイトル
-        JLabel languageTitle = createSectionTitle("扱える言語");
-        JLabel requiredMark = new JLabel(UIConstants.REQUIRED_MARK);
-        JLabel errorLabel = createFieldErrorLabel("languages");
-
-        JPanel titlePanel = new JPanel(new FlowLayout(FlowLayout.LEFT, 10, 0));
-        titlePanel.setBackground(Color.WHITE);
-        titlePanel.add(languageTitle);
-        titlePanel.add(requiredMark);
-
-        errorLabel.setVisible(false);
-        errorLabel.setForeground(UIConstants.ERROR_COLOR);
-        errorLabel.setFont(errorLabel.getFont().deriveFont(Font.PLAIN, 11f));
-        titlePanel.add(Box.createHorizontalStrut(10));
-        titlePanel.add(errorLabel);
-
-        container.add(titlePanel);
+        // 言語選択のラベルを作成（他のフィールドと統一）
+        JLabel languageLabel = createFieldLabel("扱える言語", true);
 
         // MultiSelectComboBoxの作成
         languageComboBox = FormComponentUtil.createLanguageComboBox();
         registerComponent("languageComboBox", languageComboBox);
         registerComponent("languages", languageComboBox);
 
-        container.add(createVerticalSpacer(5));
-        container.add(languageComboBox);
+        // 他のフィールドと同様にcreateFormRowを使用
+        // これにより、一貫したレイアウトと左寄せが実現される
+        container.add(createFormRow(languageLabel, languageComboBox, "languages"));
+
+        // 他のセクションとの間隔を統一
         container.add(createVerticalSpacer(20));
     }
 
@@ -480,7 +468,7 @@ public abstract class AbstractEngineerPanel extends JPanel {
         titlePanel.add(careerHistoryTitle);
         container.add(titlePanel);
 
-        careerHistoryArea = new JTextArea(5, 20);
+        careerHistoryArea = new JTextArea(5, 40);
         careerHistoryArea.setLineWrap(true);
         careerHistoryArea.setWrapStyleWord(true);
         JScrollPane careerScrollPane = new JScrollPane(careerHistoryArea);
@@ -501,7 +489,7 @@ public abstract class AbstractEngineerPanel extends JPanel {
         titlePanel.add(trainingTitle);
         container.add(titlePanel);
 
-        trainingHistoryArea = new JTextArea(2, 20);
+        trainingHistoryArea = new JTextArea(2, 40);
         trainingHistoryArea.setLineWrap(true);
         trainingHistoryArea.setWrapStyleWord(true);
         JScrollPane trainingScrollPane = new JScrollPane(trainingHistoryArea);
@@ -569,7 +557,7 @@ public abstract class AbstractEngineerPanel extends JPanel {
         titlePanel.add(noteTitle);
         container.add(titlePanel);
 
-        noteArea = new JTextArea(5, 20);
+        noteArea = new JTextArea(5, 40);
         noteArea.setLineWrap(true);
         noteArea.setWrapStyleWord(true);
         JScrollPane noteScrollPane = new JScrollPane(noteArea);

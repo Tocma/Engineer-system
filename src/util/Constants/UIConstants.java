@@ -79,6 +79,9 @@ public final class UIConstants {
     /** スキル評価コンボボックスサイズ */
     public static final Dimension SKILL_COMBO_SIZE = new Dimension(80, 25);
 
+    /** 言語選択コンボボックスのサイズ */
+    public static final Dimension LANGUAGE_COMBO_SIZE = new Dimension(200, 25);
+
     /** テーブル行高さ */
     public static final int TABLE_ROW_HEIGHT = 25;
 

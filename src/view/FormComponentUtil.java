@@ -2,6 +2,7 @@ package view;
 
 import javax.swing.*;
 import javax.swing.plaf.basic.BasicComboBoxRenderer;
+import util.Constants.UIConstants;
 import java.awt.*;
 import java.util.ArrayList;
 import java.util.List;
@@ -33,7 +34,10 @@ public final class FormComponentUtil {
         }
 
         MultiSelectComboBox comboBox = new MultiSelectComboBox(items);
-        comboBox.setPreferredSize(new Dimension(80, 25));
+        // 定数を使用してサイズを統一管理
+        comboBox.setPreferredSize(UIConstants.LANGUAGE_COMBO_SIZE);
+        comboBox.setMinimumSize(UIConstants.LANGUAGE_COMBO_SIZE);
+        comboBox.setMaximumSize(UIConstants.LANGUAGE_COMBO_SIZE);
         return comboBox;
     }
 
