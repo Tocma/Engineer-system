@@ -7,7 +7,7 @@ import java.util.logging.Level;
 
 /**
  * バリデーション実行を管理するサービスクラス
- * フォーム全体のバリデーション処理を統括します
+ * フォーム全体のバリデーション処理を統括
  * 
  * @author Nakano
  */
@@ -21,7 +21,7 @@ public class ValidationService {
      */
     private ValidationService() {
         LogHandler.getInstance().log(Level.INFO, LogType.SYSTEM,
-                "ValidationServiceを初期化しました");
+                "ValidationServiceを初期化完了");
     }
 
     /**
@@ -69,7 +69,7 @@ public class ValidationService {
             } catch (Exception e) {
                 LogHandler.getInstance().logError(LogType.SYSTEM,
                         "フィールドバリデーション中にエラーが発生: " + fieldName, e);
-                result.addError(fieldName, "検証中にエラーが発生しました");
+                result.addError(fieldName, "検証中にエラーが発生");
             }
         }
 
@@ -111,7 +111,7 @@ public class ValidationService {
     }
 
     /**
-     * 単一フィールドのバリデーションを実行（簡易版）
+     * 単一フィールドのバリデーションを実行
      * 
      * @param value     検証対象の値
      * @param validator バリデータ

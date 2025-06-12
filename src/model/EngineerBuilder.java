@@ -2,35 +2,12 @@ package model;
 
 import java.time.LocalDate;
 import java.util.List;
-
 import util.validator.IDValidator;
 
 /**
  * EngineerDTOオブジェクトを生成するビルダークラス
- * Builderパターンを使用してEngineerDTOの段階的な構築を可能にする
+ * Builderパターンを使用してEngineerDTOの段階的な構築
  * 
- * <p>
- * このクラスは、必須項目の設定を強制し、任意項目は必要に応じて設定できるように
- * 設計されています。また、設定された値の簡易的な検証も行います。
- * </p>
- * 
- * <p>
- * 使用例：
- * </p>
- * 
- * <pre>
- * 
- * EngineerDTO engineer = new EngineerBuilder()
- *         .setId("ID00001")
- *         .setName("山田太郎")
- *         .setNameKana("ヤマダタロウ")
- *         .setBirthDate(LocalDate.of(1990, 1, 15))
- *         .setJoinDate(LocalDate.of(2020, 4, 1))
- *         .setCareer(5)
- *         .setProgrammingLanguages(Arrays.asList("Java", "Python"))
- *         .setTechnicalSkill(4.5)
- *         .build();
- * </pre>
  * 
  * @author Nakano
  */
@@ -90,7 +67,7 @@ public class EngineerBuilder {
 
     /**
      * 社員IDを設定
-     * 入力されたIDを標準形式に変換して設定します
+     * 入力されたIDを標準形式に変換して設定
      * 
      * @param id 社員ID
      */

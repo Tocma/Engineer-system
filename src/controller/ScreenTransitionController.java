@@ -16,62 +16,16 @@ import java.util.logging.Level;
 
 /**
  * 画面遷移を制御するコントローラークラス
- * MainFrameを介して各画面の表示を管理し、パネル間の遷移を制御します
+ * MainFrameを介して各画面の表示を管理し、パネル間の遷移を制御
  *
- * <p>
- * このクラスは、エンジニア人材管理システムのMVCアーキテクチャにおいて、
- * 複数のビュー（画面）間の遷移を一元管理する役割を持ちます。具体的には、
- * MainFrameインスタンスを介して各種パネルの切り替えを行い、パネルの生成と
- * キャッシュの管理、トランジション効果の適用、画面状態の追跡などを担当します。
- * </p>
+ * このコントローラーは、LazyLoading方式でパネルを初期化
+ * 各パネルは初回表示時に初期化され、それ以降はキャッシュされたインスタンスが再利用されます
+ * これにより、メモリ使用量の最適化と起動時間の短縮
  *
- * <p>
- * 主な責務：
- * <ul>
- * <li>各種パネル（画面）の初期化と保持</li>
- * <li>パネル間の遷移制御</li>
- * <li>パネル切り替え時のアニメーション効果（オプション）</li>
- * <li>画面状態の追跡</li>
- * <li>パネル間のデータ受け渡し</li>
- * </ul>
- * </p>
- *
- * <p>
- * このコントローラーは、LazyLoading方式でパネルを初期化します。
- * 各パネルは初回表示時に初期化され、それ以降はキャッシュされたインスタンスが再利用されます。
- * これにより、メモリ使用量の最適化と起動時間の短縮を実現しています。
- * </p>
- *
- * <p>
  * 画面遷移コントローラーは、MainControllerから遷移指示を受け取り、
  * 適切なパネルを選択・初期化し、MainFrameを通じて表示します。
  * 遷移操作はSwingのイベントディスパッチスレッド（EDT）上で実行され、
- * 遷移中のフラグ管理により連続遷移による問題を防止します。
- * </p>
- *
- * <p>
- * 対応している画面パネル：
- * <ul>
- * <li>LIST - エンジニア一覧画面</li>
- * <li>DETAIL - エンジニア詳細画面</li>
- * <li>ADD - エンジニア新規追加画面</li>
- * </ul>
- * </p>
- * 
- * <p>
- * 使用例：
- * 
- * <pre>
- * // 一覧画面への遷移
- * screenTransitionController.showPanel("LIST");
- * 
- * // 詳細画面への遷移
- * screenTransitionController.showPanel("DETAIL");
- * 
- * // 新規追加画面への遷移
- * screenTransitionController.showPanel("ADD");
- * </pre>
- * </p>
+ * 遷移中のフラグ管理により連続遷移による問題を防止
  *
  * @author Nakano
  */
@@ -117,7 +71,7 @@ public class ScreenTransitionController {
         // 一覧パネルをキャッシュに追加
         panelCache.put("LIST", listPanel);
 
-        LogHandler.getInstance().log(Level.INFO, LogType.SYSTEM, "画面遷移コントローラーを初期化しました");
+        LogHandler.getInstance().log(Level.INFO, LogType.SYSTEM, "画面遷移コントローラーを初期化完了");
     }
 
     /**
@@ -136,15 +90,14 @@ public class ScreenTransitionController {
         if (listPanel != null) {
             listPanel.setMainController(mainController);
         }
-
-        // 詳細パネルも同様に設定（実装時に追加）
+        LogHandler.getInstance().log(Level.INFO, LogType.SYSTEM, "メインコントローラーを設定");
     }
 
     /**
      * 指定されたパネルタイプの画面を表示
-     * パネルを切り替えて表示します
+     * パネルを切り替えて表示
      * 削除中のフラグがある場合は、
-     * 新規画面への登録ボタンを無効化する処理が含まれます。
+     * 新規画面への登録ボタンを無効化する処理
      *
      * @param panelType 表示するパネルタイプ(PanelType enum)
      */
@@ -161,14 +114,14 @@ public class ScreenTransitionController {
         // 同じパネルへの遷移の場合は処理しない（ただしリフレッシュフラグがある場合は除く）
         if (panelTypeId.equals(currentPanelType)) {
             LogHandler.getInstance().log(Level.INFO, LogType.SYSTEM,
-                    "同一パネルへの遷移をスキップします: " + panelType.getDisplayName());
+                    "同一パネルへの遷移をスキップ: " + panelType.getDisplayName());
             return;
         }
 
         // 既に遷移中の場合は処理をキューイング（本実装では簡易化のため処理をスキップ）
         if (isTransitioning.getAndSet(true)) {
             LogHandler.getInstance().log(Level.WARNING, LogType.SYSTEM,
-                    "遷移中のため遷移要求をスキップします: " + panelType.getDisplayName());
+                    "遷移中のため遷移要求をスキップ: " + panelType.getDisplayName());
             return;
         }
 
@@ -209,10 +162,10 @@ public class ScreenTransitionController {
                                 String.format("画面を切り替えました: %s (%s)", panelType.getDisplayName(), panelTypeId));
                     } else {
                         LogHandler.getInstance().log(Level.WARNING, LogType.SYSTEM,
-                                "パネルの取得に失敗しました: " + panelType.getDisplayName());
+                                "パネルの取得に失敗: " + panelType.getDisplayName());
                     }
                 } catch (Exception e) {
-                    LogHandler.getInstance().logError(LogType.SYSTEM, "画面切り替えに失敗しました: " + panelType.getDisplayName(),
+                    LogHandler.getInstance().logError(LogType.SYSTEM, "画面切り替えに失敗: " + panelType.getDisplayName(),
                             e);
                 } finally {
                     // 遷移中フラグを解除
@@ -222,7 +175,7 @@ public class ScreenTransitionController {
         } catch (Exception e) {
             // EDT外での例外発生時の処理
             isTransitioning.set(false);
-            LogHandler.getInstance().logError(LogType.SYSTEM, "画面切り替え要求の処理に失敗しました", e);
+            LogHandler.getInstance().logError(LogType.SYSTEM, "画面切り替え要求の処理に失敗", e);
         }
     }
 
@@ -248,10 +201,10 @@ public class ScreenTransitionController {
             return;
         }
 
-        // 既に遷移中の場合は処理をキューイング（本実装では簡易化のため処理をスキップ）
+        // 既に遷移中の場合は処理をキューイング
         if (isTransitioning.getAndSet(true)) {
             LogHandler.getInstance().log(Level.WARNING, LogType.SYSTEM,
-                    "遷移中のため遷移要求をスキップします: " + panelType.getDisplayName());
+                    "遷移中のため遷移要求をスキップ: " + panelType.getDisplayName());
             return;
         }
 
@@ -281,10 +234,10 @@ public class ScreenTransitionController {
                                 String.format("画面を切り替えました: %s (%s)", panelType.getDisplayName(), panelTypeId));
                     } else {
                         LogHandler.getInstance().log(Level.WARNING, LogType.SYSTEM,
-                                "パネルの取得に失敗しました: " + panelType.getDisplayName());
+                                "パネルの取得に失敗: " + panelType.getDisplayName());
                     }
                 } catch (Exception e) {
-                    LogHandler.getInstance().logError(LogType.SYSTEM, "画面切り替えに失敗しました: " + panelType.getDisplayName(),
+                    LogHandler.getInstance().logError(LogType.SYSTEM, "画面切り替えに失敗: " + panelType.getDisplayName(),
                             e);
                 } finally {
                     // 遷移中フラグを解除
@@ -294,12 +247,12 @@ public class ScreenTransitionController {
         } catch (Exception e) {
             // EDT外での例外発生時の処理
             isTransitioning.set(false);
-            LogHandler.getInstance().logError(LogType.SYSTEM, "画面切り替え要求の処理に失敗しました", e);
+            LogHandler.getInstance().logError(LogType.SYSTEM, "画面切り替え要求の処理に失敗", e);
         }
     }
 
     /**
-     * 文字列IDを使用してパネルを表示（後方互換性のため）
+     * 文字列IDを使用してパネルを表示
      * 
      * @param panelTypeId パネルタイプID文字列
      * @param callback    コールバック
@@ -318,7 +271,7 @@ public class ScreenTransitionController {
     }
 
     /**
-     * 指定されたパネルタイプに対応するパネルをキャッシュから取得します。
+     * 指定されたパネルタイプに対応するパネルをキャッシュから取得
      *
      * @param panelType パネルの識別子（例: "LIST", "ADD" など）
      * @return 指定されたパネルに対応する JPanel、存在しない場合は null
@@ -337,20 +290,20 @@ public class ScreenTransitionController {
         if (panel instanceof AddPanel addPanel) {
             addPanel.setRegisterButtonEnabled(enabled);
         } else if (panel instanceof DetailPanel detailPanel) {
-            detailPanel.setUpdateButtonEnabled(enabled); // ← これを追加
+            detailPanel.setUpdateButtonEnabled(enabled);
         }
     }
 
     /**
      * 現在のビューを更新
-     * 表示中のパネルを再描画します
+     * 表示中のパネルを再描画
      */
     public void refreshView() {
         try {
             mainFrame.refreshView();
-            LogHandler.getInstance().log(Level.INFO, LogType.SYSTEM, "ビューを更新しました");
+            LogHandler.getInstance().log(Level.INFO, LogType.SYSTEM, "ビューを更新");
         } catch (Exception e) {
-            LogHandler.getInstance().logError(LogType.SYSTEM, "ビューの更新に失敗しました", e);
+            LogHandler.getInstance().logError(LogType.SYSTEM, "ビューの更新に失敗", e);
         }
     }
 
@@ -385,7 +338,7 @@ public class ScreenTransitionController {
                 // パネルの初期化
                 detailPanel.initialize();
                 panel = detailPanel;
-                LogHandler.getInstance().log(Level.INFO, LogType.SYSTEM, "DetailPanelを作成しました");
+                LogHandler.getInstance().log(Level.INFO, LogType.SYSTEM, "ディテールパネルを作成");
                 break;
 
             case "ADD":
@@ -480,7 +433,7 @@ public class ScreenTransitionController {
             panelCache.put(currentPanelType, currentPanel);
         }
 
-        LogHandler.getInstance().log(Level.INFO, LogType.SYSTEM, "パネルキャッシュをクリアしました");
+        LogHandler.getInstance().log(Level.INFO, LogType.SYSTEM, "パネルキャッシュをクリア");
     }
 
     // 追加するメソッド

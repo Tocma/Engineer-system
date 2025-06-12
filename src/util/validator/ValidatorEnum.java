@@ -9,96 +9,58 @@ import util.Constants.MessageEnum;
 /**
  * バリデーション戦略を定義する列挙型クラス（新バリデーションシステム統合版）
  * エンジニア管理システムで使用される各種入力フィールドの検証ルールを定義し、
- * 新しい{@link FieldValidator}インターフェースの実装を通じて様々な検証方法を提供します。
+ * 新しい{@link FieldValidator}インターフェースの実装を通じて様々な検証方法
  * 
- * <p>
+ * 
  * この列挙型は、Strategyパターンに基づいて実装されており、
  * 検証ロジックをカプセル化し、実行時に適切な検証戦略を選択できるようにします。
- * バージョン4.15.11では、新しいValidationServiceとの統合を実現しています。
- * </p>
+ * ValidationServiceとの統合を実現しています。
  * 
- * <p>
- * 各列挙値は特定のフィールドタイプに対応し、適切な{@link FieldValidator}実装を提供します。
+ * 各列挙値は特定のフィールドタイプに対応し、適切な{@link FieldValidator}実装
  * エラーメッセージは{@link MessageEnum}から取得し、一貫性のある表示を実現します。
- * </p>
- * 
- * <p>
- * 使用例：
- * </p>
- * 
- * <pre>
- * // 氏名のバリデーション
- * FieldValidator nameValidator = ValidatorEnum.NAME.getValidator();
- * boolean isValid = nameValidator.validate("山田太郎");
- * if (!isValid) {
- *         String errorMessage = ValidatorEnum.NAME.getErrorMessage();
- *         // エラー処理...
- * }
- * </pre>
  * 
  * @author Nakano
- * @see FieldValidator
- * @see ValidationService
- * @see ValidatorFactory
- * @see MessageEnum
  */
 public enum ValidatorEnum {
 
         /**
          * 氏名フィールドの検証
-         * <p>
          * 制約：
-         * </p>
-         * <ul>
-         * <li>必須項目</li>
-         * <li>20文字以内</li>
-         * <li>日本語（漢字、ひらがな、カタカナ）のみ許可</li>
-         * </ul>
+         * 必須項目
+         * 20文字以内
+         * 日本語（漢字、ひらがな、カタカナ）のみ許可
          */
         NAME("name", () -> new NameValidator("name",
                         MessageEnum.VALIDATION_ERROR_NAME.getMessage())),
 
         /**
          * フリガナフィールドの検証
-         * <p>
          * 制約：
-         * </p>
-         * <ul>
-         * <li>必須項目</li>
-         * <li>20文字以内</li>
-         * <li>カタカナのみ許可</li>
-         * </ul>
+         * 必須項目
+         * 20文字以内
+         * カタカナのみ許可
          */
         NAME_KANA("nameKana", () -> new NameKanaValidator("nameKana",
                         MessageEnum.VALIDATION_ERROR_NAME_KANA.getMessage())),
 
         /**
          * 社員IDフィールドの検証
-         * <p>
          * 制約：
-         * </p>
-         * <ul>
-         * <li>必須項目</li>
-         * <li>5桁以内の数字</li>
-         * <li>既存IDとの重複不可</li>
-         * </ul>
-         * <p>
+         * 必須項目
+         * 5桁以内の数字
+         * 既存IDとの重複不可
          * 注：このバリデーターは初期状態では空のIDセットで初期化され、使用前に
          * {@link #initializeIdValidator(Set)}メソッドで既存IDセットを設定する必要があります。
-         * </p>
+         * 
          */
         EMPLOYEE_ID("id", () -> new IDValidator("id",
                         MessageEnum.VALIDATION_ERROR_EMPLOYEE_ID.getMessage(), null)),
 
         /**
          * 生年月日フィールドの検証
-         * <p>
          * 制約：
-         * </p>
-         * <ul>
-         * <li>必須項目</li>
-         * <li>1950年から現在までの有効な日付</li>
-         * </ul>
+         * 必須項目
+         * 1950年から現在までの有効な日付
          */
         BIRTH_DATE("birthDate", () -> new BirthDateValidator("birthDate",
                         MessageEnum.VALIDATION_ERROR_BIRTH_DATE.getMessage(),
@@ -106,13 +68,9 @@ public enum ValidatorEnum {
 
         /**
          * 入社年月フィールドの検証
-         * <p>
          * 制約：
-         * </p>
-         * <ul>
-         * <li>必須項目</li>
-         * <li>1950年から現在までの有効な年月</li>
-         * </ul>
+         * 必須項目
+         * 1950年から現在までの有効な年月
          */
         JOIN_DATE("joinDate", () -> new JoinDateValidator("joinDate",
                         MessageEnum.VALIDATION_ERROR_JOIN_DATE.getMessage(),
@@ -120,113 +78,78 @@ public enum ValidatorEnum {
 
         /**
          * エンジニア歴フィールドの検証
-         * <p>
          * 制約：
-         * </p>
-         * <ul>
-         * <li>必須項目</li>
-         * <li>0年目から50年目までの整数値</li>
-         * </ul>
+         * 必須項目
+         * 0年目から50年目までの整数値
          */
         CAREER("career", () -> new CareerValidator("career",
                         MessageEnum.VALIDATION_ERROR_CAREER.getMessage(), 0, 50)),
 
         /**
          * プログラミング言語選択の検証
-         * <p>
          * 制約：
-         * </p>
-         * <ul>
-         * <li>必須項目</li>
-         * <li>少なくとも1つ以上の言語を選択</li>
-         * </ul>
+         * 必須項目
+         * 少なくとも1つ以上の言語を選択
          */
         PROGRAMMING_LANGUAGES("programmingLanguages", () -> new ProgrammingLanguagesValidator(
                         "programmingLanguages", MessageEnum.VALIDATION_ERROR_PROGRAMMING_LANGUAGES.getMessage())),
 
         /**
          * 経歴フィールドの検証
-         * <p>
          * 制約：
-         * </p>
-         * <ul>
-         * <li>任意項目</li>
-         * <li>200文字以内</li>
-         * </ul>
+         * 任意項目
+         * 200文字以内
          */
         CAREER_HISTORY("careerHistory", () -> new TextValidator("careerHistory",
                         MessageEnum.VALIDATION_ERROR_CAREER_HISTORY.getMessage(), 200)),
 
         /**
          * 研修受講歴フィールドの検証
-         * <p>
          * 制約：
-         * </p>
-         * <ul>
-         * <li>任意項目</li>
-         * <li>200文字以内</li>
-         * </ul>
+         * 任意項目
+         * 200文字以内
          */
         TRAINING_HISTORY("trainingHistory", () -> new TextValidator("trainingHistory",
                         MessageEnum.VALIDATION_ERROR_TRAINING_HISTORY.getMessage(), 200)),
 
         /**
          * 技術力フィールドの検証
-         * <p>
          * 制約：
-         * </p>
-         * <ul>
-         * <li>1.0から5.0までの0.5刻みの値</li>
-         * </ul>
+         * 1.0から5.0までの0.5刻みの値
+         * 
          */
         TECHNICAL_SKILL("technicalSkill", () -> new SkillValidator("technicalSkill",
                         "技術力は1.0〜5.0の0.5刻みで選択してください")),
 
         /**
          * 受講態度フィールドの検証
-         * <p>
          * 制約：
-         * </p>
-         * <ul>
-         * <li>1.0から5.0までの0.5刻みの値</li>
-         * </ul>
+         * 1.0から5.0までの0.5刻みの値
          */
         LEARNING_ATTITUDE("learningAttitude", () -> new SkillValidator("learningAttitude",
                         "受講態度は1.0〜5.0の0.5刻みで選択してください")),
 
         /**
          * コミュニケーション能力フィールドの検証
-         * <p>
          * 制約：
-         * </p>
-         * <ul>
-         * <li>1.0から5.0までの0.5刻みの値</li>
-         * </ul>
+         * 1.0から5.0までの0.5刻みの値
          */
         COMMUNICATION_SKILL("communicationSkill", () -> new SkillValidator("communicationSkill",
                         "コミュニケーション能力は1.0〜5.0の0.5刻みで選択してください")),
 
         /**
          * リーダーシップフィールドの検証
-         * <p>
          * 制約：
-         * </p>
-         * <ul>
-         * <li>1.0から5.0までの0.5刻みの値</li>
-         * </ul>
+         * 1.0から5.0までの0.5刻みの値
          */
         LEADERSHIP("leadership", () -> new SkillValidator("leadership",
                         "リーダーシップは1.0〜5.0の0.5刻みで選択してください")),
 
         /**
          * 備考フィールドの検証
-         * <p>
          * 制約：
-         * </p>
-         * <ul>
-         * <li>任意項目</li>
-         * <li>500文字以内</li>
-         * </ul>
+         * 任意項目
+         * 500文字以内
          */
         NOTE("note", () -> new TextValidator("note",
                         MessageEnum.VALIDATION_ERROR_NOTE.getMessage(), 500));
@@ -263,7 +186,7 @@ public enum ValidatorEnum {
         }
 
         /**
-         * この列挙値に関連付けられたバリデーターを取得します。
+         * この列挙値に関連付けられたバリデーターを取得
          * 
          * @return バリデーターインスタンス
          * @throws IllegalStateException IDバリデーターで既存IDセットが未設定の場合
@@ -288,7 +211,7 @@ public enum ValidatorEnum {
         }
 
         /**
-         * この列挙値に関連付けられたエラーメッセージを取得します。
+         * この列挙値に関連付けられたエラーメッセージを取得
          * 
          * @return エラーメッセージ
          */
@@ -297,7 +220,7 @@ public enum ValidatorEnum {
         }
 
         /**
-         * フィールド名を取得します。
+         * フィールド名を取得
          * 
          * @return フィールド名
          */
@@ -306,8 +229,8 @@ public enum ValidatorEnum {
         }
 
         /**
-         * バリデーターキャッシュをクリアします。
-         * 設定変更後に新しいバリデーターインスタンスを生成したい場合に使用します。
+         * バリデーターキャッシュをクリア
+         * 設定変更後に新しいバリデーターインスタンスを生成したい場合に使用
          */
         public void clearCache() {
                 this.cachedValidator = null;
@@ -315,7 +238,7 @@ public enum ValidatorEnum {
 
         /**
          * IDバリデーターを初期化するためのヘルパーメソッド。
-         * 既存IDのセットを受け取り、適切な設定でIDValidatorを生成して設定します。
+         * 既存IDのセットを受け取り、適切な設定でIDValidatorを生成して設定
          * 
          * @param existingIdSet 既に使用されているIDのセット
          */

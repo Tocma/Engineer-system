@@ -4,7 +4,7 @@ import java.time.LocalDate;
 
 /**
  * 登録日検証用バリデータ
- * 登録日の形式の検証を実行します（CSV読み込み時に使用）
+ * 登録日の形式の検証を実行（CSV読み込み時に使用）
  * 
  * @author Nakano
  */

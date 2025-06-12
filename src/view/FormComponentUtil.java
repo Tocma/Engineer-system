@@ -14,9 +14,9 @@ import java.util.List;
  */
 public final class FormComponentUtil {
 
-    /** プライベートコンストラクタ（ユーティリティクラスのため） */
+    /** プライベートコンストラクタ */
     private FormComponentUtil() {
-        throw new AssertionError("Utility class should not be instantiated");
+        throw new AssertionError("ユーティリティクラスはインスタンス化できません");
     }
 
     /**
@@ -33,7 +33,7 @@ public final class FormComponentUtil {
         }
 
         MultiSelectComboBox comboBox = new MultiSelectComboBox(items);
-        comboBox.setPreferredSize(new Dimension(100, 25));
+        comboBox.setPreferredSize(new Dimension(80, 25));
         return comboBox;
     }
 

@@ -54,13 +54,13 @@ public class MainFrame extends AbstractFrame {
         frame.add(contentPanel);
 
         // スレッド管理用の初期化
-        this.executor = Executors.newFixedThreadPool(5);
+        this.executor = Executors.newFixedThreadPool(SystemConstants.WORKER_THREAD_POOL_SIZE);
         this.managedThreads = new ArrayList<>();
 
         // リストパネルの初期化
         this.listPanel = new ListPanel();
 
-        // ウィンドウ終了イベントのハンドリング（簡素化）
+        // ウィンドウ終了イベントのハンドリング
         setupWindowCloseHandler();
     }
 
@@ -71,11 +71,11 @@ public class MainFrame extends AbstractFrame {
     @Override
     protected void customizeFrame() {
         frame.setTitle("エンジニア人材管理");
-        LogHandler.getInstance().log(Level.INFO, LogType.SYSTEM, "メインフレームを初期化しました");
+        LogHandler.getInstance().log(Level.INFO, LogType.SYSTEM, "メインフレーム初期化完了");
     }
 
     /**
-     * ウィンドウ終了時の処理を設定（簡素化版）
+     * ウィンドウ終了時の処理を設定
      * MainControllerに終了処理を完全に委譲
      */
     private void setupWindowCloseHandler() {
@@ -86,11 +86,11 @@ public class MainFrame extends AbstractFrame {
                 // 単純にMainControllerに終了処理を委譲するだけ
                 if (mainController != null) {
                     LogHandler.getInstance().log(Level.INFO, LogType.SYSTEM,
-                            "ウィンドウ終了イベントをMainControllerに委譲します");
+                            "ウィンドウ終了イベントをメインコントローラーに委譲します");
                     mainController.initiateShutdown();
                 } else {
                     LogHandler.getInstance().log(Level.SEVERE, LogType.SYSTEM,
-                            "MainControllerが設定されていないため、強制終了します");
+                            "メインコントローラーが設定されていないため、強制終了します");
                     System.exit(1);
                 }
             }
@@ -102,11 +102,11 @@ public class MainFrame extends AbstractFrame {
      * ExecutorServiceとスレッドの安全な終了のみを担当
      * 
      * 重要: このメソッドはMainControllerの制御下で実行され、
-     * 終了処理の一部分のみを担当します
+     * 終了処理の一部分のみを担当
      */
     public void releaseUIResources() {
         LogHandler.getInstance().log(Level.INFO, LogType.SYSTEM,
-                "UI関連リソースの解放を開始します");
+                "UI関連リソースの解放を開始");
 
         try {
             // ExecutorServiceを安全に終了
@@ -116,11 +116,11 @@ public class MainFrame extends AbstractFrame {
             shutdownManagedThreads();
 
             LogHandler.getInstance().log(Level.INFO, LogType.SYSTEM,
-                    "UI関連リソースの解放が完了しました");
+                    "UI関連リソースの解放が完了");
 
         } catch (Exception e) {
             LogHandler.getInstance().logError(LogType.SYSTEM,
-                    "UI関連リソース解放中にエラーが発生しました", e);
+                    "UI関連リソース解放中にエラーが発生", e);
             // エラーがあってもMainControllerに制御を返す
         }
     }
@@ -128,7 +128,7 @@ public class MainFrame extends AbstractFrame {
     public void setMainController(MainController mainController) {
         this.mainController = mainController;
         LogHandler.getInstance().log(Level.INFO, LogType.SYSTEM,
-                "MainFrameにMainControllerへの参照を設定しました");
+                "メインフレームにメインコントローラーへの参照を設定");
     }
 
     /**
@@ -148,11 +148,11 @@ public class MainFrame extends AbstractFrame {
                 executor.shutdownNow();
             } else {
                 LogHandler.getInstance().log(Level.INFO, LogType.SYSTEM,
-                        "ExecutorServiceが正常に終了しました");
+                        "ExecutorServiceが正常に終了");
             }
         } catch (InterruptedException e) {
             LogHandler.getInstance().logError(LogType.SYSTEM,
-                    "ExecutorServiceの終了中に割り込みが発生しました", e);
+                    "ExecutorServiceの終了中に割り込みが発生", e);
             executor.shutdownNow();
             Thread.currentThread().interrupt();
         }
@@ -191,11 +191,11 @@ public class MainFrame extends AbstractFrame {
             }
 
             LogHandler.getInstance().log(Level.INFO, LogType.SYSTEM,
-                    "管理対象スレッドの終了処理が完了しました");
+                    "管理対象スレッドの終了処理が完了");
 
         } catch (InterruptedException e) {
             LogHandler.getInstance().logError(LogType.SYSTEM,
-                    "スレッド終了待機中に割り込みが発生しました", e);
+                    "スレッド終了待機中に割り込みが発生", e);
             Thread.currentThread().interrupt();
         }
     }
@@ -228,7 +228,7 @@ public class MainFrame extends AbstractFrame {
     public void refreshView() {
         contentPanel.revalidate();
         contentPanel.repaint();
-        LogHandler.getInstance().log(Level.INFO, LogType.SYSTEM, "ビューを更新しました");
+        LogHandler.getInstance().log(Level.INFO, LogType.SYSTEM, "ビューを更新");
     }
 
     /**
@@ -245,7 +245,7 @@ public class MainFrame extends AbstractFrame {
         if (thread != null) {
             managedThreads.add(thread);
             LogHandler.getInstance().log(Level.INFO, LogType.SYSTEM,
-                    "スレッド '" + thread.getName() + "' を管理対象に登録しました");
+                    "スレッド '" + thread.getName() + "' を管理対象に登録");
         }
     }
 
@@ -256,7 +256,7 @@ public class MainFrame extends AbstractFrame {
         boolean removed = managedThreads.remove(thread);
         if (removed) {
             LogHandler.getInstance().log(Level.INFO, LogType.SYSTEM,
-                    "スレッド '" + thread.getName() + "' を管理対象から削除しました");
+                    "スレッド '" + thread.getName() + "' を管理対象から削除");
         }
         return removed;
     }

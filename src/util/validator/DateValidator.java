@@ -6,7 +6,7 @@ import java.time.format.DateTimeParseException;
 
 /**
  * 日付検証用の基底バリデータ
- * 生年月日と入社年月の検証で共通利用される日付検証ロジックを提供します
+ * 生年月日と入社年月の検証で共通利用される日付検証を実行
  * 
  * @author Nakano
  */
@@ -38,7 +38,7 @@ public abstract class DateValidator extends AbstractValidator {
 
     /**
      * 日付の前処理を実行
-     * 日付文字列を標準フォーマット（YYYY-MM-DD）に正規化します
+     * 日付文字列を標準フォーマット（YYYY-MM-DD）に正規化
      * 
      * @param value 入力値
      * @return 前処理済みの日付文字列

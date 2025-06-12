@@ -4,7 +4,7 @@ import java.time.LocalDate;
 
 /**
  * 入社年月検証用バリデータ
- * 入社年月の形式と範囲（1950年～現在）の検証を実行します
+ * 入社年月の形式と範囲（1950年～現在）の検証を実行
  * 
  * @author Nakano
  */
@@ -25,7 +25,7 @@ public class JoinDateValidator extends DateValidator {
 
     /**
      * 入社年月の前処理を実行
-     * 年月のみの場合は日を01に補完します
+     * 年月のみの場合は日を01に補完
      * 
      * @param value 入力値
      * @return 前処理済みの日付文字列

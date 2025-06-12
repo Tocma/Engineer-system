@@ -17,24 +17,16 @@ import javax.swing.SwingUtilities;
  * エンジニア情報に関する操作を制御するコントローラークラス
  * データの取得、追加、更新、検証などを担当
  *
- * <p>
+ * 
  * このクラスは、エンジニア情報の操作に関するビジネスロジックを実装し、
- * ModelとViewの間の橋渡し役を果たします。主な責務は以下の通りです：
- * <ul>
- * <li>エンジニア情報の取得と管理</li>
- * <li>データの検証</li>
- * <li>データアクセスオブジェクトとの連携</li>
- * </ul>
- * </p>
- *
+ * ModelとViewの間の橋渡し役
+ * 
  * @author Nakano
  */
 public class EngineerController {
 
     /** エンジニアデータアクセスオブジェクト */
     private final EngineerDAO engineerDAO;
-
-    // 最大レコード数の定数
 
     /**
      * コンストラクタ
@@ -43,7 +35,7 @@ public class EngineerController {
     public EngineerController() {
         // CSVファイルを使用するDAOを初期化
         this.engineerDAO = new EngineerCSVDAO();
-        LogHandler.getInstance().log(Level.INFO, LogType.SYSTEM, "エンジニアコントローラーを初期化しました");
+        LogHandler.getInstance().log(Level.INFO, LogType.SYSTEM, "エンジニアコントローラーを初期化完了");
     }
 
     /**
@@ -53,12 +45,12 @@ public class EngineerController {
      */
     public List<EngineerDTO> loadEngineers() {
         try {
-            LogHandler.getInstance().log(Level.INFO, LogType.SYSTEM, "エンジニアデータの読み込みを開始します");
+            LogHandler.getInstance().log(Level.INFO, LogType.SYSTEM, "エンジニアデータの読み込みを開始");
             List<EngineerDTO> engineers = engineerDAO.findAll();
             LogHandler.getInstance().log(Level.INFO, LogType.SYSTEM, "Loaded " + engineers.size() + " engineers.");
             return engineers;
         } catch (Exception e) {
-            LogHandler.getInstance().logError(LogType.SYSTEM, "エンジニアデータの読み込みに失敗しました", e);
+            LogHandler.getInstance().logError(LogType.SYSTEM, "エンジニアデータの読み込みに失敗", e);
             return new ArrayList<>();
         }
     }
@@ -103,7 +95,7 @@ public class EngineerController {
             // 上限エラーはそのまま再スロー
             throw e;
         } catch (Exception e) {
-            LogHandler.getInstance().logError(LogType.SYSTEM, "エンジニア情報の追加に失敗しました", e);
+            LogHandler.getInstance().logError(LogType.SYSTEM, "エンジニア情報の追加に失敗", e);
             return false;
         }
     }
@@ -133,39 +125,17 @@ public class EngineerController {
             }
             return false;
         } catch (Exception e) {
-            LogHandler.getInstance().logError(LogType.SYSTEM, "エンジニア情報の更新に失敗しました", e);
+            LogHandler.getInstance().logError(LogType.SYSTEM, "エンジニア情報の更新に失敗", e);
             return false;
         }
     }
 
     /**
-     * エンジニア情報を一括削除
+     * エンジニア情報を削除
      *
-     * @param targetList 削除対象のエンジニアDTOリスト
-     * @param onFinish   完了後に実行する処理（UI更新など）
+     * @param targetList 削除対象のエンジニア情報リスト
+     * @param onFinish   削除完了後に実行する処理
      */
-    // public void deleteEngineers(List<EngineerDTO> targetList, Runnable onFinish)
-    // {
-    // try {
-
-    // Thread.sleep(3000);
-
-    // List<String> ids = targetList.stream()
-    // .map(EngineerDTO::getId)
-    // .collect(Collectors.toList());
-
-    // engineerDAO.deleteAll(ids); // EngineerCSVDAOに実装したdeleteAll()を呼ぶ
-
-    // LogHandler.getInstance().log(Level.INFO, LogType.SYSTEM,
-    // String.format("%d件のエンジニア情報を削除しました。", ids.size()));
-
-    // } catch (Exception e) {
-    // DialogManager.getInstance().showSystemErrorDialog("削除中にエラーが発生しました。", e);
-    // } finally {
-    // SwingUtilities.invokeLater(onFinish); // UIスレッドで後処理
-    // }
-    // }
-
     public void deleteEngineers(List<EngineerDTO> targetList, Runnable onFinish) {
         try {
             Thread.sleep(3000);
@@ -176,9 +146,9 @@ public class EngineerController {
 
             engineerDAO.deleteAll(ids); // 削除実行
             LogHandler.getInstance().log(Level.INFO, LogType.SYSTEM,
-                    String.format("%d件のエンジニア情報を削除しました。", ids.size()));
+                    String.format("%d件のエンジニア情報を削除。", ids.size()));
         } catch (Exception e) {
-            DialogManager.getInstance().showSystemErrorDialog("削除中にエラーが発生しました。", e);
+            DialogManager.getInstance().showSystemErrorDialog("削除中にエラーが発生。", e);
         } finally {
             SwingUtilities.invokeLater(onFinish); // UIスレッドで後処理
         }
@@ -240,7 +210,7 @@ public class EngineerController {
         try {
             return engineerDAO.findById(id);
         } catch (Exception e) {
-            LogHandler.getInstance().logError(LogType.SYSTEM, "エンジニア情報の取得に失敗しました: ID=" + id, e);
+            LogHandler.getInstance().logError(LogType.SYSTEM, "エンジニア情報の取得に失敗: ID=" + id, e);
             return null;
         }
     }

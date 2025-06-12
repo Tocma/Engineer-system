@@ -74,8 +74,8 @@ public class LogHandler {
                 INSTANCE.initialize();
             } catch (IOException e) {
                 // 初期化に失敗した場合は標準出力にフォールバック
-                System.err.println("ログシステムの自動初期化に失敗しました: " + e.getMessage());
-                System.err.println("標準出力へのフォールバックを使用します");
+                System.err.println("ログシステムの自動初期化に失敗: " + e.getMessage());
+                System.err.println("標準出力へのフォールバックを使用");
             }
         }
         return INSTANCE;
@@ -123,12 +123,12 @@ public class LogHandler {
             isInitialized = true;
 
             // 初期化完了のログを出力
-            log(LogType.SYSTEM, "ログシステムが正常に初期化されました: " + this.logDirectory);
+            log(LogType.SYSTEM, "ログシステムを初期化完了: " + this.logDirectory);
 
         } catch (IOException e) {
-            System.err.println("ログシステムの初期化に失敗しました: " + e.getMessage());
+            System.err.println("ログシステムの初期化に失敗: " + e.getMessage());
             e.printStackTrace();
-            throw new IOException("ログシステムの初期化に失敗しました", e);
+            throw new IOException("ログシステムの初期化に失敗", e);
         }
     }
 
@@ -142,18 +142,18 @@ public class LogHandler {
      */
     private String setupLogDirectory(String logDir) throws IOException {
         Path logPath = Paths.get(logDir).toAbsolutePath();
-        System.out.println("ログディレクトリを作成します: " + logPath);
+        System.out.println("ログディレクトリを作成: " + logPath);
 
         if (!Files.exists(logPath)) {
             try {
                 Files.createDirectories(logPath);
-                System.out.println("ログディレクトリを作成しました: " + logPath);
+                System.out.println("ログディレクトリを作成: " + logPath);
             } catch (IOException e) {
-                System.err.println("ログディレクトリの作成に失敗しました: " + e.getMessage());
+                System.err.println("ログディレクトリの作成に失敗: " + e.getMessage());
                 throw e;
             }
         } else {
-            System.out.println("既存のログディレクトリを使用します: " + logPath);
+            System.out.println("既存のログディレクトリを使用: " + logPath);
         }
 
         return logPath.toString();
@@ -188,7 +188,7 @@ public class LogHandler {
 
         // ハンドラの追加
         logger.addHandler(fileHandler);
-        System.out.println("ログファイルを設定しました: " + logFilePath);
+        System.out.println("ログファイルを設定: " + logFilePath);
     }
 
     /**
@@ -347,7 +347,7 @@ public class LogHandler {
         // 初期化前は標準エラー出力にフォールバック
         if (!isInitialized) {
             System.err.println("[ERROR][" + (type != null ? type : "UNKNOWN") + "] " +
-                    (message != null ? message : "エラーが発生しました"));
+                    (message != null ? message : "エラーが発生"));
             if (throwable != null) {
                 throwable.printStackTrace();
             }
@@ -356,7 +356,7 @@ public class LogHandler {
 
         // nullチェックを強化
         if (message == null) {
-            message = "エラーが発生しました";
+            message = "エラーが発生";
         }
         if (type == null) {
             type = LogType.SYSTEM;

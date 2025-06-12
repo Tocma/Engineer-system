@@ -4,7 +4,7 @@ import util.StringUtil;
 
 /**
  * 氏名検証用バリデータ
- * 氏名の文字数と文字種（日本語のみ）の検証を実行します
+ * 氏名の文字数と文字種（日本語のみ）の検証を実行
  * 
  * @author Nakano
  */
@@ -28,7 +28,7 @@ public class NameValidator extends AbstractValidator {
 
     /**
      * 氏名の前処理を実行
-     * スペースを除去し、半角カタカナを全角に変換します
+     * スペースを除去し、半角カタカナを全角に変換
      * 
      * @param value 入力値
      * @return 前処理済みの氏名

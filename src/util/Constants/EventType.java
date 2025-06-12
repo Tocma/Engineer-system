@@ -4,7 +4,7 @@ package util.Constants;
  * システムで使用されるイベントタイプを定義する列挙型
  * 
  * <p>
- * MainControllerで処理されるイベントの識別子を統一的に管理します。
+ * MainControllerで処理されるイベントの識別子を統一的に管理
  * </p>
  * 
  * @author Nakano

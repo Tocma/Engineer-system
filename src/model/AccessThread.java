@@ -8,10 +8,8 @@ import java.util.logging.Level;
  * 非同期データアクセスの基底クラス
  * バックグラウンドでのデータアクセス処理を抽象化
  *
- * <p>
- * このクラスは、データアクセス処理を非同期的に実行するための基底クラスです。
- * スレッド制御と処理状態の管理を担当し、サブクラスで具体的な処理を実装します。
- * </p>
+ * このクラスは、データアクセス処理を非同期的に実行するための基底クラス
+ * スレッド制御と処理状態の管理を担当し、サブクラスで具体的な処理を実装
  *
  * @author Nakano
  */
@@ -40,7 +38,7 @@ public abstract class AccessThread implements Runnable {
             // 処理の実行
             processOperation();
         } catch (Exception e) {
-            LogHandler.getInstance().logError(LogType.SYSTEM, "スレッド処理中にエラーが発生しました", e);
+            LogHandler.getInstance().logError(LogType.SYSTEM, "スレッド処理中にエラーが発生", e);
         } finally {
             running = false;
         }
@@ -54,7 +52,7 @@ public abstract class AccessThread implements Runnable {
             running = true;
             thread = new Thread(this);
             thread.start();
-            LogHandler.getInstance().log(Level.INFO, LogType.SYSTEM, "アクセススレッドを開始しました");
+            LogHandler.getInstance().log(Level.INFO, LogType.SYSTEM, "アクセススレッドを開始");
         }
     }
 
@@ -65,7 +63,7 @@ public abstract class AccessThread implements Runnable {
         running = false;
         if (thread != null && thread.isAlive()) {
             thread.interrupt();
-            LogHandler.getInstance().log(Level.INFO, LogType.SYSTEM, "アクセススレッドを停止しました");
+            LogHandler.getInstance().log(Level.INFO, LogType.SYSTEM, "アクセススレッドを停止");
         }
     }
 

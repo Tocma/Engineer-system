@@ -14,7 +14,7 @@ public final class DateOptionUtil {
 
     /** プライベートコンストラクタ（ユーティリティクラスのため） */
     private DateOptionUtil() {
-        throw new AssertionError("Utility class should not be instantiated");
+        throw new AssertionError("ユーティリティクラスはインスタンス化できません");
     }
 
     /**

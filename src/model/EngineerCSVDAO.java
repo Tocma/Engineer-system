@@ -7,7 +7,6 @@ import util.validator.IDValidator;
 import util.ResourceManager;
 import util.Constants.CSVConstants;
 import util.Constants.SystemConstants;
-
 import java.io.*;
 import java.nio.charset.StandardCharsets;
 import java.time.LocalDate;
@@ -19,13 +18,7 @@ import java.util.stream.Collectors;
 
 /**
  * CSVファイルを使用したエンジニア情報のデータアクセスを実装するクラス
- * EngineerDAOインターフェースを実装し、CSVファイルを使用したデータ永続化を提供します
- * 
- * バージョン4.4.2での主な改善点：
- * - ResourceManagerとの統合によるファイルパス管理の一元化
- * - ファイル作成処理のResourceManagerへの委譲
- * - エラーハンドリングの統一とログ出力の改善
- * - リソースリーク防止機能の強化
+ * EngineerDAOインターフェースを実装し、CSVファイルを使用したデータ永続化を提供
  *
  * @author Nakano
  */
@@ -52,8 +45,6 @@ public class EngineerCSVDAO implements EngineerDAO {
      * デフォルトコンストラクタ
      * ResourceManagerから標準のCSVファイルパスを取得して初期化
      * 
-     * この設計により、ファイルパスの管理がResourceManagerに一元化され、
-     * 将来的な設定変更やディレクトリ構造の変更に柔軟に対応できます。
      */
     public EngineerCSVDAO() {
         // ResourceManagerのシングルトンインスタンスを取得
@@ -64,7 +55,7 @@ public class EngineerCSVDAO implements EngineerDAO {
             if (!resourceManager.isInitialized()) {
                 resourceManager.initialize();
                 LogHandler.getInstance().log(Level.INFO, LogType.SYSTEM,
-                        "ResourceManagerを初期化しました");
+                        "ResourceManagerを初期化完了");
             }
 
             // ResourceManagerからエンジニアCSVファイルのパスを取得
@@ -74,8 +65,8 @@ public class EngineerCSVDAO implements EngineerDAO {
         } catch (IOException e) {
             // ResourceManagerの初期化に失敗した場合のフォールバック処理
             LogHandler.getInstance().logError(LogType.SYSTEM,
-                    "ResourceManagerの初期化に失敗しました。フォールバックパスを使用します", e);
-            throw new RuntimeException("ResourceManagerの初期化に失敗しました", e);
+                    "ResourceManagerの初期化に失敗しました。フォールバックパスを使用", e);
+            throw new RuntimeException("ResourceManagerの初期化に失敗", e);
         }
 
         this.dialogManager = DialogManager.getInstance();
@@ -88,10 +79,6 @@ public class EngineerCSVDAO implements EngineerDAO {
     /**
      * 指定されたCSVファイルパスを使用するコンストラクタ
      * テスト用途や特別な要件がある場合に使用
-     * 
-     * 注意：このコンストラクタを使用する場合、ResourceManagerとの
-     * 統合メリットを一部失うことになります。通常はデフォルト
-     * コンストラクタの使用を推奨します。
      * 
      * @param csvFilePath CSVファイルのパス
      */
@@ -114,10 +101,6 @@ public class EngineerCSVDAO implements EngineerDAO {
      * CSVファイルの存在確認と作成処理
      * ResourceManagerの機能を活用してファイル管理を一元化
      * 
-     * この実装により、以下のメリットが得られます：
-     * - ファイル作成ロジックの重複排除
-     * - 統一されたエラーハンドリング
-     * - ResourceManagerによるリソース追跡
      */
     private void ensureCsvFileExists() {
         try {
@@ -126,7 +109,7 @@ public class EngineerCSVDAO implements EngineerDAO {
             // ファイルが存在しない場合の処理
             if (!csvFile.exists()) {
                 LogHandler.getInstance().log(Level.INFO, LogType.SYSTEM,
-                        "CSVファイルが存在しないため、新規作成します: " + csvFilePath);
+                        "CSVファイルが存在しないため、新規作成: " + csvFilePath);
 
                 // 親ディレクトリの確認と作成をResourceManagerに委譲
                 File parentDir = csvFile.getParentFile();
@@ -140,24 +123,21 @@ public class EngineerCSVDAO implements EngineerDAO {
                 createInitialCsvFile(csvFile);
 
                 LogHandler.getInstance().log(Level.INFO, LogType.SYSTEM,
-                        "新規CSVファイルを作成しました: " + csvFilePath);
+                        "新規CSVファイルを作成: " + csvFilePath);
             } else {
             }
 
         } catch (IOException e) {
             // エラーハンドリングを統一し、適切なログ出力を行います
             LogHandler.getInstance().logError(LogType.SYSTEM,
-                    "CSVファイルの確認・作成処理中にエラーが発生しました: " + csvFilePath, e);
-            throw new RuntimeException("CSVファイルの初期化に失敗しました", e);
+                    "CSVファイルの確認・作成処理中にエラーが発生: " + csvFilePath, e);
+            throw new RuntimeException("CSVファイルの初期化に失敗", e);
         }
     }
 
     /**
      * 初期CSVファイルの作成処理
      * ヘッダー行を含む新しいCSVファイルを作成
-     * 
-     * この処理では、リソースリークを防ぐためのtry-with-resources文を使用し、
-     * 作成されたファイルストリームをResourceManagerに登録して適切な管理を行います。
      * 
      * @param csvFile 作成するCSVファイル
      * @throws IOException ファイル作成に失敗した場合
@@ -182,7 +162,7 @@ public class EngineerCSVDAO implements EngineerDAO {
 
         } catch (IOException e) {
             LogHandler.getInstance().logError(LogType.SYSTEM,
-                    "初期CSVファイルの作成に失敗しました: " + csvFile.getPath(), e);
+                    "初期CSVファイルの作成に失敗: " + csvFile.getPath(), e);
             throw e;
         }
     }
@@ -196,7 +176,7 @@ public class EngineerCSVDAO implements EngineerDAO {
             // 致命的エラーがあれば空リストを返す
             if (result.isFatalError()) {
                 LogHandler.getInstance().log(Level.WARNING, LogType.SYSTEM,
-                        "エンジニアデータの読み込みに失敗しました: " + result.getErrorMessage());
+                        "エンジニアデータの読み込みに失敗: " + result.getErrorMessage());
                 return new ArrayList<>();
             }
 
@@ -217,7 +197,7 @@ public class EngineerCSVDAO implements EngineerDAO {
             return successData;
 
         } catch (Exception e) {
-            LogHandler.getInstance().logError(LogType.SYSTEM, "エンジニアリストの取得に失敗しました", e);
+            LogHandler.getInstance().logError(LogType.SYSTEM, "エンジニアリストの取得に失敗", e);
             return new ArrayList<>();
         }
     }
@@ -242,7 +222,7 @@ public class EngineerCSVDAO implements EngineerDAO {
             return null;
 
         } catch (Exception e) {
-            LogHandler.getInstance().logError(LogType.SYSTEM, "IDによるエンジニア検索に失敗しました: " + id, e);
+            LogHandler.getInstance().logError(LogType.SYSTEM, "IDによるエンジニア検索に失敗: " + id, e);
             return null;
         }
     }
@@ -265,11 +245,11 @@ public class EngineerCSVDAO implements EngineerDAO {
             writeCSV(engineers);
 
             LogHandler.getInstance().log(Level.INFO, LogType.SYSTEM,
-                    String.format("エンジニア情報を保存しました: ID=%s, 名前=%s", engineer.getId(), engineer.getName()));
+                    String.format("エンジニア情報を保存: ID=%s, 名前=%s", engineer.getId(), engineer.getName()));
 
         } catch (Exception e) {
-            LogHandler.getInstance().logError(LogType.SYSTEM, "エンジニア情報の保存に失敗しました", e);
-            throw new RuntimeException("エンジニア情報の保存に失敗しました", e);
+            LogHandler.getInstance().logError(LogType.SYSTEM, "エンジニア情報の保存に失敗", e);
+            throw new RuntimeException("エンジニア情報の保存に失敗", e);
         }
     }
 
@@ -303,11 +283,11 @@ public class EngineerCSVDAO implements EngineerDAO {
             writeCSV(engineers);
 
             LogHandler.getInstance().log(Level.INFO, LogType.SYSTEM,
-                    String.format("エンジニア情報を更新しました: ID=%s, 名前=%s", engineer.getId(), engineer.getName()));
+                    String.format("エンジニア情報を更新: ID=%s, 名前=%s", engineer.getId(), engineer.getName()));
 
         } catch (Exception e) {
-            LogHandler.getInstance().logError(LogType.SYSTEM, "エンジニア情報の更新に失敗しました", e);
-            throw new RuntimeException("エンジニア情報の更新に失敗しました", e);
+            LogHandler.getInstance().logError(LogType.SYSTEM, "エンジニア情報の更新に失敗", e);
+            throw new RuntimeException("エンジニア情報の更新に失敗", e);
         }
     }
 
@@ -334,11 +314,11 @@ public class EngineerCSVDAO implements EngineerDAO {
             original.removeIf(dto -> ids.contains(dto.getId()));
 
             LogHandler.getInstance().log(Level.INFO, LogType.SYSTEM,
-                    String.format("CSV削除後、%d件のエンジニアをメモリ上からも削除しました", ids.size()));
+                    String.format("CSV削除後、%d件のエンジニアをメモリ上からも削除", ids.size()));
 
         } catch (Exception e) {
-            LogHandler.getInstance().logError(LogType.SYSTEM, "エンジニア情報の一括削除に失敗しました", e);
-            throw new RuntimeException("エンジニア情報の一括削除に失敗しました", e);
+            LogHandler.getInstance().logError(LogType.SYSTEM, "エンジニア情報の一括削除に失敗", e);
+            throw new RuntimeException("エンジニア情報の一括削除に失敗", e);
         }
     }
 
@@ -374,16 +354,16 @@ public class EngineerCSVDAO implements EngineerDAO {
 
             if (success) {
                 LogHandler.getInstance().log(Level.INFO, LogType.SYSTEM,
-                        "エラーリストをCSVファイルに出力しました: " + filePath);
+                        "エラーリストをCSVファイルに出力: " + filePath);
             } else {
                 LogHandler.getInstance().log(Level.WARNING, LogType.SYSTEM,
-                        "エラーリストのCSV出力に失敗しました: " + filePath);
+                        "エラーリストのCSV出力に失敗: " + filePath);
             }
 
             return success;
 
         } catch (Exception e) {
-            LogHandler.getInstance().logError(LogType.SYSTEM, "エラーリストのCSV出力中にエラーが発生しました", e);
+            LogHandler.getInstance().logError(LogType.SYSTEM, "エラーリストのCSV出力中にエラーが発生", e);
             return false;
         }
     }
@@ -426,11 +406,11 @@ public class EngineerCSVDAO implements EngineerDAO {
             writer.newLine();
 
             LogHandler.getInstance().log(Level.INFO, LogType.SYSTEM,
-                    "テンプレートCSVファイルを出力しました: " + filePath);
+                    "テンプレートCSVファイルを出力: " + filePath);
             return true;
 
         } catch (IOException e) {
-            LogHandler.getInstance().logError(LogType.SYSTEM, "テンプレートCSV出力に失敗しました", e);
+            LogHandler.getInstance().logError(LogType.SYSTEM, "テンプレートCSV出力に失敗", e);
             return false;
         }
     }
@@ -447,12 +427,12 @@ public class EngineerCSVDAO implements EngineerDAO {
     public CSVAccessResult readCSV() {
         try {
             CSVAccess csvAccess;
-            
+
             // インポートファイルが設定されている場合は、それを使用
             if (importFile != null && importFile.exists()) {
                 csvAccess = new CSVAccess("read", null, importFile);
                 LogHandler.getInstance().log(Level.INFO, LogType.SYSTEM,
-                    "インポートファイルから読み込みを開始: " + importFile.getPath());
+                        "インポートファイルから読み込みを開始: " + importFile.getPath());
             } else {
                 // 通常の読み込み（システムファイル）
                 File file = new File(csvFilePath);
@@ -479,9 +459,9 @@ public class EngineerCSVDAO implements EngineerDAO {
             }
 
         } catch (Exception e) {
-            LogHandler.getInstance().logError(LogType.SYSTEM, "CSV読み込み中にエラーが発生しました", e);
+            LogHandler.getInstance().logError(LogType.SYSTEM, "CSV読み込み中にエラーが発生", e);
             return new CSVAccessResult(new ArrayList<>(), new ArrayList<>(), true,
-                    "CSV読み込み中にエラーが発生しました: " + e.getMessage());
+                    "CSV読み込み中にエラーが発生: " + e.getMessage());
         }
     }
 
@@ -519,7 +499,7 @@ public class EngineerCSVDAO implements EngineerDAO {
             }
 
         } catch (Exception e) {
-            LogHandler.getInstance().logError(LogType.SYSTEM, "CSV書き込み中にエラーが発生しました", e);
+            LogHandler.getInstance().logError(LogType.SYSTEM, "CSV書き込み中にエラーが発生", e);
             return false;
         }
     }
@@ -560,7 +540,7 @@ public class EngineerCSVDAO implements EngineerDAO {
             }
 
         } catch (Exception e) {
-            LogHandler.getInstance().logError(LogType.SYSTEM, "重複ID処理中にエラーが発生しました", e);
+            LogHandler.getInstance().logError(LogType.SYSTEM, "重複ID処理中にエラーが発生", e);
 
             // エラー時は上書きしない
             result.setOverwriteConfirmed(false);
@@ -708,7 +688,7 @@ public class EngineerCSVDAO implements EngineerDAO {
                     builder.setBirthDate(birthDate);
                 } catch (DateTimeParseException e) {
                     LogHandler.getInstance().log(Level.WARNING, LogType.SYSTEM,
-                            "生年月日の解析に失敗しました: " + line[3]);
+                            "生年月日の解析に失敗: " + line[3]);
                 }
             }
 
@@ -719,7 +699,7 @@ public class EngineerCSVDAO implements EngineerDAO {
                     builder.setJoinDate(joinDate);
                 } catch (DateTimeParseException e) {
                     LogHandler.getInstance().log(Level.WARNING, LogType.SYSTEM,
-                            "入社年月の解析に失敗しました: " + line[4]);
+                            "入社年月の解析に失敗: " + line[4]);
                 }
             }
 
@@ -730,7 +710,7 @@ public class EngineerCSVDAO implements EngineerDAO {
                     builder.setCareer(career);
                 } catch (NumberFormatException e) {
                     LogHandler.getInstance().log(Level.WARNING, LogType.SYSTEM,
-                            "エンジニア歴の解析に失敗しました: " + line[5]);
+                            "エンジニア歴の解析に失敗: " + line[5]);
                 }
             }
 
@@ -757,7 +737,7 @@ public class EngineerCSVDAO implements EngineerDAO {
                     builder.setTechnicalSkill(technicalSkill);
                 } catch (NumberFormatException e) {
                     LogHandler.getInstance().log(Level.WARNING, LogType.SYSTEM,
-                            "技術力の解析に失敗しました: " + line[9]);
+                            "技術力の解析に失敗: " + line[9]);
                     // nullを設定（未評価）
                     builder.setTechnicalSkill(null);
                 }
@@ -773,7 +753,7 @@ public class EngineerCSVDAO implements EngineerDAO {
                     builder.setLearningAttitude(learningAttitude);
                 } catch (NumberFormatException e) {
                     LogHandler.getInstance().log(Level.WARNING, LogType.SYSTEM,
-                            "受講態度の解析に失敗しました: " + line[10]);
+                            "受講態度の解析に失敗: " + line[10]);
                     // nullを設定（未評価）
                     builder.setLearningAttitude(null);
                 }
@@ -789,7 +769,7 @@ public class EngineerCSVDAO implements EngineerDAO {
                     builder.setCommunicationSkill(communicationSkill);
                 } catch (NumberFormatException e) {
                     LogHandler.getInstance().log(Level.WARNING, LogType.SYSTEM,
-                            "コミュニケーション能力の解析に失敗しました: " + line[11]);
+                            "コミュニケーション能力の解析に失敗: " + line[11]);
                     // nullを設定（未評価）
                     builder.setCommunicationSkill(null);
                 }
@@ -805,7 +785,7 @@ public class EngineerCSVDAO implements EngineerDAO {
                     builder.setLeadership(leadership);
                 } catch (NumberFormatException e) {
                     LogHandler.getInstance().log(Level.WARNING, LogType.SYSTEM,
-                            "リーダーシップの解析に失敗しました: " + line[12]);
+                            "リーダーシップの解析に失敗: " + line[12]);
                     // nullを設定（未評価）
                     builder.setLeadership(null);
                 }
@@ -826,14 +806,14 @@ public class EngineerCSVDAO implements EngineerDAO {
                     builder.setRegisteredDate(registeredDate);
                 } catch (DateTimeParseException e) {
                     LogHandler.getInstance().log(Level.WARNING, LogType.SYSTEM,
-                            "登録日時の解析に失敗しました: " + line[14]);
+                            "登録日時の解析に失敗: " + line[14]);
                 }
             }
 
             return builder.build();
 
         } catch (Exception e) {
-            LogHandler.getInstance().logError(LogType.SYSTEM, "EngineerDTOへの変換に失敗しました", e);
+            LogHandler.getInstance().logError(LogType.SYSTEM, "EngineerDTOへの変換に失敗", e);
             return null;
         }
     }

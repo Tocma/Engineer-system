@@ -6,7 +6,7 @@ import java.util.Collections;
 
 /**
  * バリデーション結果を保持するクラス
- * 検証エラーと前処理済み値を管理します
+ * 検証エラーと前処理済み値を管理
  * 
  * @author Nakano
  */
@@ -79,7 +79,7 @@ public class ValidationResult {
     }
 
     /**
-     * エラー情報を取得（読み取り専用）
+     * エラー情報を取得
      * 
      * @return エラー情報のマップ
      */
@@ -88,7 +88,7 @@ public class ValidationResult {
     }
 
     /**
-     * 前処理済み値を取得（読み取り専用）
+     * 前処理済み値を取得
      * 
      * @return 前処理済み値のマップ
      */

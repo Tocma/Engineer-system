@@ -30,14 +30,8 @@ import java.awt.event.InputEvent;
  * エンジニア一覧を表示するパネルクラス（ListenerManager統合版）
  * ページング、ソート、検索、追加、取込、削除機能
  * 
- * バージョン4.13.0での主な改善点：
- * - ListenerManagerによる統合リスナー管理の導入
- * - リスナーのライフサイクル管理の明確化
- * - デバッグ機能の強化
- * - メモリリーク防止機能の追加
- * 
- * 責任分離版では検索処理をMainControllerに委譲し、
- * UI表示とユーザーインタラクションのみに集中する設計に変更
+ * ListenerManagerによる統合リスナー管理の導入
+ * リスナーのライフサイクル管理の明確化
  *
  * @author Nakano
  */
@@ -160,21 +154,17 @@ public class ListPanel extends JPanel {
 
     /**
      * コンストラクタ
-     * パネルの初期化とUIコンポーネントの配置を行います
-     * 
-     * ListenerManager統合版では、リスナー管理システムを初期化し、
-     * すべてのイベントリスナーを統合的に管理します。これにより、
-     * メモリリークの防止とデバッグの効率化を実現しています。
+     * パネルの初期化とUIコンポーネントの配置
      */
     public ListPanel() {
         super(new BorderLayout());
 
-        // ListenerManagerの初期化（最重要：すべてのリスナー管理の基盤）
+        // ListenerManagerの初期化
         this.listenerManager = ListenerManager.getInstance();
         this.registeredListenerIds = new ArrayList<>();
 
         LogHandler.getInstance().log(Level.INFO, LogType.SYSTEM,
-                "ListPanel初期化開始：ListenerManager統合版を使用");
+                "リストパネル初期化開始");
 
         // データ初期化
         this.allData = new ArrayList<>();
@@ -195,15 +185,13 @@ public class ListPanel extends JPanel {
         initialize();
 
         LogHandler.getInstance().log(Level.INFO, LogType.SYSTEM,
-                "ListPanel初期化完了：登録リスナー数=" + registeredListenerIds.size());
+                "リストパネル初期化完了：登録リスナー数=" + registeredListenerIds.size());
     }
 
     /**
      * パネルを初期化
-     * UIコンポーネントの配置と初期設定を行います
+     * UIコンポーネントの配置と初期設定
      * 
-     * この初期化プロセスでは、従来の直接リスナー追加方式から
-     * ListenerManager経由の管理方式に変更しています。
      */
     private void initialize() {
         try {
@@ -224,28 +212,25 @@ public class ListPanel extends JPanel {
             // ソート設定とイベント登録（ListenerManager経由）
             configureSorterWithManager();
 
-            // テーブルのイベント設定（ListenerManager経由：最重要な変更点）
+            // テーブルのイベント設定（ListenerManager経由）
             setupTableEventsWithManager();
 
             // リスナー初期化完了フラグを設定
             listenersInitialized = true;
 
             LogHandler.getInstance().log(Level.INFO, LogType.SYSTEM,
-                    "エンジニア一覧画面を初期化しました（ListenerManager統合版）");
+                    "エンジニア一覧画面を初期化完了");
 
         } catch (Exception e) {
             LogHandler.getInstance().logError(LogType.SYSTEM,
-                    "ListPanel初期化中にエラーが発生しました", e);
-            throw new RuntimeException("ListPanel初期化失敗", e);
+                    "リストパネル初期化中にエラーが発生", e);
+            throw new RuntimeException("リストパネル初期化失敗", e);
         }
     }
 
     /**
      * ページネーションのイベント設定（ListenerManager統合版）
      * 
-     * 従来の直接ActionListener追加から、ListenerManager経由の管理に変更。
-     * これにより、後でページネーションのリスナーだけを無効化したり、
-     * デバッグ時に「なぜページが切り替わらないのか」を追跡できます。
      */
     private void setupPaginationEventsWithManager() {
         // 前へボタンのリスナー登録
@@ -269,8 +254,6 @@ public class ListPanel extends JPanel {
     /**
      * ソート機能のイベント設定（ListenerManager統合版）
      * 
-     * テーブルヘッダーのクリックによるソート機能を、ListenerManagerで管理。
-     * 複雑なソートロジックも、リスナー管理システムにより追跡可能になります。
      */
     private void configureSorterWithManager() {
         // ソート可能な列を設定
@@ -301,10 +284,7 @@ public class ListPanel extends JPanel {
     }
 
     /**
-     * テーブルのイベント設定（ListenerManager統合版：最重要な変更）
-     * 
-     * これは今回の修正で最も重要な部分です。従来は複雑なマウスイベント処理が
-     * 直接table.addMouseListenerで追加されていましたが、現在は以下の利点があります：
+     * テーブルのイベント設定（ListenerManager統合版）
      * 
      * 1. リスナーの目的が明確（説明文付き）
      * 2. デバッグ時にリスナーの動作を追跡可能
@@ -350,7 +330,7 @@ public class ListPanel extends JPanel {
 
                         } catch (Exception ex) {
                             LogHandler.getInstance().logError(LogType.UI,
-                                    "マウス離上処理中にエラーが発生しました", ex);
+                                    "マウス離上処理中にエラーが発生", ex);
                         }
                     }
 
@@ -376,7 +356,7 @@ public class ListPanel extends JPanel {
                                 }
                             } catch (Exception ex) {
                                 LogHandler.getInstance().logError(LogType.UI,
-                                        "ダブルクリック処理中にエラーが発生しました", ex);
+                                        "ダブルクリック処理中にエラーが発生", ex);
                             }
                         }
                     }
@@ -400,12 +380,12 @@ public class ListPanel extends JPanel {
     public int removeAllListeners() {
         if (!listenersInitialized) {
             LogHandler.getInstance().log(Level.INFO, LogType.SYSTEM,
-                    "リスナーが初期化されていないため、クリーンアップをスキップします");
+                    "リスナーが初期化されていないため、クリーンアップをスキップ");
             return 0;
         }
 
         LogHandler.getInstance().log(Level.INFO, LogType.SYSTEM,
-                "ListPanelのリスナークリーンアップを開始：対象=" + registeredListenerIds.size() + "個");
+                "リストパネルのリスナークリーンアップを開始：対象=" + registeredListenerIds.size() + "個");
 
         int removedCount = 0;
         Iterator<String> iterator = registeredListenerIds.iterator();
@@ -442,7 +422,7 @@ public class ListPanel extends JPanel {
      * リスナー管理の詳細情報を取得（デバッグ用）
      * 
      * 開発時やトラブルシューティング時に、現在登録されている
-     * リスナーの状況を詳しく確認できます。
+     * リスナーの状況を詳しく確認できる
      * 
      * @return リスナー管理情報の詳細な文字列
      */
@@ -507,7 +487,7 @@ public class ListPanel extends JPanel {
         return newTable;
     }
 
-    // ===== 検索関連メソッド群（既存機能を保持） =====
+    // ===== 検索関連メソッド群 =====
 
     /**
      * 年のコンボボックス用データを生成
@@ -569,7 +549,7 @@ public class ListPanel extends JPanel {
     private JPanel createTopPanel() {
         JPanel topPanel = new JPanel(new GridLayout(2, 1));
 
-        // ボタン群パネル（ActionListenerもListenerManager経由で管理）
+        // ボタン群パネル（ActionListenerもListenerManager経由）
         JPanel buttonPanel = new JPanel(new FlowLayout(FlowLayout.LEFT));
 
         JButton addButton = new JButton("新規追加");
@@ -669,8 +649,7 @@ public class ListPanel extends JPanel {
         return searchPanel;
     }
 
-    // ===== 以下、既存の機能メソッド群（変更なし） =====
-    // この部分は元のコードと同じ内容を保持し、長くなりすぎるため省略
+    // ===== 機能メソッド群 =====
 
     /**
      * 検索ボタンのクリック処理
@@ -678,7 +657,7 @@ public class ListPanel extends JPanel {
     private void handleSearchButton() {
         if (mainController == null) {
             LogHandler.getInstance().log(Level.WARNING, LogType.UI,
-                    "MainControllerが設定されていないため検索できません");
+                    "メインコントローラが設定されていないため検索できません");
             return;
         }
 
@@ -846,7 +825,7 @@ public class ListPanel extends JPanel {
             LogHandler.getInstance().log(Level.INFO, LogType.SYSTEM,
                     String.format("ソート完了: %d件", currentDisplayData.size()));
         } catch (Exception e) {
-            LogHandler.getInstance().logError(LogType.SYSTEM, "ソート処理中にエラーが発生しました", e);
+            LogHandler.getInstance().logError(LogType.SYSTEM, "ソート処理中にエラーが発生", e);
         }
     }
 
@@ -988,7 +967,7 @@ public class ListPanel extends JPanel {
         updateTableData(getDisplayData());
 
         LogHandler.getInstance().log(Level.INFO, LogType.SYSTEM,
-                String.format("エンジニアデータを更新しました: %d件", allData.size()));
+                String.format("エンジニアデータを更新: %d件", allData.size()));
     }
 
     /**
@@ -1005,7 +984,7 @@ public class ListPanel extends JPanel {
                 allData.set(i, engineer);
                 replaced = true;
                 LogHandler.getInstance().log(Level.INFO, LogType.SYSTEM,
-                        String.format("エンジニア情報を更新しました: ID=%s, 氏名=%s",
+                        String.format("エンジニア情報を更新: ID=%s, 氏名=%s",
                                 engineer.getId(), engineer.getName()));
                 break;
             }
@@ -1014,7 +993,7 @@ public class ListPanel extends JPanel {
         if (!replaced) {
             allData.add(engineer);
             LogHandler.getInstance().log(Level.INFO, LogType.SYSTEM,
-                    String.format("エンジニアを追加しました: ID=%s, 氏名=%s",
+                    String.format("エンジニアを追加: ID=%s, 氏名=%s",
                             engineer.getId(), engineer.getName()));
         }
 
@@ -1335,7 +1314,7 @@ public class ListPanel extends JPanel {
                 // エラー時は状態をリセット
                 setImportProcessing(false);
                 LogHandler.getInstance().logError(LogType.UI,
-                        "インポート処理の開始に失敗しました", e);
+                        "インポート処理の開始に失敗", e);
             }
         } else {
             LogHandler.getInstance().log(Level.WARNING, LogType.UI,
@@ -1354,7 +1333,7 @@ public class ListPanel extends JPanel {
     }
 
     /**
-     * 出力ボタンのイベントハンドラ（修正版）
+     * 出力ボタンのイベントハンドラ
      */
     private void exportData() {
         if (mainController != null) {
@@ -1400,11 +1379,11 @@ public class ListPanel extends JPanel {
 
     /**
      * テーブルで選択された行を削除対象として確認ダイアログを表示し、
-     * ユーザーが確認すれば削除処理を開始する（修正版）
+     * ユーザーが確認すれば削除処理を開始する
      */
     private void deleteSelectedRow() {
         // 修正：selectedEngineerIdsを使用して全ページの選択状態をチェック
-        if (!selectedEngineerIds.isEmpty()) { // ←修正ポイント
+        if (!selectedEngineerIds.isEmpty()) {
             List<EngineerDTO> selectedEngineers = getSelectedEngineers();
 
             deleting = true;
@@ -1530,9 +1509,9 @@ public class ListPanel extends JPanel {
                 updatePageLabel(latestData.size());
                 updatePaginationButtons(latestData.size());
                 updateButtonState();
-                LogHandler.getInstance().log(Level.INFO, LogType.SYSTEM, "一覧画面を再描画しました（Controller経由）");
+                LogHandler.getInstance().log(Level.INFO, LogType.SYSTEM, "一覧画面を再描画（Controller経由）");
             } catch (Exception e) {
-                LogHandler.getInstance().logError(LogType.SYSTEM, "一覧画面の再描画に失敗しました", e);
+                LogHandler.getInstance().logError(LogType.SYSTEM, "一覧画面の再描画に失敗", e);
             }
         }
     }

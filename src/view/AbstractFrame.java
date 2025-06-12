@@ -10,14 +10,6 @@ import util.Constants.UIConstants;
  * フレームの基本機能を提供する抽象基底クラス
  * 共通のフレーム初期化処理とサイズ設定機能を実装
  *
- * <p>
- * 主な機能：
- * <ul>
- * <li>基本フレームの初期化</li>
- * <li>フレームサイズの設定</li>
- * <li>共通のフレームプロパティ設定</li>
- * </ul>
- * </p>
  *
  * @author Nakano
  */
@@ -44,8 +36,8 @@ public abstract class AbstractFrame {
             initializeFrame();
             customizeFrame();
         } catch (Exception e) {
-            LogHandler.getInstance().logError(LogType.SYSTEM, "フレームの初期化に失敗しました", e);
-            throw new RuntimeException("フレームの初期化に失敗しました", e);
+            LogHandler.getInstance().logError(LogType.SYSTEM, "フレームの初期化に失敗", e);
+            throw new RuntimeException("フレームの初期化に失敗", e);
         }
     }
 
@@ -89,7 +81,7 @@ public abstract class AbstractFrame {
 
     /**
      * サブクラスで実装する必要のあるフレームカスタマイズメソッド
-     * 各画面固有の設定を行う
+     * 各画面固有の設定
      */
     protected abstract void customizeFrame();
 }

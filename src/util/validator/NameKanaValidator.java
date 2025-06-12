@@ -4,7 +4,7 @@ import util.StringUtil;
 
 /**
  * フリガナ検証用バリデータ
- * フリガナの文字数と文字種（カタカナのみ）の検証を実行します
+ * フリガナの文字数と文字種（カタカナのみ）の検証を実行
  * 
  * @author Nakano
  */
@@ -28,7 +28,7 @@ public class NameKanaValidator extends AbstractValidator {
 
     /**
      * フリガナの前処理を実行
-     * スペース除去、ひらがな→カタカナ変換、半角カタカナ→全角変換を行います
+     * スペース除去、ひらがな→カタカナ変換、半角カタカナ→全角変換
      * 
      * @param value 入力値
      * @return 前処理済みのフリガナ

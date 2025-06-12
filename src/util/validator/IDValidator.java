@@ -7,7 +7,7 @@ import java.util.regex.Pattern;
 
 /**
  * 社員ID検証用バリデータ
- * ID形式の検証、禁止ID（ID00000）のチェック、重複チェックを実行します
+ * ID形式の検証、禁止ID（ID00000）のチェック、重複チェックを実行
  * 
  * @author Nakano
  */
@@ -36,7 +36,7 @@ public class IDValidator extends AbstractValidator {
 
     /**
      * IDの前処理を実行
-     * 全角数字を半角に変換し、標準形式（ID00000）に変換します
+     * 全角数字を半角に変換し、標準形式（ID00000）に変換
      * 
      * @param value 入力値
      * @return 前処理済みのID

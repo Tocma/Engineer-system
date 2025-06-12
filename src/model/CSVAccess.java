@@ -17,34 +17,6 @@ import java.util.logging.Level;
  * CSVファイルへのアクセスを実装するクラス
  * ファイル操作とデータの読み書きを担当し、同時アクセス制御とバリデーションを提供します
  *
- * <p>
- * このクラスは、CSVファイルへの読み書き操作を実装し、同時アクセス制御を提供します。
- * AccessThreadクラスを継承し、バックグラウンドでの非同期ファイルアクセスを実現します。
- * また、CSVファイル読み込み時のバリデーションと重複IDの検出処理も担当します。
- * </p>
- *
- * <p>
- * 主な責務：
- * <ul>
- * <li>CSVファイルの読み込み処理</li>
- * <li>CSVファイルへの書き込み処理</li>
- * <li>ReadWriteLockによる同時アクセス制御</li>
- * <li>CSV行のバリデーションと変換</li>
- * <li>重複IDの検出と管理</li>
- * <li>エラーデータの収集と結果オブジェクトへの格納</li>
- * </ul>
- * </p>
- *
- * <p>
- * CSVファイル読み込み時は、行ごとにバリデーションを実行し、エラーがある場合はエラーリストに追加します。
- * また、IDの重複チェックを行い、重複がある場合は重複IDリストに追加します。
- * 処理結果は、CSVAccessResultオブジェクトとして返却され、正常データ、エラーデータ、重複IDの情報が格納されます。
- * </p>
- *
- * <p>
- * CSVファイル書き込み時は、データをCSV形式に変換して出力し、結果をBoolean値として返却します。
- * </p>
- *
  * @author Nakano
  */
 public class CSVAccess extends AccessThread {
@@ -69,8 +41,6 @@ public class CSVAccess extends AccessThread {
 
     /** リソース管理フラグ（ResourceManager経由で作成された場合はtrue） */
     private final boolean useResourceManager;
-
-    /** CSVのヘッダー行 */
 
     /** 上書きモードフラグ（追記モードで書き込む場合はtrue） */
     private final boolean appendMode;
@@ -114,7 +84,7 @@ public class CSVAccess extends AccessThread {
         this.csvValidators = ValidatorFactory.createCSVValidators();
 
         LogHandler.getInstance().log(Level.INFO, LogType.SYSTEM,
-                "CSVAccess初期化完了（新バリデーションシステム統合）: " + csvFile.getPath());
+                "CSVAccessを初期化完了: " + csvFile.getPath());
     }
 
     // CSVAccessクラスに、ファイルを指定できるコンストラクタを追加
@@ -141,7 +111,7 @@ public class CSVAccess extends AccessThread {
     }
 
     /**
-     * CSV行データをEngineerDTOに変換（新バリデーションシステム使用）
+     * CSV行データをEngineerDTOに変換
      * 
      * @param row        CSV行データ
      * @param lineNumber 行番号（エラー報告用）
@@ -172,7 +142,7 @@ public class CSVAccess extends AccessThread {
 
         } catch (Exception e) {
             LogHandler.getInstance().logError(LogType.SYSTEM,
-                    "CSV行の変換中にエラーが発生しました（行 " + lineNumber + "）", e);
+                    "CSV行の変換中にエラーが発生（行 " + lineNumber + "）", e);
             return null;
         }
     }
@@ -311,7 +281,7 @@ public class CSVAccess extends AccessThread {
             }
         } catch (InterruptedException e) {
             Thread.currentThread().interrupt();
-            LogHandler.getInstance().logError(LogType.SYSTEM, "CSVアクセス処理の待機中に割り込みが発生しました", e);
+            LogHandler.getInstance().logError(LogType.SYSTEM, "CSVアクセス処理の待機中に割り込みが発生", e);
         }
     }
 
@@ -341,7 +311,7 @@ public class CSVAccess extends AccessThread {
                 result = null;
             }
         } catch (Exception e) {
-            LogHandler.getInstance().logError(LogType.SYSTEM, "CSVアクセス処理中にエラーが発生しました: " + operation, e);
+            LogHandler.getInstance().logError(LogType.SYSTEM, "CSVアクセス処理中にエラーが発生: " + operation, e);
 
             // エラー時は空の結果オブジェクトを返す
             if ("read".equalsIgnoreCase(operation)) {
@@ -376,7 +346,7 @@ public class CSVAccess extends AccessThread {
 
         try {
             LogHandler.getInstance().log(Level.INFO, LogType.SYSTEM,
-                    "CSVファイル読み込み開始（新バリデーションシステム使用）: " + csvFile.getPath());
+                    "CSVファイル読み込み開始: " + csvFile.getPath());
 
             // ファイルが存在しない場合の処理
             if (!csvFile.exists()) {
@@ -420,9 +390,9 @@ public class CSVAccess extends AccessThread {
 
         } catch (IOException e) {
             LogHandler.getInstance().logError(LogType.SYSTEM,
-                    "CSVファイルの読み込みに失敗しました: " + csvFile.getPath(), e);
+                    "CSVファイルの読み込みに失敗: " + csvFile.getPath(), e);
             return new CSVAccessResult(successData, errorData, true,
-                    "CSVファイルの読み込みに失敗しました: " + e.getMessage());
+                    "CSVファイルの読み込みに失敗: " + e.getMessage());
         } finally {
             if (useResourceManager && resourceManager != null && resourceKey != null) {
                 resourceManager.releaseResource(resourceKey);
@@ -430,7 +400,7 @@ public class CSVAccess extends AccessThread {
             lock.readLock().unlock();
         }
 
-        // CSV行データをEngineerDTOに変換（新バリデーションシステム使用）
+        // CSV行データをEngineerDTOに変換
         for (int i = 0; i < csvRows.size(); i++) {
             String[] row = csvRows.get(i);
             int lineNumber = i + 2; // ヘッダー行も含めた行番号
@@ -461,7 +431,7 @@ public class CSVAccess extends AccessThread {
 
             } catch (Exception e) {
                 LogHandler.getInstance().logError(LogType.SYSTEM,
-                        "CSV行の処理中にエラーが発生しました (行 " + lineNumber + ")", e);
+                        "CSV行の処理中にエラーが発生 (行 " + lineNumber + ")", e);
                 ValidationResult errorResult = new ValidationResult();
                 errorResult.addError("error", "処理エラー (行 " + lineNumber + "): " + e.getMessage());
                 EngineerDTO errorEngineer = createErrorEngineer(row, lineNumber, errorResult);
@@ -473,7 +443,7 @@ public class CSVAccess extends AccessThread {
     }
 
     /**
-     * エラー情報を含むエンジニアDTOを作成（改良版）
+     * エラー情報を含むエンジニアDTOを作成
      */
     private EngineerDTO createErrorEngineer(String[] row, int lineNumber, ValidationResult result) {
         EngineerDTO engineer = new EngineerDTO();
@@ -537,10 +507,10 @@ public class CSVAccess extends AccessThread {
                         resourceManager.createDirectory(parentDir.getName());
                         created = true;
                         LogHandler.getInstance().log(Level.INFO, LogType.SYSTEM,
-                                "ResourceManager経由でディレクトリを作成しました: " + parentDir.getPath());
+                                "ResourceManager経由でディレクトリを作成: " + parentDir.getPath());
                     } catch (IOException e) {
                         LogHandler.getInstance().logError(LogType.SYSTEM,
-                                "ResourceManager経由でのディレクトリ作成に失敗しました", e);
+                                "ResourceManager経由でのディレクトリ作成に失敗", e);
                         created = false;
                     }
                 } else {
@@ -550,7 +520,7 @@ public class CSVAccess extends AccessThread {
 
                 if (!created) {
                     LogHandler.getInstance().log(Level.WARNING, LogType.SYSTEM,
-                            "ディレクトリの作成に失敗しました: " + parentDir.getPath());
+                            "ディレクトリの作成に失敗: " + parentDir.getPath());
                 }
             }
 
@@ -575,7 +545,7 @@ public class CSVAccess extends AccessThread {
             return true;
 
         } catch (IOException e) {
-            LogHandler.getInstance().logError(LogType.SYSTEM, "CSVファイルの書き込みに失敗しました: " + csvFile.getPath(), e);
+            LogHandler.getInstance().logError(LogType.SYSTEM, "CSVファイルの書き込みに失敗: " + csvFile.getPath(), e);
             return false;
         } finally {
             // リソースのクリーンアップ

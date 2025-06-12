@@ -37,35 +37,15 @@ import javax.swing.filechooser.FileNameExtensionFilter;
  * アプリケーションのメインコントローラー
  * 画面遷移、イベント処理、スレッド管理、エンジニア検索機能を統括するクラス
  *
- * <p>
- * このクラスは、エンジニア人材管理システムのMVCアーキテクチャにおける中心的なコントローラーとして機能し、
- * ビュー（画面）とモデル（データ）を連携させる役割を担います。アプリケーション全体の状態管理から
- * 個別の操作イベント処理まで、ビジネスロジックの多くの側面を統括的に制御します。
- * </p>
- *
- * <p>
- * バージョン4.12.8での主な改善点：
- * <ul>
- * <li>エンジニア検索機能の責任分離とMainControllerへの統合</li>
- * <li>検索条件の検証ロジックの一元化</li>
- * <li>検索結果処理の非同期化対応</li>
- * <li>MVCパターンに準拠した適切な責任分散</li>
- * </ul>
- * </p>
- *
- * <p>
- * 主な責務：
- * <ul>
- * <li>画面遷移の制御とビュー間の調整</li>
- * <li>ユーザーインターフェースイベントの処理</li>
- * <li>エンジニア検索機能のビジネスロジック制御</li>
- * <li>非同期処理とスレッド管理</li>
- * <li>アプリケーション終了処理の調整</li>
- * <li>モデル操作の統合管理</li>
- * <li>データの保存と読み込み処理</li>
- * <li>エラー処理と回復機能</li>
- * </ul>
- * </p>
+ * このクラスは、アプリケーション全体の制御を担当：
+ * 
+ * 画面遷移の管理
+ * エンジニア情報の検索とフィルタリング
+ * 非同期タスクの管理
+ * イベント処理のディスパッチ
+ * リソースの管理と初期化
+ * シャットダウン処理の制御
+ * 
  *
  * @author Nakano
  */
@@ -95,13 +75,12 @@ public class MainController {
     /** シャットダウン完了フラグ */
     private final AtomicBoolean isShutdownCompleted = new AtomicBoolean(false);
 
+    /** 削除中のエンジニアIDのセット */
     private final Set<String> deletingIds = ConcurrentHashMap.newKeySet();
-
-    // 最大レコード数の定数
 
     /**
      * エンジニア検索条件を保持するクラス
-     * 検索フォームから入力された各種条件を格納し、検索処理に使用します
+     * 検索フォームから入力された各種条件を格納し、検索処理に使用
      */
     public static class SearchCriteria {
         private final String id;
@@ -141,7 +120,7 @@ public class MainController {
                     (day != null && !day.isEmpty());
         }
 
-        // ゲッターメソッド群
+        /** ゲッターメソッド群 */
         public String getId() {
             return id;
         }
@@ -169,7 +148,7 @@ public class MainController {
 
     /**
      * エンジニア検索結果を保持するクラス
-     * 検索処理の結果とエラー情報を格納し、呼び出し元に結果を返却します
+     * 検索処理の結果とエラー情報を格納し、呼び出し元に結果を返却
      */
     public static class SearchResult {
         private final List<EngineerDTO> results;
@@ -225,7 +204,7 @@ public class MainController {
         // MainFrameにMainControllerへの参照を設定（循環参照だが制御された形で）
         this.mainFrame.setMainController(this);
 
-        LogHandler.getInstance().log(Level.INFO, LogType.SYSTEM, "メインコントローラーを初期化しました");
+        LogHandler.getInstance().log(Level.INFO, LogType.SYSTEM, "メインコントローラを初期化完了");
     }
 
     /**
@@ -240,7 +219,7 @@ public class MainController {
             if (!resourceManager.isInitialized()) {
                 resourceManager.initialize();
                 LogHandler.getInstance().log(Level.INFO, LogType.SYSTEM,
-                        "ResourceManager を初期化しました");
+                        "ResourceManager を初期化完了");
             }
 
             // エンジニアコントローラーの初期化
@@ -249,7 +228,7 @@ public class MainController {
             // 初期画面の表示
             screenController.showPanel("LIST");
 
-            LogHandler.getInstance().log(Level.INFO, LogType.SYSTEM, "アプリケーションを初期化しました");
+            LogHandler.getInstance().log(Level.INFO, LogType.SYSTEM, "アプリケーションを初期化完了");
 
             // ListPanelにMainControllerを設定
             JPanel panel = screenController.getCurrentPanel();
@@ -258,14 +237,14 @@ public class MainController {
             }
 
         } catch (Exception e) {
-            LogHandler.getInstance().logError(LogType.SYSTEM, "アプリケーションの初期化に失敗しました", e);
+            LogHandler.getInstance().logError(LogType.SYSTEM, "アプリケーションの初期化に失敗", e);
             handleFatalError(e);
         }
     }
 
     /**
      * エンジニア検索処理
-     * 検索条件に基づいてエンジニア情報を検索し、結果を返却します
+     * 検索条件に基づいてエンジニア情報を検索し、結果を返却
      * 
      * @param searchCriteria 検索条件オブジェクト
      * @return 検索結果オブジェクト（結果リストとエラー情報を含む）
@@ -279,7 +258,7 @@ public class MainController {
             List<String> validationErrors = validateSearchCriteria(searchCriteria);
             if (!validationErrors.isEmpty()) {
                 LogHandler.getInstance().log(Level.WARNING, LogType.SYSTEM,
-                        "検索条件の検証でエラーが発生しました: " + String.join(", ", validationErrors));
+                        "検索条件の検証でエラーが発生: " + String.join(", ", validationErrors));
                 return new SearchResult(new ArrayList<>(), validationErrors);
             }
 
@@ -294,14 +273,14 @@ public class MainController {
             return new SearchResult(filteredEngineers, new ArrayList<>());
 
         } catch (Exception e) {
-            LogHandler.getInstance().logError(LogType.SYSTEM, "検索処理中にエラーが発生しました", e);
-            return new SearchResult(new ArrayList<>(), List.of("検索処理中にエラーが発生しました: " + e.getMessage()));
+            LogHandler.getInstance().logError(LogType.SYSTEM, "検索処理中にエラーが発生", e);
+            return new SearchResult(new ArrayList<>(), List.of("検索処理中にエラーが発生: " + e.getMessage()));
         }
     }
 
     /**
      * 検索条件の妥当性検証
-     * 各検索条件フィールドに対して適切な検証を実行します
+     * 各検索条件フィールドに対して適切な検証を実行
      * 
      * @param criteria 検証対象の検索条件
      * @return 検証エラーメッセージのリスト（エラーがない場合は空リスト）
@@ -366,7 +345,7 @@ public class MainController {
 
     /**
      * 検索条件によるエンジニアリストのフィルタリング
-     * 指定された検索条件に一致するエンジニアのみを抽出します
+     * 指定された検索条件に一致するエンジニアのみを抽出
      * 
      * @param engineers 全エンジニアのリスト
      * @param criteria  検索条件
@@ -380,7 +359,7 @@ public class MainController {
 
     /**
      * エンジニアが検索条件にマッチするかチェック
-     * 各検索条件項目について個別に適合性を判定します
+     * 各検索条件項目について個別に適合性を判定
      * 
      * @param engineer 判定対象のエンジニア
      * @param criteria 検索条件
@@ -527,16 +506,16 @@ public class MainController {
 
             LogHandler.getInstance().log(
                     Level.INFO, LogType.SYSTEM,
-                    String.format("イベントを処理しました: %s (%s)", eventType.getEventName(), eventType.getDescription()));
+                    String.format("イベントを処理: %s (%s)", eventType.getEventName(), eventType.getDescription()));
 
         } catch (Exception e) {
-            LogHandler.getInstance().logError(LogType.SYSTEM, "イベント処理に失敗しました: " + eventType.getEventName(), e);
+            LogHandler.getInstance().logError(LogType.SYSTEM, "イベント処理に失敗: " + eventType.getEventName(), e);
             handleError(e);
         }
     }
 
     /**
-     * 文字列イベント名でイベントを処理（後方互換性のため）
+     * 文字列イベント名でイベントを処理
      *
      * @param eventName イベント名文字列
      * @param data      イベントデータ
@@ -556,7 +535,7 @@ public class MainController {
 
     /**
      * エンジニア検索処理のイベントハンドラ
-     * 検索要求を受け取り、非同期で検索処理を実行します
+     * 検索要求を受け取り、非同期で検索処理を実行
      * 
      * @param data 検索条件オブジェクト（SearchCriteria型）
      */
@@ -590,18 +569,18 @@ public class MainController {
                         }
                     } catch (Exception e) {
                         LogHandler.getInstance().logError(LogType.SYSTEM,
-                                "検索結果のUI更新中にエラーが発生しました", e);
+                                "検索結果のUI更新中にエラーが発生", e);
                     }
                 });
 
             } catch (Exception e) {
                 LogHandler.getInstance().logError(LogType.SYSTEM,
-                        "非同期検索処理中にエラーが発生しました", e);
+                        "非同期検索処理中にエラーが発生", e);
 
                 // エラー時のUI更新
                 SwingUtilities.invokeLater(() -> {
                     DialogManager.getInstance().showErrorDialog(
-                            "検索エラー", "検索処理中にエラーが発生しました: " + e.getMessage());
+                            "検索エラー", "検索処理中にエラーが発生: " + e.getMessage());
                 });
             }
         });
@@ -609,7 +588,7 @@ public class MainController {
 
     /**
      * ListPanel向けの検索結果処理
-     * 検索結果をListPanelに適切に反映します
+     * 検索結果をListPanelに適切に反映
      * 
      * @param listPanel 更新対象のListPanel
      * @param result    検索結果
@@ -642,9 +621,9 @@ public class MainController {
             }
         } catch (Exception e) {
             LogHandler.getInstance().logError(LogType.SYSTEM,
-                    "検索結果の処理中にエラーが発生しました", e);
+                    "検索結果の処理中にエラーが発生", e);
             DialogManager.getInstance().showErrorDialog(
-                    "表示エラー", "検索結果の表示中にエラーが発生しました");
+                    "表示エラー", "検索結果の表示中にエラーが発生");
         }
     }
 
@@ -684,7 +663,7 @@ public class MainController {
     }
 
     /**
-     * エンジニア情報の削除処理を非同期で実行します。
+     * エンジニア情報の削除処理を非同期で実行
      * 
      * @param data 削除対象のエンジニアDTOリスト
      */
@@ -732,10 +711,10 @@ public class MainController {
 
                             ListPanel.setNeedsRefresh(true); // ← 一覧更新フラグON
 
-                            LogHandler.getInstance().log(Level.INFO, LogType.SYSTEM, "削除後のデータを再読み込みしました");
+                            LogHandler.getInstance().log(Level.INFO, LogType.SYSTEM, "削除後のデータを再読み込み");
 
                         } catch (Exception e) {
-                            LogHandler.getInstance().logError(LogType.SYSTEM, "削除後の再読み込みに失敗しました", e);
+                            LogHandler.getInstance().logError(LogType.SYSTEM, "削除後の再読み込みに失敗", e);
                         }
 
                     });
@@ -746,19 +725,19 @@ public class MainController {
     }
 
     /**
-     * 最新のエンジニア一覧を取得します。
+     * 最新のエンジニア一覧を取得
      *
      * @return エンジニアDTOのリスト
      */
     public List<EngineerDTO> getEngineerList() {
         if (engineerController == null) {
-            engineerController = new EngineerController(); // 念のため
+            engineerController = new EngineerController();
         }
         return engineerController.loadEngineers();
     }
 
     /**
-     * 最新のエンジニア一覧を取得します。
+     * 最新のエンジニア一覧を取得
      *
      * @return エンジニアDTOのリスト
      */
@@ -772,32 +751,20 @@ public class MainController {
 
     /**
      * データ保存処理を実行します
-     * <p>
+     * 
      * このメソッドはエンジニア情報の保存処理を非同期的に実行します。単一エンジニアの追加と
      * 複数エンジニアの一括更新に対応しています。保存処理の成功後は、UIを適切に更新し、
      * 必要に応じてダイアログ表示や画面遷移を行います。
-     * </p>
      * 
-     * <p>
      * 主な処理の流れ：
-     * <ol>
-     * <li>データ型の判定（単一エンジニアまたはエンジニアリスト）</li>
-     * <li>コンテキスト情報（元画面の参照）の取得と保持</li>
-     * <li>非同期タスクとしての保存処理実行</li>
-     * <li>成功時のUI更新（リスト更新、ダイアログ表示など）</li>
-     * <li>エラー時の例外処理と状態復元</li>
-     * </ol>
-     * </p>
      * 
-     * <p>
+     * データ型の判定（単一エンジニアまたはエンジニアリスト）
+     * コンテキスト情報（元画面の参照）の取得と保持
+     * 非同期タスクとしての保存処理実行
+     * 成功時のUI更新（リスト更新、ダイアログ表示など）
+     * エラー時の例外処理と状態復元
+     * 
      * このメソッドは特に次の点に注意して実装されています：
-     * <ul>
-     * <li>スレッド間の安全な連携（バックグラウンド処理とEDTの連携）</li>
-     * <li>コンテキスト情報の確実な保持と伝達</li>
-     * <li>例外発生時の適切な処理とロギング</li>
-     * <li>処理状態の確実なリセット（処理中フラグの管理）</li>
-     * </ul>
-     * </p>
      * 
      * @param data 保存するデータ（{@link EngineerDTO}または{@link List}&lt;{@link EngineerDTO}&gt;）
      */
@@ -805,7 +772,7 @@ public class MainController {
         // シャットダウン中は処理しない
         if (isShuttingDown.get()) {
             LogHandler.getInstance().log(Level.WARNING, LogType.SYSTEM,
-                    "シャットダウン中のため保存処理をスキップします");
+                    "シャットダウン中のため保存処理をスキップ");
             return;
         }
 
@@ -814,7 +781,7 @@ public class MainController {
             try {
                 EngineerDTO engineer = (EngineerDTO) data;
                 LogHandler.getInstance().log(Level.INFO, LogType.SYSTEM,
-                        "エンジニア情報の保存を開始します: ID=" + engineer.getId());
+                        "エンジニア情報の保存を開始: ID=" + engineer.getId());
 
                 // パネル情報を取得（直接参照として）
                 JPanel sourcePanel = screenController.getCurrentPanel();
@@ -863,7 +830,7 @@ public class MainController {
                             } catch (EngineerController.TooManyRecordsException e) {
                                 // 登録上限エラーの処理
                                 LogHandler.getInstance().log(Level.WARNING, LogType.SYSTEM,
-                                        "登録件数の上限に達したため、エンジニア情報の追加に失敗しました: " + e.getMessage());
+                                        "登録件数の上限に達したため、エンジニア情報の追加に失敗: " + e.getMessage());
 
                                 // UI更新はSwingのEDTで実行
                                 javax.swing.SwingUtilities.invokeLater(() -> {
@@ -898,7 +865,7 @@ public class MainController {
                                     if (listPanel instanceof ListPanel) {
                                         ((ListPanel) listPanel).addEngineerData(engineer);
                                         LogHandler.getInstance().log(Level.INFO, LogType.SYSTEM,
-                                                "ListPanelにエンジニアデータを追加しました: " + engineer.getId());
+                                                "リストパネルにエンジニアデータを追加: " + engineer.getId());
                                     }
 
                                     // 保存元のパネルタイプに応じた完了処理を呼び出し
@@ -925,7 +892,7 @@ public class MainController {
                                     } else {
                                         // 対応するパネルが見つからない場合
                                         LogHandler.getInstance().log(Level.WARNING, LogType.SYSTEM,
-                                                "対応するパネルが見つからないため完了処理をスキップします: " +
+                                                "対応するパネルが見つからないため完了処理をスキップ: " +
                                                         "sourcePanel="
                                                         + (sourcePanel != null ? sourcePanel.getClass().getName()
                                                                 : "null")
@@ -934,10 +901,10 @@ public class MainController {
 
                                         // 代替手段としてダイアログを直接表示
                                         LogHandler.getInstance().log(Level.INFO, LogType.SYSTEM,
-                                                "代替手段としてダイアログを直接表示します");
+                                                "代替手段としてダイアログを直接表示");
                                         DialogManager.getInstance().showCompletionDialog(
                                                 "処理完了",
-                                                "エンジニア情報を保存しました: ID=" + engineer.getId() + ", 名前="
+                                                "エンジニア情報を保存: ID=" + engineer.getId() + ", 名前="
                                                         + engineer.getName());
                                     }
 
@@ -945,7 +912,7 @@ public class MainController {
                                     screenController.refreshView();
                                 } catch (Exception e) {
                                     LogHandler.getInstance().logError(LogType.SYSTEM,
-                                            "保存完了後の処理中にエラーが発生しました: " + engineer.getId(), e);
+                                            "保存完了後の処理中にエラーが発生: " + engineer.getId(), e);
 
                                     // エラー時もパネルの処理中状態は解除
                                     try {
@@ -957,43 +924,43 @@ public class MainController {
                                         }
                                     } catch (Exception ex) {
                                         LogHandler.getInstance().logError(LogType.SYSTEM,
-                                                "エラー処理中にも例外が発生しました", ex);
+                                                "エラー処理中にも例外が発生", ex);
                                     }
                                 }
                             });
                         } else {
                             // 保存失敗時の処理
                             LogHandler.getInstance().log(Level.WARNING, LogType.SYSTEM,
-                                    "エンジニア情報の保存に失敗しました: ID=" + engineer.getId());
+                                    "エンジニア情報の保存に失敗: ID=" + engineer.getId());
 
                             javax.swing.SwingUtilities.invokeLater(() -> {
                                 if (finalAddPanel != null) {
                                     finalAddPanel.setProcessing(false);
                                     DialogManager.getInstance().showErrorDialog(
-                                            "保存エラー", "エンジニア情報の保存に失敗しました");
+                                            "保存エラー", "エンジニア情報の保存に失敗");
                                 }
                                 if (finalDetailPanel != null) {
                                     finalDetailPanel.setProcessing(false);
                                     DialogManager.getInstance().showErrorDialog(
-                                            "更新エラー", "エンジニア情報の更新に失敗しました");
+                                            "更新エラー", "エンジニア情報の更新に失敗");
                                 }
                             });
                         }
                     } catch (Exception e) {
                         LogHandler.getInstance().logError(LogType.SYSTEM,
-                                "エンジニア情報の保存処理中にエラーが発生しました: " + engineer.getId(), e);
+                                "エンジニア情報の保存処理中にエラーが発生: " + engineer.getId(), e);
 
                         // エラー時に処理中状態を解除
                         javax.swing.SwingUtilities.invokeLater(() -> {
                             if (finalAddPanel != null) {
                                 finalAddPanel.setProcessing(false);
                                 DialogManager.getInstance().showErrorDialog(
-                                        "保存エラー", "エンジニア情報の保存中にエラーが発生しました: " + e.getMessage());
+                                        "保存エラー", "エンジニア情報の保存中にエラーが発生: " + e.getMessage());
                             }
                             if (finalDetailPanel != null) {
                                 finalDetailPanel.setProcessing(false);
                                 DialogManager.getInstance().showErrorDialog(
-                                        "更新エラー", "エンジニア情報の更新中にエラーが発生しました: " + e.getMessage());
+                                        "更新エラー", "エンジニア情報の更新中にエラーが発生: " + e.getMessage());
                             }
                         });
                     } finally {
@@ -1004,17 +971,17 @@ public class MainController {
                                     // 処理状態の強制リセット（念のため）
                                     finalAddPanel.setProcessing(false);
                                     LogHandler.getInstance().log(Level.INFO, LogType.SYSTEM,
-                                            "AddPanelの処理状態をリセットしました");
+                                            "AddPanelの処理状態をリセット");
                                 }
                                 if (finalDetailPanel != null) {
                                     // 処理状態の強制リセット（念のため）
                                     finalDetailPanel.setProcessing(false);
                                     LogHandler.getInstance().log(Level.INFO, LogType.SYSTEM,
-                                            "DetailPanelの処理状態をリセットしました");
+                                            "DetailPanelの処理状態をリセット");
                                 }
                             } catch (Exception e) {
                                 LogHandler.getInstance().logError(LogType.SYSTEM,
-                                        "処理状態リセット中にエラーが発生しました", e);
+                                        "処理状態リセット中にエラーが発生", e);
                             }
                         });
                     }
@@ -1023,7 +990,7 @@ public class MainController {
             } catch (ClassCastException e) {
                 LogHandler.getInstance().logError(LogType.SYSTEM, "保存データの型が不正です", e);
             } catch (Exception e) {
-                LogHandler.getInstance().logError(LogType.SYSTEM, "エンジニア情報の保存前処理中にエラーが発生しました", e);
+                LogHandler.getInstance().logError(LogType.SYSTEM, "エンジニア情報の保存前処理中にエラーが発生", e);
             }
         }
         // エンジニア情報の一括保存処理（リスト）
@@ -1032,7 +999,7 @@ public class MainController {
                 @SuppressWarnings("unchecked")
                 List<EngineerDTO> engineers = (List<EngineerDTO>) data;
                 LogHandler.getInstance().log(Level.INFO, LogType.SYSTEM,
-                        "エンジニア情報の一括保存を開始します: " + engineers.size() + "件");
+                        "エンジニア情報の一括保存を開始: " + engineers.size() + "件");
 
                 // 非同期タスクとして保存処理を実行
                 startAsyncTask("SaveEngineerList", () -> {
@@ -1045,7 +1012,7 @@ public class MainController {
 
                         if (success) {
                             LogHandler.getInstance().log(Level.INFO, LogType.SYSTEM,
-                                    "エンジニア情報の一括保存に成功しました: " + engineers.size() + "件");
+                                    "エンジニア情報の一括保存に成功: " + engineers.size() + "件");
 
                             // UI更新はSwingのEDTで実行
                             javax.swing.SwingUtilities.invokeLater(() -> {
@@ -1055,28 +1022,28 @@ public class MainController {
 
                                     // 保存完了ダイアログを表示
                                     DialogManager.getInstance().showCompletionDialog(
-                                            "保存完了", engineers.size() + "件のエンジニア情報を保存しました");
+                                            "保存完了", engineers.size() + "件のエンジニア情報を保存");
                                 } catch (Exception e) {
                                     LogHandler.getInstance().logError(LogType.SYSTEM,
-                                            "一括保存後の処理中にエラーが発生しました", e);
+                                            "一括保存後の処理中にエラーが発生", e);
                                 }
                             });
                         } else {
                             // 保存失敗時の処理
                             LogHandler.getInstance().log(Level.WARNING, LogType.SYSTEM,
-                                    "エンジニア情報の一括保存に失敗しました");
+                                    "エンジニア情報の一括保存に失敗");
 
                             javax.swing.SwingUtilities.invokeLater(() -> {
                                 DialogManager.getInstance().showErrorDialog(
-                                        "保存エラー", "エンジニア情報の一括保存に失敗しました");
+                                        "保存エラー", "エンジニア情報の一括保存に失敗");
                             });
                         }
                     } catch (Exception e) {
-                        LogHandler.getInstance().logError(LogType.SYSTEM, "エンジニア情報の一括保存処理中にエラーが発生しました", e);
+                        LogHandler.getInstance().logError(LogType.SYSTEM, "エンジニア情報の一括保存処理中にエラーが発生", e);
 
                         javax.swing.SwingUtilities.invokeLater(() -> {
                             DialogManager.getInstance().showErrorDialog(
-                                    "保存エラー", "エンジニア情報の一括保存中にエラーが発生しました: " + e.getMessage());
+                                    "保存エラー", "エンジニア情報の一括保存中にエラーが発生: " + e.getMessage());
                         });
                     }
                 });
@@ -1084,7 +1051,7 @@ public class MainController {
             } catch (ClassCastException e) {
                 LogHandler.getInstance().logError(LogType.SYSTEM, "保存データの型が不正です", e);
             } catch (Exception e) {
-                LogHandler.getInstance().logError(LogType.SYSTEM, "エンジニア情報の一括保存前処理中にエラーが発生しました", e);
+                LogHandler.getInstance().logError(LogType.SYSTEM, "エンジニア情報の一括保存前処理中にエラーが発生", e);
             }
         }
         // その他のデータ型（非対応）
@@ -1142,13 +1109,13 @@ public class MainController {
                 });
 
             } catch (Exception e) {
-                LogHandler.getInstance().logError(LogType.SYSTEM, "データ読み込みに失敗しました", e);
+                LogHandler.getInstance().logError(LogType.SYSTEM, "データ読み込みに失敗", e);
 
                 // エラーメッセージ表示
                 javax.swing.SwingUtilities.invokeLater(() -> {
                     DialogManager.getInstance().showErrorDialog(
                             "読み込みエラー",
-                            "データ読み込みに失敗しました: " + e.getMessage());
+                            "データ読み込みに失敗: " + e.getMessage());
                 });
             }
         });
@@ -1156,13 +1123,7 @@ public class MainController {
 
     /**
      * 詳細表示処理
-     * エンジニアIDを指定して詳細画面に遷移します
-     * 
-     * @param engineerId 表示するエンジニアID
-     */
-    /**
-     * 詳細表示処理
-     * エンジニアIDを指定して詳細画面に遷移します
+     * エンジニアIDを指定して詳細画面に遷移
      * 
      * @param engineerId 表示するエンジニアID
      */
@@ -1200,7 +1161,7 @@ public class MainController {
                                 "エンジニア詳細を表示: ID=" + engineerId);
                     } else {
                         LogHandler.getInstance().log(Level.WARNING, LogType.SYSTEM,
-                                "DetailPanelへの参照取得に失敗しました");
+                                "DetailPanelへの参照取得に失敗");
                     }
                 });
             } else {
@@ -1213,11 +1174,11 @@ public class MainController {
             }
         } catch (Exception e) {
             LogHandler.getInstance().logError(LogType.SYSTEM,
-                    "エンジニア詳細表示中にエラーが発生しました: ID=" + engineerId, e);
+                    "エンジニア詳細表示中にエラーが発生: ID=" + engineerId, e);
 
             // エラーダイアログを表示
             DialogManager.getInstance().showErrorDialog(
-                    "エラー", "エンジニア詳細表示中にエラーが発生しました: " + e.getMessage());
+                    "エラー", "エンジニア詳細表示中にエラーが発生: " + e.getMessage());
         }
     }
 
@@ -1281,7 +1242,7 @@ public class MainController {
 
             fileChooser.setSelectedFile(new File(defaultFileName));
 
-            LogHandler.getInstance().log(Level.INFO, LogType.SYSTEM, "出力先選択画面を表示をしました");
+            LogHandler.getInstance().log(Level.INFO, LogType.SYSTEM, "出力先選択画面を表示");
             int userSelection = fileChooser.showSaveDialog(listPanel);
 
             if (userSelection != JFileChooser.APPROVE_OPTION) {
@@ -1325,7 +1286,7 @@ public class MainController {
      */
     private boolean confirmTemplateOverwrite(File file) {
         LogHandler.getInstance().log(Level.INFO, LogType.SYSTEM,
-                "保存場所に同一名ファイルが存在したため、上書き確認ダイアログを表示しました");
+                "保存場所に同一名ファイルが存在したため、上書き確認ダイアログを表示");
 
         int overwriteConfirm = JOptionPane.showConfirmDialog(
                 null,
@@ -1370,14 +1331,14 @@ public class MainController {
                 });
 
                 LogHandler.getInstance().log(Level.INFO, LogType.SYSTEM,
-                        "テンプレートファイルの出力が成功しました: " + outputFile.getAbsolutePath());
+                        "テンプレートファイルの出力が成功: " + outputFile.getAbsolutePath());
             } else {
-                throw new RuntimeException("テンプレート出力処理が失敗しました");
+                throw new RuntimeException("テンプレート出力処理が失敗");
             }
 
         } catch (Exception e) {
             LogHandler.getInstance().logError(LogType.SYSTEM,
-                    "テンプレート出力処理中に例外が発生しました", e);
+                    "テンプレート出力処理中に例外が発生", e);
 
             SwingUtilities.invokeLater(() -> {
                 DialogManager.getInstance().showErrorDialog("エラー",
@@ -1392,7 +1353,7 @@ public class MainController {
                 resourceManager.releaseResource(resourceKey);
             } catch (Exception cleanupError) {
                 LogHandler.getInstance().log(Level.WARNING, LogType.SYSTEM,
-                        "リソースクリーンアップ中にエラーが発生しました: " + cleanupError.getMessage());
+                        "リソースクリーンアップ中にエラーが発生: " + cleanupError.getMessage());
             }
         }
     }
@@ -1504,9 +1465,9 @@ public class MainController {
 
         } catch (Exception e) {
             LogHandler.getInstance().logError(LogType.SYSTEM,
-                    "ファイル検証中にエラーが発生しました", e);
+                    "ファイル検証中にエラーが発生", e);
             return new FileValidationResult(false,
-                    "ファイル検証中にエラーが発生しました: " + e.getMessage());
+                    "ファイル検証中にエラーが発生: " + e.getMessage());
         }
     }
 
@@ -1518,7 +1479,7 @@ public class MainController {
      */
     private boolean confirmFileOverwrite(File file) {
         LogHandler.getInstance().log(Level.INFO, LogType.SYSTEM,
-                "保存場所に同一名ファイルが存在したため、上書き確認ダイアログを表示しました");
+                "保存場所に同一名ファイルが存在したため、上書き確認ダイアログを表示");
 
         int overwrite = JOptionPane.showConfirmDialog(
                 listPanel,
@@ -1568,7 +1529,7 @@ public class MainController {
 
         } catch (Exception e) {
             LogHandler.getInstance().logError(LogType.SYSTEM,
-                    "CSV出力処理中に例外が発生しました", e);
+                    "CSV出力処理中に例外が発生", e);
 
             SwingUtilities.invokeLater(() -> {
                 showExportError("CSV出力", e);
@@ -1580,7 +1541,7 @@ public class MainController {
                 resourceManager.releaseResource(resourceKey);
             } catch (Exception cleanupError) {
                 LogHandler.getInstance().log(Level.WARNING, LogType.SYSTEM,
-                        "CSV出力リソースクリーンアップ中にエラーが発生しました: " + cleanupError.getMessage());
+                        "CSV出力リソースクリーンアップ中にエラーが発生: " + cleanupError.getMessage());
             }
         }
     }
@@ -1635,7 +1596,7 @@ public class MainController {
      */
     private void showExportError(String operation, Exception exception) {
         JOptionPane.showMessageDialog(listPanel,
-                operation + "中にエラーが発生しました:\n" + exception.getMessage(),
+                operation + "中にエラーが発生:\n" + exception.getMessage(),
                 "エラー", JOptionPane.ERROR_MESSAGE);
     }
 
@@ -1660,7 +1621,6 @@ public class MainController {
         }
     }
 
-    // 追加するヘルパーメソッド
     /**
      * キャッシュからListPanelを取得するヘルパーメソッド
      * 
@@ -1690,7 +1650,7 @@ public class MainController {
     public void handleImportData() {
         if (isShuttingDown.get()) {
             LogHandler.getInstance().log(Level.WARNING, LogType.SYSTEM,
-                    "シャットダウン中のためインポート処理をスキップします");
+                    "シャットダウン中のためインポート処理をスキップ");
             return;
         }
 
@@ -1766,13 +1726,13 @@ public class MainController {
 
             } catch (Exception e) {
                 LogHandler.getInstance().logError(LogType.SYSTEM,
-                        "CSVファイルのインポート中にエラーが発生しました", e);
+                        "CSVファイルのインポート中にエラーが発生", e);
 
                 // UI更新はSwingのEDTで実行
                 SwingUtilities.invokeLater(() -> {
                     DialogManager.getInstance().showErrorDialog(
                             "インポートエラー",
-                            "CSVファイルのインポート中にエラーが発生しました：" + e.getMessage());
+                            "CSVファイルのインポート中にエラーが発生：" + e.getMessage());
 
                     if (currentPanel instanceof ListPanel) {
                         ((ListPanel) currentPanel).clearStatus();
@@ -1784,21 +1744,17 @@ public class MainController {
                     resourceManager.releaseResource(resourceKey);
                 } catch (Exception cleanupError) {
                     LogHandler.getInstance().log(Level.WARNING, LogType.SYSTEM,
-                            "インポート処理のリソースクリーンアップ中にエラーが発生しました: " + cleanupError.getMessage());
+                            "インポート処理のリソースクリーンアップ中にエラーが発生: " + cleanupError.getMessage());
                 }
             }
         });
     }
 
     /**
-     * ResourceManagerを活用したインポート結果の処理（CSVAccessResult拡張版）
+     * ResourceManagerを活用したインポート結果の処理
      * 
-     * 修正内容：
-     * - 新しいクラス作成を避け、既存のCSVAccessResultクラスの拡張機能を活用
-     * - より一貫性のある設計によるシステム全体の保守性向上
-     * - 段階的な処理フローによる理解しやすいコード構造
      * 
-     * @param importResult     インポート結果（拡張機能付き）
+     * @param importResult     インポート結果
      * @param currentEngineers 現在のエンジニアリスト
      * @param currentPanel     ステータス表示用パネル
      */
@@ -1822,7 +1778,7 @@ public class MainController {
             SwingUtilities.invokeLater(() -> {
                 DialogManager.getInstance().showErrorDialog(
                         "インポートエラー",
-                        "CSV読み込み中に致命的なエラーが発生しました:\n" + importResult.getErrorMessage());
+                        "CSV読み込み中に致命的なエラーが発生:\n" + importResult.getErrorMessage());
                 if (currentPanel instanceof ListPanel) {
                     ((ListPanel) currentPanel).setImportProcessing(false);
                 }
@@ -1841,10 +1797,10 @@ public class MainController {
 
         } catch (Exception e) {
             LogHandler.getInstance().logError(LogType.SYSTEM,
-                    "インポート分析中にエラーが発生しました", e);
+                    "インポート分析中にエラーが発生", e);
             SwingUtilities.invokeLater(() -> {
                 DialogManager.getInstance().showErrorDialog(
-                        "分析エラー", "インポートデータの分析中にエラーが発生しました: " + e.getMessage());
+                        "分析エラー", "インポートデータの分析中にエラーが発生: " + e.getMessage());
                 if (currentPanel instanceof ListPanel) {
                     ((ListPanel) currentPanel).setImportProcessing(false);
                 }
@@ -1889,20 +1845,20 @@ public class MainController {
                     updateUIAfterImportWithAnalysis(importResult, currentPanel);
                 } catch (Exception e) {
                     LogHandler.getInstance().logError(LogType.SYSTEM,
-                            "インポート完了後のUI更新中にエラーが発生しました", e);
+                            "インポート完了後のUI更新中にエラーが発生", e);
                     handleImportError(e, currentPanel);
                 }
             });
 
         } catch (Exception e) {
             LogHandler.getInstance().logError(LogType.SYSTEM,
-                    "インポートデータの処理中にエラーが発生しました", e);
+                    "インポートデータの処理中にエラーが発生", e);
             SwingUtilities.invokeLater(() -> handleImportError(e, currentPanel));
         }
     }
 
     /**
-     * 既存データとの重複チェックを実行（新規メソッド）
+     * 既存データとの重複チェックを実行
      * インポートデータと既存エンジニアデータを比較し、重複IDを検出
      * 
      * @param importResult     インポート結果オブジェクト
@@ -1950,7 +1906,7 @@ public class MainController {
     }
 
     /**
-     * エラーデータの詳細表示（新規メソッド）
+     * エラーデータの詳細表示
      * エラーになったエンジニアデータの詳細情報を表示
      */
     private void showImportErrorDetails(List<EngineerDTO> errorEngineers, JPanel currentPanel) {
@@ -2004,7 +1960,7 @@ public class MainController {
      * 分析結果に基づくデータ更新処理
      * CSVAccessResultの分析機能を活用して効率的なデータ更新を実行
      * 
-     * @param importResult      拡張されたCSVAccessResult（分析済み）
+     * @param importResult      拡張されたCSVAccessResult
      * @param importedEngineers 取り込み予定のエンジニアデータ
      * @param currentEngineers  現在のエンジニアデータ
      */
@@ -2116,7 +2072,7 @@ public class MainController {
     }
 
     /**
-     * インポート完了後のUI更新（分析機能活用版）
+     * インポート完了後のUI更新
      * CSVAccessResultの拡張機能を使用して、詳細な結果表示を実行
      * 
      * @param importResult 分析済みのCSVAccessResult
@@ -2155,11 +2111,11 @@ public class MainController {
             DialogManager.getInstance().showCompletionDialog("インポート完了", completionMessage);
 
             LogHandler.getInstance().log(Level.INFO, LogType.SYSTEM,
-                    "インポート結果ダイアログを表示しました: " + importResult.getAnalysisDetailInfo());
+                    "インポート結果ダイアログを表示: " + importResult.getAnalysisDetailInfo());
 
         } catch (Exception e) {
             LogHandler.getInstance().logError(LogType.SYSTEM,
-                    "インポート結果ダイアログの表示中にエラーが発生しました", e);
+                    "インポート結果ダイアログの表示中にエラーが発生", e);
 
             // フォールバック: 基本的な完了メッセージを表示
             DialogManager.getInstance().showCompletionDialog("インポート完了",
@@ -2178,7 +2134,7 @@ public class MainController {
     private void handleImportError(Exception e, JPanel currentPanel) {
         DialogManager.getInstance().showErrorDialog(
                 "エラー",
-                "インポート処理中にエラーが発生しました：" + e.getMessage());
+                "インポート処理中にエラーが発生：" + e.getMessage());
 
         if (currentPanel instanceof ListPanel) {
             ((ListPanel) currentPanel).setImportProcessing(false);
@@ -2215,7 +2171,7 @@ public class MainController {
         // 必要に応じてエラーダイアログを表示
         DialogManager.getInstance().showWarningDialog(
                 "未定義のイベント",
-                "システムが認識できないイベントが発生しました: " + event);
+                "システムが認識できないイベントが発生: " + event);
     }
 
     /**
@@ -2241,9 +2197,9 @@ public class MainController {
 
         } catch (Exception e) {
             LogHandler.getInstance().logError(LogType.SYSTEM,
-                    "インポートファイル検証中にエラーが発生しました", e);
+                    "インポートファイル検証中にエラーが発生", e);
             return new FileValidationResult(false,
-                    "ファイル検証中にエラーが発生しました: " + e.getMessage());
+                    "ファイル検証中にエラーが発生: " + e.getMessage());
         }
     }
 
@@ -2255,11 +2211,11 @@ public class MainController {
      */
     private void handleError(Exception e) {
         // 通常のエラー処理
-        LogHandler.getInstance().logError(LogType.SYSTEM, "エラーが発生しました", e);
+        LogHandler.getInstance().logError(LogType.SYSTEM, "エラーが発生", e);
         // UI更新はSwingのEDTで実行
         javax.swing.SwingUtilities.invokeLater(() -> {
             // エラーダイアログを表示
-            DialogManager.getInstance().showErrorDialog("処理中にエラーが発生しました", e.getMessage());
+            DialogManager.getInstance().showErrorDialog("処理中にエラーが発生", e.getMessage());
         });
     }
 
@@ -2275,7 +2231,7 @@ public class MainController {
     }
 
     /**
-     * シャットダウン処理の開始（修正版）
+     * シャットダウン処理の開始
      * AtomicBooleanによる排他制御を活用し、システム全体を統制する
      */
     public void initiateShutdown() {
@@ -2305,7 +2261,7 @@ public class MainController {
         } catch (Exception e) {
             // エラー時は緊急終了処理を実行
             LogHandler.getInstance().logError(LogType.SYSTEM,
-                    "統合シャットダウン処理中にエラーが発生しました", e);
+                    "統合シャットダウン処理中にエラーが発生", e);
             performEmergencyShutdown(e);
         }
     }
@@ -2321,10 +2277,10 @@ public class MainController {
         try {
             terminateRunningTasks();
             LogHandler.getInstance().log(Level.INFO, LogType.SYSTEM,
-                    "ビジネスロジック層のシャットダウンが完了しました");
+                    "ビジネスロジック層のシャットダウンが完了");
         } catch (Exception e) {
             LogHandler.getInstance().logError(LogType.SYSTEM,
-                    "ビジネスロジック層の終了処理中にエラーが発生しました", e);
+                    "ビジネスロジック層の終了処理中にエラーが発生", e);
             // エラーがあっても次のステップに進む
         }
     }
@@ -2342,14 +2298,14 @@ public class MainController {
                 // MainFrameには純粋にUI関連のリソース解放のみを委譲
                 mainFrame.releaseUIResources();
                 LogHandler.getInstance().log(Level.INFO, LogType.SYSTEM,
-                        "UI層のリソース解放が完了しました");
+                        "UI層のリソース解放が完了");
             } else {
                 LogHandler.getInstance().log(Level.WARNING, LogType.SYSTEM,
-                        "MainFrameへの参照がnullのため、UI層の終了処理をスキップします");
+                        "MainFrameへの参照がnullのため、UI層の終了処理をスキップ");
             }
         } catch (Exception e) {
             LogHandler.getInstance().logError(LogType.SYSTEM,
-                    "UI層の終了処理中にエラーが発生しました", e);
+                    "UI層の終了処理中にエラーが発生", e);
             // エラーがあっても次のステップに進む
         }
     }
@@ -2367,7 +2323,7 @@ public class MainController {
 
         // 注意: ログシステムのクリーンアップは最後のステップで実行
         LogHandler.getInstance().log(Level.INFO, LogType.SYSTEM,
-                "リソース層のシャットダウンが完了しました");
+                "リソース層のシャットダウンが完了");
     }
 
     /**
@@ -2383,15 +2339,15 @@ public class MainController {
                             "ResourceManagerのリソースが正常に解放されました");
                 } else {
                     LogHandler.getInstance().log(Level.WARNING, LogType.SYSTEM,
-                            "一部のResourceManagerリソース解放に失敗しましたが、処理を続行します");
+                            "一部のResourceManagerリソース解放に失敗しましたが、処理を続行");
                 }
             } else {
                 LogHandler.getInstance().log(Level.INFO, LogType.SYSTEM,
-                        "ResourceManagerは未初期化のため、クリーンアップをスキップします");
+                        "ResourceManagerは未初期化のため、クリーンアップをスキップ");
             }
         } catch (Exception e) {
             LogHandler.getInstance().logError(LogType.SYSTEM,
-                    "ResourceManagerクリーンアップ中にエラーが発生しました", e);
+                    "ResourceManagerクリーンアップ中にエラーが発生", e);
             // エラーがあっても処理を続行
         }
     }
@@ -2417,7 +2373,7 @@ public class MainController {
 
             // ログシステムの最終クリーンアップ（一度だけ実行）
             LogHandler.getInstance().log(Level.INFO, LogType.SYSTEM,
-                    "統合シャットダウン処理が正常に完了しました");
+                    "統合シャットダウン処理が正常に完了");
             LogHandler.getInstance().cleanup();
 
             // JVMの正常終了
@@ -2425,7 +2381,7 @@ public class MainController {
 
         } catch (Exception e) {
             // 最終段階でのエラーは緊急終了で対応
-            System.err.println("最終終了処理中にエラーが発生しました: " + e.getMessage());
+            System.err.println("最終終了処理中にエラーが発生: " + e.getMessage());
             performEmergencyShutdown(e);
         }
     }
@@ -2437,12 +2393,12 @@ public class MainController {
     private void performEmergencyShutdown(Exception originalError) {
         try {
             // 最小限のクリーンアップを試行
-            System.err.println("緊急終了処理を実行します。元のエラー: " + originalError.getMessage());
+            System.err.println("緊急終了処理を実行。元のエラー: " + originalError.getMessage());
 
             // ログシステムが生きていれば最後のログを記録
             try {
                 LogHandler.getInstance().logError(LogType.SYSTEM,
-                        "緊急終了処理を実行します", originalError);
+                        "緊急終了処理を実行", originalError);
                 LogHandler.getInstance().cleanup();
             } catch (Exception logError) {
                 System.err.println("ログ記録も失敗しました: " + logError.getMessage());
@@ -2453,7 +2409,7 @@ public class MainController {
 
         } catch (Exception e) {
             // 最後の最後の手段
-            System.err.println("緊急終了処理中にも例外が発生しました: " + e.getMessage());
+            System.err.println("緊急終了処理中にも例外が発生: " + e.getMessage());
             Runtime.getRuntime().halt(1); // 即座に強制終了
         }
     }
@@ -2465,7 +2421,7 @@ public class MainController {
     private void terminateRunningTasks() {
         int taskCount = runningTasks.size();
         LogHandler.getInstance().log(Level.INFO, LogType.SYSTEM,
-                "実行中の非同期タスクを終了します: " + taskCount + "件");
+                "実行中の非同期タスクを終了: " + taskCount + "件");
 
         if (taskCount == 0) {
             LogHandler.getInstance().log(Level.INFO, LogType.SYSTEM,

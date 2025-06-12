@@ -8,27 +8,6 @@ import java.util.Objects;
  * エンジニア情報を保持するデータ転送オブジェクト（DTO）
  * エンジニアの基本情報、スキル情報、経歴情報などを管理
  * 
- * <p>
- * 主要フィールド：
- * <ul>
- * <li>id - 社員ID（必須）</li>
- * <li>name - 氏名（必須）</li>
- * <li>nameKana - フリガナ（必須）</li>
- * <li>birthDate - 生年月日（必須）</li>
- * <li>joinDate - 入社年月（必須）</li>
- * <li>career - エンジニア歴（必須）</li>
- * <li>programmingLanguages - 扱える言語（必須）</li>
- * <li>careerHistory - 経歴</li>
- * <li>trainingHistory - 研修の受講歴</li>
- * <li>technicalSkill - 技術力</li>
- * <li>learningAttitude - 受講態度</li>
- * <li>communicationSkill - コミュニケーション能力</li>
- * <li>leadership - リーダーシップ</li>
- * <li>note - 備考</li>
- * <li>registeredDate - 登録日時</li>
- * </ul>
- * </p>
- * 
  * @author Nakano
  */
 public class EngineerDTO {

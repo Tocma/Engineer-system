@@ -20,21 +20,9 @@ import java.util.logging.Level;
  * エンジニア情報の新規登録画面を提供するパネルクラス
  * AbstractEngineerPanelの共通機能を活用し、新規登録に特化した機能を実装
  *
- * <p>
  * このクラスは、エンジニア人材管理システムにおいて新規エンジニア情報を
  * 登録するためのユーザーインターフェースを提供します。AbstractEngineerPanelを
- * 継承し、共通のフォーム作成機能とバリデーション機能を活用することで、
- * コードの重複を大幅に削減しています。
- * </p>
- *
- * <p>
- * バージョン4.11.7での主な改善点：
- * <ul>
- * <li>共通機能の親クラス移動による重複削減</li>
- * <li>新規登録に特化した機能への集約</li>
- * <li>保守性の向上</li>
- * </ul>
- * </p>
+ * 継承し、共通のフォーム作成機能とバリデーション機能を活用
  *
  * @author Nakano
  */
@@ -65,12 +53,12 @@ public class AddPanel extends AbstractEngineerPanel {
     public AddPanel() {
         super();
         this.processing = false;
-        LogHandler.getInstance().log(Level.INFO, LogType.UI, "AddPanelを作成しました");
+        LogHandler.getInstance().log(Level.INFO, LogType.UI, "アドパネルを作成");
     }
 
     /**
      * メインコントローラーを設定
-     * コントローラーを通じてイベント処理や画面遷移を行う
+     * コントローラーを通じてイベント処理や画面遷移
      *
      * @param mainController メインコントローラー
      */
@@ -80,7 +68,7 @@ public class AddPanel extends AbstractEngineerPanel {
 
     /**
      * パネルの初期化
-     * UIコンポーネントの生成と配置を行う
+     * UIコンポーネントの生成と配置
      */
     @Override
     public void initialize() {
@@ -94,9 +82,9 @@ public class AddPanel extends AbstractEngineerPanel {
             // ボタン領域の作成
             createButtonArea();
 
-            LogHandler.getInstance().log(Level.INFO, LogType.UI, "AddPanelの初期化が完了しました");
+            LogHandler.getInstance().log(Level.INFO, LogType.UI, "アドパネルの初期化完了");
         } catch (Exception e) {
-            LogHandler.getInstance().logError(LogType.UI, "AddPanelの初期化中にエラーが発生しました", e);
+            LogHandler.getInstance().logError(LogType.UI, "アドパネルの初期化中にエラーが発生", e);
         }
     }
 
@@ -203,8 +191,8 @@ public class AddPanel extends AbstractEngineerPanel {
             }
 
         } catch (Exception e) {
-            LogHandler.getInstance().logError(LogType.UI, "エンジニア追加処理中にエラーが発生しました", e);
-            showErrorMessage("エンジニア情報の登録中にエラーが発生しました: " + e.getMessage());
+            LogHandler.getInstance().logError(LogType.UI, "エンジニア追加処理中にエラーが発生", e);
+            showErrorMessage("エンジニア情報の登録中にエラーが発生: " + e.getMessage());
             setProcessing(false);
         }
     }
@@ -251,7 +239,7 @@ public class AddPanel extends AbstractEngineerPanel {
             }
         } catch (Exception e) {
             LogHandler.getInstance().logError(LogType.SYSTEM,
-                    "既存IDの取得中にエラーが発生しました", e);
+                    "既存IDの取得中にエラーが発生", e);
         }
         return new HashSet<>();
     }
@@ -335,7 +323,7 @@ public class AddPanel extends AbstractEngineerPanel {
     }
 
     /**
-     * 保存完了処理を実行します
+     * 保存完了処理を実行
      * エンジニア情報の保存処理が正常に完了した後に呼び出されます
      *
      * @param engineer 保存されたエンジニア情報
@@ -347,7 +335,7 @@ public class AddPanel extends AbstractEngineerPanel {
         try {
             // 処理中状態を解除
             setProcessing(false);
-            LogHandler.getInstance().log(Level.INFO, LogType.SYSTEM, "処理中状態を解除しました");
+            LogHandler.getInstance().log(Level.INFO, LogType.SYSTEM, "処理中状態を解除");
 
             // 登録完了ダイアログを表示し、次のアクションを取得
             String action = dialogManager.showRegisterCompletionDialog(engineer);
@@ -357,38 +345,38 @@ public class AddPanel extends AbstractEngineerPanel {
             switch (action) {
                 case "CONTINUE":
                     LogHandler.getInstance().log(Level.INFO, LogType.SYSTEM,
-                            "「続けて登録」が選択されました - フォームをクリアします");
+                            "「続けて登録」が選択されました - フォームをクリア");
                     clearFields();
                     break;
 
                 case "LIST":
                     LogHandler.getInstance().log(Level.INFO, LogType.SYSTEM,
-                            "「一覧に戻る」が選択されました - 一覧画面に遷移します");
+                            "「一覧に戻る」が選択されました - 一覧画面に遷移");
                     if (mainController != null) {
                         mainController.handleEvent("LOAD_DATA", null);
                         mainController.handleEvent("CHANGE_PANEL", "LIST");
                     } else {
                         LogHandler.getInstance().log(Level.WARNING, LogType.SYSTEM,
-                                "MainControllerが設定されていないため画面遷移できません");
+                                "メインコントローラが設定されていないため画面遷移できません");
                         clearFields();
                     }
                     break;
 
                 case "DETAIL":
                     LogHandler.getInstance().log(Level.INFO, LogType.SYSTEM,
-                            "「詳細を表示」が選択されました - 詳細画面に遷移します: ID=" + engineer.getId());
+                            "「詳細を表示」が選択されました - 詳細画面に遷移: ID=" + engineer.getId());
                     if (mainController != null) {
                         mainController.handleEvent("VIEW_DETAIL", engineer.getId());
                     } else {
                         LogHandler.getInstance().log(Level.WARNING, LogType.SYSTEM,
-                                "MainControllerが設定されていないため画面遷移できません");
+                                "メインコントローラが設定されていないため画面遷移できません");
                         clearFields();
                     }
                     break;
 
                 default:
                     LogHandler.getInstance().log(Level.WARNING, LogType.SYSTEM,
-                            "未知のアクションが選択されました: " + action + " - デフォルト処理を実行します");
+                            "未知のアクションが選択されました: " + action + " - デフォルト処理を実行");
                     clearFields();
                     break;
             }
@@ -400,14 +388,14 @@ public class AddPanel extends AbstractEngineerPanel {
 
         } catch (Exception e) {
             LogHandler.getInstance().logError(LogType.SYSTEM,
-                    "handleSaveComplete処理中にエラーが発生しました: " + engineer.getId(), e);
+                    "handleSaveComplete処理中にエラーが発生: " + engineer.getId(), e);
 
             try {
                 DialogManager.getInstance().showErrorDialog("エラー",
-                        "登録完了処理中にエラーが発生しました: " + e.getMessage());
+                        "登録完了処理中にエラーが発生: " + e.getMessage());
             } catch (Exception dialogError) {
                 LogHandler.getInstance().logError(LogType.SYSTEM,
-                        "エラーダイアログの表示にも失敗しました", dialogError);
+                        "エラーダイアログの表示にも失敗", dialogError);
             }
 
             setProcessing(false);
@@ -415,7 +403,7 @@ public class AddPanel extends AbstractEngineerPanel {
         } finally {
             if (processing) {
                 LogHandler.getInstance().log(Level.WARNING, LogType.SYSTEM,
-                        "処理中状態が解除されていません - 強制的に解除します");
+                        "処理中状態が解除されていません - 強制的に解除");
                 setProcessing(false);
             }
         }
@@ -423,7 +411,7 @@ public class AddPanel extends AbstractEngineerPanel {
 
     /**
      * 入力フィールドをクリア
-     * すべての入力フィールドを初期状態にリセットし、エラー表示もクリアします
+     * すべての入力フィールドを初期状態にリセットし、エラー表示もクリア
      */
     private void clearFields() {
         // テキストフィールドのクリア
@@ -462,7 +450,7 @@ public class AddPanel extends AbstractEngineerPanel {
 
     /**
      * 一覧画面に戻る
-     * コントローラーを通じて画面遷移を行う
+     * コントローラーを通じて画面遷移
      */
     private void goBack() {
         // 入力フィールドをクリア
@@ -483,7 +471,7 @@ public class AddPanel extends AbstractEngineerPanel {
 
     /**
      * 処理中状態の設定
-     * 処理中はUIコンポーネントを無効化し、プログレスインジケーターを表示します
+     * 処理中はUIコンポーネントを無効化し、プログレスインジケーターを表示
      *
      * @param processing 処理中の場合true
      */
@@ -502,7 +490,7 @@ public class AddPanel extends AbstractEngineerPanel {
     }
 
     /**
-     * 完了処理の成功状態を取得します
+     * 完了処理の成功状態を取得
      *
      * @return 完了処理が成功した場合true、そうでなければfalse
      */
@@ -511,7 +499,7 @@ public class AddPanel extends AbstractEngineerPanel {
     }
 
     /**
-     * 現在の処理中状態を取得します
+     * 現在の処理中状態を取得
      *
      * @return 処理中の場合true、そうでなければfalse
      */

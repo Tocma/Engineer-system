@@ -4,7 +4,7 @@ import util.StringUtil;
 
 /**
  * テキストフィールド検証用バリデータ
- * 経歴、研修の受講歴、備考の文字数検証を実行します
+ * 経歴、研修の受講歴、備考の文字数検証を実行
  * 
  * @author Nakano
  */
@@ -30,7 +30,7 @@ public class TextValidator extends AbstractValidator {
 
     /**
      * テキストの前処理を実行
-     * 全角英数字を半角に変換します
+     * 全角英数字を半角に変換
      * 
      * @param value 入力値
      * @return 前処理済みの値

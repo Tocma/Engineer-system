@@ -2,31 +2,7 @@ package util.Constants;
 
 /**
  * システム全体で使用されるメッセージを定義する列挙型クラス。
- * バリデーションエラーメッセージやダイアログメッセージを一元管理し、
- * メッセージの一貫性を保ちます。s
- * 
- * <p>
- * メッセージは以下のカテゴリに分類されます：
- * </p>
- * <ul>
- * <li>バリデーションエラーメッセージ: VALIDATION_ERROR_で始まるもの</li>
- * <li>ダイアログメッセージ（エラー）: DIALOG_ERROR_で始まるもの</li>
- * <li>ダイアログメッセージ（確認）: DIALOG_CONFIRM_で始まるもの</li>
- * <li>ダイアログメッセージ（完了通知）: DIALOG_COMPLETION_で始まるもの</li>
- * </ul>
- * 
- * <p>
- * 使用例：
- * </p>
- * 
- * <pre>
- * // 通常のメッセージ取得
- * String errorTitle = MessageEnum.DIALOG_ERROR_TITLE.getMessage();
- * 
- * // パラメータを含むメッセージのフォーマット
- * String addedMsg = MessageEnum.DIALOG_COMPLETION_ENGINEER_ADDED.format("ID00001", "山田太郎");
- * // 結果: "エンジニア情報を追加しました: ID=ID00001, 名前=山田太郎"
- * </pre>
+ * バリデーションエラーメッセージやダイアログメッセージを一元管理
  *
  * @author Nakano
  */
@@ -267,7 +243,7 @@ public enum MessageEnum {
     }
 
     /**
-     * メッセージテキストを取得します。
+     * メッセージテキストを取得
      * プレースホルダーなしの単純なメッセージテキストを返します。
      * 
      * @return メッセージテキスト
@@ -277,17 +253,8 @@ public enum MessageEnum {
     }
 
     /**
-     * フォーマット済みのメッセージテキストを取得します。
+     * フォーマット済みのメッセージテキストを取得
      * メッセージ内の「%s」や「%d」などのプレースホルダーが引数の値で置換されます。
-     * 
-     * <p>
-     * このメソッドは、動的な情報を含むメッセージを表示したい場合に使用します。
-     * 例えば、特定のエンジニアIDや名前を含むメッセージなどです。
-     * </p>
-     * 
-     * <p>
-     * 例：
-     * </p>
      * 
      * <pre>
      * String msg = MessageEnum.DIALOG_COMPLETION_ENGINEER_ADDED.format("ID001", "山田太郎");

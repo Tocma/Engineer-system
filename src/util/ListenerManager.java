@@ -15,11 +15,11 @@ import java.util.logging.Level;
  * このクラスは、アプリケーション全体のマウスリスナー、クリックリスナー、
  * その他のイベントリスナーを一元管理し、以下の機能を提供します：
  * 
- * - リスナーの登録・削除の統一管理
- * - リスナーの重複登録防止
- * - リソースリークの防止
- * - デバッグ情報の提供
- * - 自動クリーンアップ機能
+ * リスナーの登録・削除の統一管理
+ * リスナーの重複登録防止
+ * リソースリークの防止
+ * デバッグ情報の提供
+ * 自動クリーンアップ機能
  * 
  * @author Nakano
  */
@@ -156,7 +156,7 @@ public class ListenerManager {
      */
     private ListenerManager() {
         LogHandler.getInstance().log(Level.INFO, LogType.SYSTEM,
-                "ListenerManagerを初期化しました");
+                "ListenerManagerを初期化完了");
     }
 
     /**
@@ -261,14 +261,14 @@ public class ListenerManager {
             componentInfo.addListener(listenerId, type);
 
             LogHandler.getInstance().log(Level.INFO, LogType.SYSTEM,
-                    String.format("リスナーを登録しました: ID=%s, Type=%s, Component=%s, Description=%s",
+                    String.format("リスナーを登録: ID=%s, Type=%s, Component=%s, Description=%s",
                             listenerId, type.getTypeName(), component.getClass().getSimpleName(), description));
 
             return listenerId;
 
         } catch (Exception e) {
             LogHandler.getInstance().logError(LogType.SYSTEM,
-                    "リスナーの登録に失敗しました: " + description, e);
+                    "リスナーの登録に失敗: " + description, e);
             throw new RuntimeException("リスナー登録エラー", e);
         }
     }
@@ -309,13 +309,13 @@ public class ListenerManager {
             }
 
             LogHandler.getInstance().log(Level.INFO, LogType.SYSTEM,
-                    "リスナーを削除しました: " + listenerId);
+                    "リスナーを削除: " + listenerId);
 
             return true;
 
         } catch (Exception e) {
             LogHandler.getInstance().logError(LogType.SYSTEM,
-                    "リスナーの削除に失敗しました: " + listenerId, e);
+                    "リスナーの削除に失敗: " + listenerId, e);
             return false;
         }
     }
@@ -385,7 +385,7 @@ public class ListenerManager {
         }
 
         LogHandler.getInstance().log(Level.INFO, LogType.SYSTEM,
-                String.format("コンポーネントのリスナーをすべて削除しました: %s, 削除数=%d",
+                String.format("コンポーネントのリスナーをすべて削除: %s, 削除数=%d",
                         component.getClass().getSimpleName(), removedCount));
 
         return removedCount;
@@ -398,7 +398,7 @@ public class ListenerManager {
      */
     public int removeAllListeners() {
         LogHandler.getInstance().log(Level.INFO, LogType.SYSTEM,
-                "全リスナーのクリーンアップを開始します: 総数=" + listenerRegistry.size());
+                "全リスナーのクリーンアップを開始: 総数=" + listenerRegistry.size());
 
         Set<String> allListenerIds = new HashSet<>(listenerRegistry.keySet());
         int removedCount = 0;
@@ -414,7 +414,7 @@ public class ListenerManager {
         listenerRegistry.clear();
 
         LogHandler.getInstance().log(Level.INFO, LogType.SYSTEM,
-                "全リスナーのクリーンアップが完了しました: 削除数=" + removedCount);
+                "全リスナーのクリーンアップが完了: 削除数=" + removedCount);
 
         return removedCount;
     }

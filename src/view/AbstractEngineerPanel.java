@@ -18,21 +18,9 @@ import java.util.logging.Level;
  * エンジニア情報関連パネル（詳細・追加画面）の基本機能を提供する抽象クラス
  * 共通UIコンポーネント管理、レイアウト、入力検証、フォーム作成機能を統合
  *
- * <p>
  * このクラスは、エンジニア情報の詳細表示・編集・追加に関連するパネル（DetailPanel、AddPanel）の
  * 共通基盤として機能します。Template Methodパターンを活用して、共通処理を定義しつつ、
  * サブクラス固有の振る舞いをフックメソッドで拡張できるようにしています。
- * </p>
- *
- * <p>
- * バージョン4.11.7で追加された主な機能：
- * <ul>
- * <li>共通フォーム作成機能の統合</li>
- * <li>共通フィールド管理の実装</li>
- * <li>統一されたバリデーション機能</li>
- * <li>重複コードの大幅削減</li>
- * </ul>
- * </p>
  *
  * @author Nakano
  */
@@ -153,12 +141,12 @@ public abstract class AbstractEngineerPanel extends JPanel {
         initializeFieldDisplayNames();
         initializeValidators();
         LogHandler.getInstance().log(Level.INFO, LogType.SYSTEM,
-                "AbstractEngineerPanelを初期化しました（新バリデーションシステム統合）");
+                "AbstractEngineerPanelを初期化完了");
     }
 
     /**
      * バリデータの初期化
-     * 既存のIDセットを収集してバリデータを作成
+     * IDセットを収集してバリデータを作成
      */
     private void initializeValidators() {
         try {
@@ -169,17 +157,17 @@ public abstract class AbstractEngineerPanel extends JPanel {
             this.validators = ValidatorFactory.createEngineerValidators(existingIds);
 
             LogHandler.getInstance().log(Level.INFO, LogType.SYSTEM,
-                    "バリデータを初期化しました: " + validators.size() + "個");
+                    "バリデータを初期化完了: " + validators.size() + "個");
         } catch (Exception e) {
             LogHandler.getInstance().logError(LogType.SYSTEM,
-                    "バリデータの初期化中にエラーが発生しました", e);
+                    "バリデータの初期化中にエラーが発生", e);
             // フォールバック用の空マップ
             this.validators = new HashMap<>();
         }
     }
 
     /**
-     * 既存のエンジニアIDセットを取得
+     * エンジニアIDセットを取得
      * サブクラスでオーバーライドして実装
      */
     protected Set<String> getExistingEngineerIds() {
@@ -268,11 +256,11 @@ public abstract class AbstractEngineerPanel extends JPanel {
             initialized = true;
 
             LogHandler.getInstance().log(Level.INFO, LogType.UI,
-                    this.getClass().getSimpleName() + "を初期化しました");
+                    this.getClass().getSimpleName() + "を初期化完了");
 
         } catch (Exception e) {
             LogHandler.getInstance().logError(LogType.UI,
-                    "パネルの初期化中にエラーが発生しました: " + this.getClass().getSimpleName(), e);
+                    "パネルの初期化中にエラーが発生: " + this.getClass().getSimpleName(), e);
         }
     }
 
@@ -329,7 +317,7 @@ public abstract class AbstractEngineerPanel extends JPanel {
         add(bottomPanel, BorderLayout.SOUTH);
     }
 
-    // === 共通フォーム作成メソッド（重複削減） ===
+    // === 共通フォーム作成メソッド ===
 
     /**
      * 基本情報セクションの作成（エラーラベル対応版）
@@ -593,7 +581,7 @@ public abstract class AbstractEngineerPanel extends JPanel {
     // === 共通バリデーション機能（重複削減） ===
 
     /**
-     * 共通入力検証を実行（新バリデーションシステム使用）
+     * 共通入力検証を実行
      * 
      * @return 検証成功の場合true、失敗の場合false
      */
@@ -622,8 +610,8 @@ public abstract class AbstractEngineerPanel extends JPanel {
 
         } catch (Exception e) {
             LogHandler.getInstance().logError(LogType.SYSTEM,
-                    "バリデーション実行中にエラーが発生しました", e);
-            showErrorMessage("入力検証中にエラーが発生しました: " + e.getMessage());
+                    "バリデーション実行中にエラーが発生", e);
+            showErrorMessage("入力検証中にエラーが発生: " + e.getMessage());
             return false;
         }
     }
@@ -744,7 +732,7 @@ public abstract class AbstractEngineerPanel extends JPanel {
                 // 通常のフィールド（氏名、氏名カナ、社員IDなど）
                 // フィールド名をそのまま使用してエラーラベルに表示
                 showFieldError(fieldName, errorMessage);
-                
+
                 LogHandler.getInstance().log(Level.INFO, LogType.SYSTEM,
                         "通常フィールドエラー表示完了: " + fieldName);
             }
@@ -752,7 +740,7 @@ public abstract class AbstractEngineerPanel extends JPanel {
 
         // 最初のエラーフィールドにフォーカス
         focusFirstErrorField();
-        
+
         LogHandler.getInstance().log(Level.INFO, LogType.SYSTEM,
                 "バリデーションエラー表示完了");
     }
@@ -830,8 +818,8 @@ public abstract class AbstractEngineerPanel extends JPanel {
     }
 
     /**
-     * フィールドのエラーメッセージラベルを作成（改良版）
-     * ラベルの右部に表示されるエラーメッセージラベルを作成します
+     * フィールドのエラーメッセージラベルを作成
+     * ラベルの右部に表示されるエラーメッセージラベルを作成
      */
     protected JLabel createFieldErrorLabel(String fieldName) {
         JLabel errorLabel = new JLabel("");
@@ -839,7 +827,7 @@ public abstract class AbstractEngineerPanel extends JPanel {
         errorLabel.setVisible(false);
         errorLabel.setFont(errorLabel.getFont().deriveFont(Font.PLAIN, UIConstants.ERROR_MESSAGE_FONT_SIZE));
         errorLabel.setHorizontalAlignment(SwingConstants.LEFT);
-        
+
         // エラーラベルの幅を制限して適切な表示を確保
         errorLabel.setPreferredSize(new Dimension(300, 15));
         errorLabel.setMaximumSize(new Dimension(300, 15));
@@ -960,7 +948,7 @@ public abstract class AbstractEngineerPanel extends JPanel {
     }
 
     /**
-     * フィールド固有のエラーメッセージを表示（改良版）
+     * フィールド固有のエラーメッセージを表示
      * createFieldErrorLabelで作成されたラベルに適切にエラーメッセージを表示
      */
     protected void showFieldError(String fieldName, String errorMessage) {
@@ -973,19 +961,19 @@ public abstract class AbstractEngineerPanel extends JPanel {
             // エラーメッセージをラベルに設定
             errorLabel.setText(errorMessage);
             errorLabel.setVisible(true);
-            
+
             // 対応するコンポーネントにもエラーマークを設定
             String componentName = getComponentNameFromFieldName(fieldName);
             markComponentError(componentName, null);
 
             LogHandler.getInstance().log(Level.INFO, LogType.UI,
-                    "フィールドエラーラベルにメッセージを設定しました: " + fieldName + " - " + errorMessage);
+                    "フィールドエラーラベルにメッセージを設定: " + fieldName + " - " + errorMessage);
         } else {
             // エラーラベルが見つからない場合は全体エラーメッセージにフォールバック
             LogHandler.getInstance().log(Level.WARNING, LogType.UI,
                     "フィールドエラーラベルが見つからないため全体エラーに表示: " + fieldName);
             showErrorMessage(errorMessage);
-            
+
             // コンポーネントのエラーマークは設定
             String componentName = getComponentNameFromFieldName(fieldName);
             markComponentError(componentName, null);
@@ -1001,7 +989,7 @@ public abstract class AbstractEngineerPanel extends JPanel {
     }
 
     /**
-     * すべてのフィールドエラーメッセージをクリア（改良版）
+     * すべてのフィールドエラーメッセージをクリア
      * エラーラベルの状態を確実にリセット
      */
     protected void clearAllFieldErrors() {
@@ -1011,25 +999,25 @@ public abstract class AbstractEngineerPanel extends JPanel {
         for (Map.Entry<String, JLabel> entry : fieldErrorLabels.entrySet()) {
             String fieldName = entry.getKey();
             JLabel errorLabel = entry.getValue();
-            
+
             if (errorLabel != null) {
                 errorLabel.setText("");
                 errorLabel.setVisible(false);
-                
+
                 LogHandler.getInstance().log(Level.FINE, LogType.UI,
-                        "フィールドエラーラベルをクリアしました: " + fieldName);
+                        "フィールドエラーラベルをクリア: " + fieldName);
             }
         }
-        
+
         // 全体エラーメッセージもクリア
         clearErrorMessage();
-        
+
         LogHandler.getInstance().log(Level.INFO, LogType.UI,
                 "全フィールドエラークリア完了");
     }
 
     /**
-     * コンポーネントにエラー表示を設定（改良版）
+     * コンポーネントにエラー表示を設定
      * より詳細なログ出力と、テキストフィールドの赤枠表示を強化
      */
     protected void markComponentError(String componentName, String errorMessage) {
@@ -1052,7 +1040,7 @@ public abstract class AbstractEngineerPanel extends JPanel {
             if (!originalBorders.containsKey(jComponent)) {
                 originalBorders.put(jComponent, jComponent.getBorder());
                 LogHandler.getInstance().log(Level.INFO, LogType.SYSTEM,
-                        "元のボーダーを保存しました: " + componentName);
+                        "元のボーダーを保存: " + componentName);
             }
 
             // エラーボーダーを設定
@@ -1060,7 +1048,7 @@ public abstract class AbstractEngineerPanel extends JPanel {
             errorComponents.put(componentName, component);
 
             LogHandler.getInstance().log(Level.INFO, LogType.SYSTEM,
-                    "エラーボーダーを設定しました: " + componentName +
+                    "エラーボーダーを設定: " + componentName +
                             " (" + component.getClass().getSimpleName() + ")");
 
             // コンポーネントを再描画
@@ -1081,7 +1069,7 @@ public abstract class AbstractEngineerPanel extends JPanel {
             languageComboBox.repaint();
 
             LogHandler.getInstance().log(Level.INFO, LogType.SYSTEM,
-                    "言語選択コンボボックスにエラーボーダーを設定しました");
+                    "言語選択コンボボックスにエラーボーダーを設定");
         }
     }
 
@@ -1092,10 +1080,10 @@ public abstract class AbstractEngineerPanel extends JPanel {
     protected void clearComponentError(String componentName) {
         // コンポーネントのボーダーをクリア
         Component component = errorComponents.remove(componentName);
-        
+
         LogHandler.getInstance().log(Level.INFO, LogType.SYSTEM,
                 "コンポーネントエラークリア: " + componentName);
-        
+
         if (component instanceof JComponent) {
             JComponent jComponent = (JComponent) component;
 
@@ -1105,7 +1093,7 @@ public abstract class AbstractEngineerPanel extends JPanel {
             } else {
                 jComponent.setBorder(null);
             }
-            
+
             jComponent.repaint();
         }
 
@@ -1116,9 +1104,9 @@ public abstract class AbstractEngineerPanel extends JPanel {
             if (errorLabel != null) {
                 errorLabel.setText("");
                 errorLabel.setVisible(false);
-                
+
                 LogHandler.getInstance().log(Level.INFO, LogType.SYSTEM,
-                        "対応するエラーラベルもクリアしました: " + fieldName);
+                        "対応するエラーラベルもクリア: " + fieldName);
             }
         }
 
@@ -1175,12 +1163,12 @@ public abstract class AbstractEngineerPanel extends JPanel {
     }
 
     /**
-     * すべてのコンポーネントのエラー表示をクリア（改良版）
+     * すべてのコンポーネントのエラー表示をクリア
      * より確実なエラー状態のリセットを実装
      */
     protected void clearAllComponentErrors() {
         LogHandler.getInstance().log(Level.INFO, LogType.SYSTEM,
-                "全コンポーネントのエラー表示をクリアします: " + errorComponents.size() + "個");
+                "全コンポーネントのエラー表示をクリア: " + errorComponents.size() + "個");
 
         // エラーコンポーネントのリストをコピーして安全にクリア
         List<String> componentNames = new ArrayList<>(errorComponents.keySet());
@@ -1196,7 +1184,7 @@ public abstract class AbstractEngineerPanel extends JPanel {
         clearErrorMessage();
 
         LogHandler.getInstance().log(Level.INFO, LogType.SYSTEM,
-                "全コンポーネントのエラー表示クリアが完了しました");
+                "全コンポーネントのエラー表示クリアが完了");
     }
 
     /**
@@ -1230,10 +1218,9 @@ public abstract class AbstractEngineerPanel extends JPanel {
             textField.revalidate();
 
             LogHandler.getInstance().log(Level.INFO, LogType.SYSTEM,
-                    "テキストフィールドに赤枠を設定しました: " + componentName);
+                    "テキストフィールドに赤枠を設定: " + componentName);
         }
     }
-    
 
     /**
      * バリデーションエラーの詳細なデバッグ情報を出力

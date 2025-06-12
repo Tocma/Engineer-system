@@ -2,7 +2,6 @@ package view;
 
 import javax.swing.*;
 import javax.swing.table.DefaultTableModel;
-
 import model.EngineerDTO;
 import util.LogHandler;
 import util.LogHandler.LogType;
@@ -15,50 +14,12 @@ import java.util.stream.Collectors;
 
 /**
  * ダイアログ表示を一元管理するシングルトンクラス
- * アプリケーション全体で一貫したダイアログ表示を提供します
+ * アプリケーション全体で一貫したダイアログ表示
  *
- * <p>
- * このクラスは、エンジニア管理システム内のすべてのダイアログ表示を管理し、
- * 視覚的に一貫したユーザーインターフェースを提供します。シングルトンパターンを
- * 採用しており、アプリケーション全体で単一のインスタンスを共有します。
- * </p>
- *
- * <p>
- * DialogManagerが提供する主な機能：
- * <ul>
- * <li>エラーダイアログの表示 - ユーザー入力エラーや処理エラーの通知</li>
- * <li>警告ダイアログの表示 - 潜在的な問題や注意事項の通知</li>
- * <li>情報ダイアログの表示 - 一般的な情報の通知</li>
- * <li>確認ダイアログの表示 - ユーザーの確認が必要な操作の前に表示</li>
- * <li>完了ダイアログの表示 - 処理の成功完了を通知</li>
- * <li>重複ID確認ダイアログの表示 - CSV読み込み時のID重複処理の確認</li>
- * </ul>
- * </p>
- *
- * <p>
  * このクラスは、Swingのダイアログコンポーネント（JOptionPane）をラップし、
  * アプリケーション固有のメッセージや振る舞いを統一的に提供します。
  * また、非同期処理でも適切にダイアログを表示できるよう、SwingUtilitiesと
- * CompletableFutureを組み合わせた実装を提供します。
- * </p>
- *
- * <p>
- * 使用例：
- * 
- * <pre>
- * // エラーダイアログの表示
- * DialogManager.getInstance().showErrorDialog("入力データが不正です");
- *
- * // 確認ダイアログの表示と結果の取得
- * boolean confirmed = DialogManager.getInstance().showConfirmDialog("保存してもよろしいですか？");
- * if (confirmed) {
- *     // 保存処理
- * }
- *
- * // 完了ダイアログの表示
- * DialogManager.getInstance().showCompletionDialog("データの保存が完了しました");
- * </pre>
- * </p>
+ * CompletableFutureを組み合わせた実装
  *
  * @author Nakano
  */
@@ -76,14 +37,14 @@ public class DialogManager {
 
     /**
      * プライベートコンストラクタ
-     * シングルトンパターンを実現するため、外部からのインスタンス化を防止します
+     * シングルトンパターンを実現するため、外部からのインスタンス化を防止
      */
     private DialogManager() {
         // シングルトンパターンのため空のコンストラクタ
     }
 
     /**
-     * シングルトンインスタンスを取得します
+     * シングルトンインスタンスを取得
      *
      * @return DialogManagerの唯一のインスタンス
      */
@@ -92,8 +53,8 @@ public class DialogManager {
     }
 
     /**
-     * エラーダイアログを表示します
-     * 入力エラーや処理エラーなど、エラー情報をユーザーに通知します
+     * エラーダイアログを表示
+     * 入力エラーや処理エラーなど、エラー情報をユーザーに通知
      *
      * @param message 表示するエラーメッセージ
      */
@@ -102,7 +63,7 @@ public class DialogManager {
     }
 
     /**
-     * カスタムタイトルを指定してエラーダイアログを表示します
+     * カスタムタイトルを指定してエラーダイアログを表示
      *
      * @param title   ダイアログのタイトル
      * @param message 表示するエラーメッセージ
@@ -118,8 +79,8 @@ public class DialogManager {
     }
 
     /**
-     * 警告ダイアログを表示します
-     * 潜在的な問題や注意事項をユーザーに通知します
+     * 警告ダイアログを表示
+     * 潜在的な問題や注意事項をユーザーに通知
      *
      * @param message 表示する警告メッセージ
      */
@@ -128,7 +89,7 @@ public class DialogManager {
     }
 
     /**
-     * カスタムタイトルを指定して警告ダイアログを表示します
+     * カスタムタイトルを指定して警告ダイアログを表示
      *
      * @param title   ダイアログのタイトル
      * @param message 表示する警告メッセージ
@@ -144,8 +105,8 @@ public class DialogManager {
     }
 
     /**
-     * 情報ダイアログを表示します
-     * 一般的な情報をユーザーに通知します
+     * 情報ダイアログを表示
+     * 一般的な情報をユーザーに通知
      *
      * @param message 表示する情報メッセージ
      */
@@ -154,7 +115,7 @@ public class DialogManager {
     }
 
     /**
-     * カスタムタイトルを指定して情報ダイアログを表示します
+     * カスタムタイトルを指定して情報ダイアログを表示
      *
      * @param title   ダイアログのタイトル
      * @param message 表示する情報メッセージ
@@ -170,8 +131,8 @@ public class DialogManager {
     }
 
     /**
-     * 完了ダイアログを表示します
-     * 処理の成功完了をユーザーに通知します
+     * 完了ダイアログを表示
+     * 処理の成功完了をユーザーに通知
      *
      * @param message 表示する完了メッセージ
      */
@@ -180,7 +141,7 @@ public class DialogManager {
     }
 
     /**
-     * カスタムタイトルを指定して完了ダイアログを表示します
+     * カスタムタイトルを指定して完了ダイアログを表示
      *
      * @param title   ダイアログのタイトル
      * @param message 表示する完了メッセージ
@@ -197,7 +158,7 @@ public class DialogManager {
     }
 
     /**
-     * 完了メッセージを表示するダイアログを表示し、ユーザーが閉じた後に任意の後続処理を実行します。
+     * 完了メッセージを表示するダイアログを表示し、ユーザーが閉じた後に任意の後続処理を実行
      *
      * @param message  表示する完了メッセージ
      * @param onClosed ダイアログが閉じられた後に実行される処理（null 可）
@@ -216,7 +177,7 @@ public class DialogManager {
     }
 
     /**
-     * 大量データをスクロール表示できる確認ダイアログを表示します
+     * 大量データをスクロール表示できる確認ダイアログを表示
      *
      * @param title         ダイアログのタイトル
      * @param headerMessage 上部に表示する簡単なメッセージ（null可）
@@ -251,14 +212,14 @@ public class DialogManager {
             return result == JOptionPane.YES_OPTION;
 
         } catch (Exception e) {
-            LogHandler.getInstance().logError(LogType.SYSTEM, "スクロール可能リストダイアログの表示中にエラーが発生しました", e);
+            LogHandler.getInstance().logError(LogType.SYSTEM, "スクロール可能リストダイアログの表示中にエラーが発生", e);
             return false;
         }
     }
 
     /**
-     * 確認ダイアログを表示します
-     * ユーザーの確認が必要な操作の前に、確認を求めるダイアログを表示します
+     * 確認ダイアログを表示
+     * ユーザーの確認が必要な操作の前に、確認を求めるダイアログを表示
      *
      * @param message 表示する確認メッセージ
      * @return 「はい」が選択された場合はtrue、それ以外はfalse
@@ -268,7 +229,7 @@ public class DialogManager {
     }
 
     /**
-     * カスタムタイトルを指定して確認ダイアログを表示します
+     * カスタムタイトルを指定して確認ダイアログを表示
      *
      * @param title   ダイアログのタイトル
      * @param message 表示する確認メッセージ
@@ -304,42 +265,15 @@ public class DialogManager {
             return future.get();
 
         } catch (InterruptedException | ExecutionException e) {
-            LogHandler.getInstance().logError(LogType.SYSTEM, "確認ダイアログの表示中にエラーが発生しました", e);
+            LogHandler.getInstance().logError(LogType.SYSTEM, "確認ダイアログの表示中にエラーが発生", e);
             Thread.currentThread().interrupt(); // 割り込みステータスを復元
             return false;
         }
     }
 
-    // public boolean showConfirmDialog(String title, String message) {
-    // try {
-    // // 非同期処理でダイアログを表示し、結果を待機
-    // CompletableFuture<Boolean> future = new CompletableFuture<>();
-
-    // SwingUtilities.invokeLater(() -> {
-    // int result = JOptionPane.showConfirmDialog(
-    // getActiveFrame(),
-    // message,
-    // title,
-    // JOptionPane.YES_NO_OPTION,
-    // JOptionPane.QUESTION_MESSAGE);
-
-    // future.complete(result == JOptionPane.YES_OPTION);
-    // });
-
-    // // 結果が利用可能になるまで待機
-    // return future.get();
-
-    // } catch (InterruptedException | ExecutionException e) {
-    // LogHandler.getInstance().logError(LogType.SYSTEM, "確認ダイアログの表示中にエラーが発生しました",
-    // e);
-    // Thread.currentThread().interrupt(); // 割り込みステータスを復元
-    // return false;
-    // }
-    // }
-
     /**
-     * ID重複確認ダイアログを表示します
-     * CSV読み込み時に重複IDが検出された場合に、上書き確認のダイアログを表示します
+     * ID重複確認ダイアログを表示
+     * CSV読み込み時に重複IDが検出された場合に、上書き確認のダイアログを表示
      *
      * @param duplicateIds 重複しているID一覧
      * @return 上書きする場合はtrue、そうでなければfalse
@@ -394,7 +328,7 @@ public class DialogManager {
 
                 } catch (Exception e) {
                     LogHandler.getInstance().logError(LogType.SYSTEM,
-                            "重複確認ダイアログ内でエラーが発生しました", e);
+                            "重複確認ダイアログ内でエラーが発生", e);
                     future.complete(false); // エラー時はスキップを選択
                 }
             });
@@ -409,14 +343,14 @@ public class DialogManager {
 
         } catch (InterruptedException | ExecutionException e) {
             LogHandler.getInstance().logError(LogType.SYSTEM,
-                    "ID重複確認ダイアログの表示中にエラーが発生しました", e);
+                    "ID重複確認ダイアログの表示中にエラーが発生", e);
             Thread.currentThread().interrupt(); // 割り込みステータスを復元
             return false;
         }
     }
 
     /**
-     * カスタムボタン付きの選択ダイアログを表示します
+     * カスタムボタン付きの選択ダイアログを表示
      * ユーザーに複数の選択肢を提示し、選択された結果を返します
      *
      * @param title         ダイアログのタイトル
@@ -448,15 +382,15 @@ public class DialogManager {
             return future.get();
 
         } catch (InterruptedException | ExecutionException e) {
-            LogHandler.getInstance().logError(LogType.SYSTEM, "選択ダイアログの表示中にエラーが発生しました", e);
+            LogHandler.getInstance().logError(LogType.SYSTEM, "選択ダイアログの表示中にエラーが発生", e);
             Thread.currentThread().interrupt(); // 割り込みステータスを復元
             return -1;
         }
     }
 
     /**
-     * 入力ダイアログを表示します
-     * ユーザーからテキスト入力を受け付けるダイアログを表示します
+     * 入力ダイアログを表示
+     * ユーザーからテキスト入力を受け付けるダイアログを表示
      *
      * @param message      表示するメッセージ
      * @param initialValue 初期値
@@ -480,7 +414,7 @@ public class DialogManager {
             return future.get();
 
         } catch (InterruptedException | ExecutionException e) {
-            LogHandler.getInstance().logError(LogType.SYSTEM, "入力ダイアログの表示中にエラーが発生しました", e);
+            LogHandler.getInstance().logError(LogType.SYSTEM, "入力ダイアログの表示中にエラーが発生", e);
             Thread.currentThread().interrupt(); // 割り込みステータスを復元
             return null;
         }
@@ -491,46 +425,7 @@ public class DialogManager {
      * <p>
      * このメソッドは、エンジニア情報の登録が成功した後にユーザーに表示される
      * ダイアログを生成・表示します。ユーザーは登録完了後の次のアクションとして
-     * 以下の3つの選択肢から選ぶことができます：
-     * </p>
-     * 
-     * <ul>
-     * <li><b>続けて登録</b>: 入力フォームをクリアして新たな登録を続行</li>
-     * <li><b>一覧に戻る</b>: エンジニア一覧画面に戻る</li>
-     * <li><b>詳細を表示</b>: 登録したエンジニアの詳細画面を表示</li>
-     * </ul>
-     * 
-     * <p>
-     * このメソッドは、呼び出し元のスレッドがイベントディスパッチスレッド(EDT)かどうかを
-     * 自動的に検出し、適切な方法でダイアログ表示を行います：
-     * </p>
-     * 
-     * <ul>
-     * <li>EDT上から呼び出された場合：直接ダイアログを表示し、結果を同期的に返します</li>
-     * <li>非EDT上から呼び出された場合：CompletableFutureを使用して、EDTでダイアログを表示し、
-     * 結果が得られるまで安全に待機します</li>
-     * </ul>
-     * 
-     * <p>
-     * この実装による主な利点：
-     * </p>
-     * 
-     * <ul>
-     * <li>EDTでのデッドロック防止: EDT上での呼び出し時にCompletableFuture.get()によるEDTブロックを回避</li>
-     * <li>一貫した使用方法: 呼び出し元は、どのスレッドから呼び出してもAPIの使い方を変更する必要がない</li>
-     * <li>堅牢なエラーハンドリング: 例外発生時も確実に結果を返し、EDTブロックを防止</li>
-     * </ul>
-     * 
-     * <p>
-     * エラーが発生した場合でも適切にハンドリングし、ログに記録した上でデフォルトの
-     * アクション（"CONTINUE"）を返却します。また、スレッドの割り込みが発生した場合は
-     * 割り込みステータスを適切に復元します。
-     * </p>
-     * 
-     * <p>
-     * このメソッドは、処理の各ステップでロギングを行い、問題が発生した場合の
-     * トラブルシューティングを容易にしています。
-     * </p>
+     * 3つの選択肢から選ぶことができます：
      *
      * @param engineer 登録されたエンジニア情報（{@link EngineerDTO}オブジェクト）
      * @return 選択されたアクション（"CONTINUE", "LIST", "DETAIL"のいずれか）
@@ -554,12 +449,12 @@ public class DialogManager {
     }
 
     /**
-     * EDT上で直接登録完了ダイアログを表示します（内部メソッド）
-     * <p>
+     * EDT上で直接登録完了ダイアログを表示（内部メソッド）
+     * 
      * このメソッドは、イベントディスパッチスレッド(EDT)上から呼び出される場合に使用され、
      * ダイアログを直接表示して結果を返します。CompletableFutureのようなスレッド間通信
-     * メカニズムを使用せず、同期的に処理を行うため、EDTブロックのリスクを回避します。
-     * </p>
+     * メカニズムを使用せず、同期的に処理を行うため、EDTブロックのリスクを回避
+     * 
      * 
      * @param engineer 登録されたエンジニア情報
      * @return 選択されたアクション
@@ -636,12 +531,11 @@ public class DialogManager {
     }
 
     /**
-     * 非EDT上から登録完了ダイアログを非同期的に表示します（内部メソッド）
-     * <p>
+     * 非EDT上から登録完了ダイアログを非同期的に表示（内部メソッド）
+     * 
      * このメソッドは、イベントディスパッチスレッド(EDT)以外のスレッドから呼び出される場合に使用され、
-     * CompletableFutureを使用してEDT上でダイアログを表示し、その結果を安全に待機します。
+     * CompletableFutureを使用してEDT上でダイアログを表示し、その結果を安全に待機
      * EDTをブロックすることなく、ダイアログの結果を非同期に取得することができます。
-     * </p>
      * 
      * @param engineer 登録されたエンジニア情報
      * @return 選択されたアクション
@@ -740,27 +634,27 @@ public class DialogManager {
         } catch (InterruptedException e) {
             // 割り込み発生時
             LogHandler.getInstance().logError(LogType.SYSTEM,
-                    "非同期ダイアログの待機中に割り込みが発生しました: ID=" + engineer.getId(), e);
+                    "非同期ダイアログの待機中に割り込みが発生: ID=" + engineer.getId(), e);
             Thread.currentThread().interrupt(); // 割り込みステータスを復元
             return "CONTINUE"; // エラー時はデフォルト動作
 
         } catch (ExecutionException e) {
             // 実行時エラー
             LogHandler.getInstance().logError(LogType.SYSTEM,
-                    "非同期ダイアログの実行中にエラーが発生しました: ID=" + engineer.getId(), e);
+                    "非同期ダイアログの実行中にエラーが発生: ID=" + engineer.getId(), e);
             return "CONTINUE"; // エラー時はデフォルト動作
 
         } catch (Exception e) {
             // その他の予期しないエラー
             LogHandler.getInstance().logError(LogType.SYSTEM,
-                    "非同期ダイアログ処理中に予期しないエラーが発生しました: ID=" + engineer.getId(), e);
+                    "非同期ダイアログ処理中に予期しないエラーが発生: ID=" + engineer.getId(), e);
             return "CONTINUE"; // エラー時はデフォルト動作
         }
     }
 
     /**
-     * バリデーションエラーダイアログを表示します
-     * フォーム入力のバリデーションエラー時に特化したエラーダイアログを表示します
+     * バリデーションエラーダイアログを表示
+     * フォーム入力のバリデーションエラー時に特化したエラーダイアログを表示
      * 
      * @param errorFields エラーのあるフィールド名のリスト
      */
@@ -777,8 +671,8 @@ public class DialogManager {
     }
 
     /**
-     * システムエラーダイアログを表示します
-     * システム内部エラーをユーザーに通知します
+     * システムエラーダイアログを表示
+     * システム内部エラーをユーザーに通知
      * 
      * @param errorMessage エラーメッセージ
      * @param exception    発生した例外（オプション）
@@ -797,8 +691,8 @@ public class DialogManager {
     }
 
     /**
-     * アクティブなフレームを取得します
-     * ダイアログの親コンポーネントとして使用するフレームを取得します
+     * アクティブなフレームを取得
+     * ダイアログの親コンポーネントとして使用するフレームを取得
      *
      * @return アクティブなフレーム、存在しない場合はnull
      */
@@ -822,7 +716,7 @@ public class DialogManager {
     }
 
     /**
-     * インポートエラーの詳細表示ダイアログ（新規メソッド）
+     * インポートエラーの詳細表示ダイアログ
      * エラーになったデータの詳細情報を構造化して表示
      * 
      * @param errorEngineers エラーになったエンジニアデータのリスト
@@ -839,7 +733,7 @@ public class DialogManager {
 
             // ヘッダーメッセージ
             JLabel headerLabel = new JLabel(
-                    String.format("インポート時に %d 件のエラーが発生しました：", errorEngineers.size()));
+                    String.format("インポート時に %d 件のエラーが発生：", errorEngineers.size()));
             headerLabel.setBorder(BorderFactory.createEmptyBorder(10, 10, 10, 10));
             errorPanel.add(headerLabel, BorderLayout.NORTH);
 

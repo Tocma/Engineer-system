@@ -6,7 +6,7 @@ import java.util.logging.Level;
 
 /**
  * フィールドバリデータの抽象基底クラス
- * 共通のバリデーション処理とユーティリティメソッドを提供します
+ * 共通のバリデーション処理とユーティリティメソッドを提供
  * 
  * @author Nakano
  */
@@ -48,7 +48,7 @@ public abstract class AbstractValidator implements FieldValidator {
 
     /**
      * デフォルトの前処理実装
-     * 前後の空白を除去します
+     * 前後の空白を除去
      * 
      * @param value 入力値
      * @return トリムされた値

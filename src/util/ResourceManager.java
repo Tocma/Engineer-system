@@ -92,12 +92,12 @@ public class ResourceManager {
             initialized = true;
 
             // ログに記録
-            logInfo("リソースマネージャーが正常に初期化されました");
+            logInfo("リソースマネージャーを初期化完了");
             logPaths();
         } catch (IOException e) {
             // ログに記録
-            logError("リソースマネージャーの初期化に失敗しました", e);
-            throw new IOException("リソースマネージャーの初期化に失敗しました", e);
+            logError("リソースマネージャーの初期化に失敗", e);
+            throw new IOException("リソースマネージャーの初期化に失敗", e);
         }
     }
 
@@ -129,8 +129,8 @@ public class ResourceManager {
             createDirectoryIfNotExists(srcDirectoryPath);
             createDirectoryIfNotExists(dataDirectoryPath);
         } catch (IOException e) {
-            logError("ディレクトリの作成に失敗しました", e);
-            throw new IOException("必要なディレクトリの作成に失敗しました", e);
+            logError("ディレクトリの作成に失敗", e);
+            throw new IOException("必要なディレクトリの作成に失敗", e);
         }
     }
 
@@ -145,13 +145,13 @@ public class ResourceManager {
         if (!Files.exists(dirPath)) {
             try {
                 Files.createDirectories(dirPath);
-                System.out.println("ディレクトリを作成しました: " + dirPath.toString());
+                System.out.println("ディレクトリを作成: " + dirPath.toString());
             } catch (IOException e) {
-                System.err.println("ディレクトリの作成に失敗しました: " + dirPath + ", エラー: " + e.getMessage());
+                System.err.println("ディレクトリの作成に失敗: " + dirPath + ", エラー: " + e.getMessage());
                 throw e;
             }
         } else {
-            System.out.println("既存のディレクトリを使用します: " + dirPath);
+            System.out.println("既存のディレクトリを使用: " + dirPath);
         }
     }
 
@@ -170,20 +170,20 @@ public class ResourceManager {
                 }
 
                 // CSVファイルが存在しない場合、新規作成、try-with-resourcesを使用
-                System.out.println("CSVファイルを作成します: " + engineerCsvPath);
+                System.out.println("CSVファイルを作成: " + engineerCsvPath);
                 try (BufferedWriter writer = Files.newBufferedWriter(engineerCsvPath, StandardCharsets.UTF_8)) {
                     writer.write(DEFAULT_CSV_HEADER);
                     writer.newLine();
                 }
 
-                logInfo("新しいCSVファイルを作成しました: " + engineerCsvPath.toString());
+                logInfo("新しいCSVファイルを作成: " + engineerCsvPath.toString());
             } else {
-                System.out.println("既存のCSVファイルを使用します: " + engineerCsvPath);
+                System.out.println("既存のCSVファイルを使用: " + engineerCsvPath);
             }
         } catch (IOException e) {
-            System.err.println("新しいCSVファイルの作成に失敗しました: " + e.getMessage());
-            logError("新しいCSVファイルの作成に失敗しました", e);
-            throw new IOException("新しいCSVファイルの作成に失敗しました", e);
+            System.err.println("新しいCSVファイルの作成に失敗: " + e.getMessage());
+            logError("新しいCSVファイルの作成に失敗", e);
+            throw new IOException("新しいCSVファイルの作成に失敗", e);
         }
     }
 
@@ -203,12 +203,12 @@ public class ResourceManager {
             Path newDir = dataDirectoryPath.resolve(dirName);
             if (!Files.exists(newDir)) {
                 Files.createDirectories(newDir);
-                logInfo("新しいディレクトリを作成しました: " + newDir.toString());
+                logInfo("新しいディレクトリを作成: " + newDir.toString());
             }
             return newDir;
         } catch (IOException e) {
-            logError("新しいディレクトリの作成に失敗しました: " + dirName, e);
-            throw new IOException("新しいディレクトリの作成に失敗しました", e);
+            logError("新しいディレクトリの作成に失敗: " + dirName, e);
+            throw new IOException("新しいディレクトリの作成に失敗", e);
         }
     }
 
@@ -229,7 +229,7 @@ public class ResourceManager {
         }
 
         openResources.put(key, resource);
-        logInfo("リソースを登録しました: " + key);
+        logInfo("リソースを登録: " + key);
     }
 
     /**
@@ -247,10 +247,10 @@ public class ResourceManager {
         if (resource != null) {
             try {
                 resource.close();
-                logInfo("リソースを解放しました: " + key);
+                logInfo("リソースを解放: " + key);
                 return true;
             } catch (IOException e) {
-                logError("リソースの解放に失敗しました: " + key, e);
+                logError("リソースの解放に失敗: " + key, e);
                 return false;
             }
         }
@@ -270,22 +270,22 @@ public class ResourceManager {
         for (Map.Entry<String, Closeable> entry : openResources.entrySet()) {
             try {
                 entry.getValue().close();
-                logInfo("リソースを解放しました: " + entry.getKey());
+                logInfo("リソースを解放: " + entry.getKey());
             } catch (IOException e) {
                 allSuccess = false;
                 failedResources.add(entry.getKey());
-                logError("リソースの解放に失敗しました: " + entry.getKey(), e);
+                logError("リソースの解放に失敗: " + entry.getKey(), e);
             }
         }
 
         // 失敗したリソースがあればログに記録
         if (!failedResources.isEmpty()) {
-            logWarning("以下のリソースの解放に失敗しました: " + String.join(", ", failedResources));
+            logWarning("以下のリソースの解放に失敗: " + String.join(", ", failedResources));
         }
 
         // マップをクリア
         openResources.clear();
-        logInfo("全リソースの解放処理を完了しました");
+        logInfo("全リソースの解放処理を完了");
 
         return allSuccess;
     }

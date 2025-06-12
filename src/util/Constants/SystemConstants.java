@@ -5,7 +5,7 @@ package util.Constants;
  * 
  * <p>
  * このクラスは、エンジニア人材管理システム全体で使用される
- * 基本的な設定値や制限値を一元管理します。
+ * 基本的な設定値や制限値を一元管理
  * </p>
  * 
  * @author Nakano
@@ -67,7 +67,7 @@ public final class SystemConstants {
     public static final String DEFAULT_ENCODING = "UTF-8";
 
     /** システムバージョン */
-    public static final String SYSTEM_VERSION = "4.15.16";
+    public static final String SYSTEM_VERSION = "4.15.17";
 
     /** システム名 */
     public static final String SYSTEM_NAME = "エンジニア人材管理システム";
