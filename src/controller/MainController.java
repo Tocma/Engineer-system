@@ -26,6 +26,7 @@ import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.logging.Level;
 import java.util.stream.Collectors;
+import java.util.Objects;
 import javax.swing.JFileChooser;
 import javax.swing.JOptionPane;
 import javax.swing.JPanel;
@@ -1808,9 +1809,8 @@ public class MainController {
         List<EngineerDTO> errorEngineers = importResult.getErrorData();
 
         LogHandler.getInstance().log(Level.INFO, LogType.SYSTEM,
-                String.format("インポート処理開始: 取込データ=%d件, 現在データ=%d件, エラーデータ=%d件, 重複ID=%d件",
-                        importedEngineers.size(), currentEngineers.size(), errorEngineers.size(),
-                        importResult.getDuplicateIds().size()));
+                String.format("インポート処理開始: 取込データ=%d件, 現在データ=%d件, エラーデータ=%d件",
+                        importedEngineers.size(), currentEngineers.size(), errorEngineers.size()));
 
         // エラーデータがある場合の詳細表示
         if (!errorEngineers.isEmpty()) {
@@ -1823,13 +1823,15 @@ public class MainController {
                 DialogManager.getInstance().showErrorDialog(
                         "インポートエラー",
                         "CSV読み込み中に致命的なエラーが発生しました:\n" + importResult.getErrorMessage());
-
                 if (currentPanel instanceof ListPanel) {
                     ((ListPanel) currentPanel).setImportProcessing(false);
                 }
             });
             return;
         }
+
+        // **修正箇所: 既存データとの重複チェックを明示的に実行**
+        performDuplicateCheckWithExistingData(importResult, currentEngineers);
 
         // 既存の分析処理を継続
         try {
@@ -1840,7 +1842,6 @@ public class MainController {
         } catch (Exception e) {
             LogHandler.getInstance().logError(LogType.SYSTEM,
                     "インポート分析中にエラーが発生しました", e);
-
             SwingUtilities.invokeLater(() -> {
                 DialogManager.getInstance().showErrorDialog(
                         "分析エラー", "インポートデータの分析中にエラーが発生しました: " + e.getMessage());
@@ -1862,7 +1863,6 @@ public class MainController {
             SwingUtilities.invokeLater(() -> {
                 String errorMessage = importResult.buildDetailedLimitErrorMessage();
                 DialogManager.getInstance().showErrorDialog("インポート制限エラー", errorMessage);
-
                 if (currentPanel instanceof ListPanel) {
                     ((ListPanel) currentPanel).setImportProcessing(false);
                 }
@@ -1870,9 +1870,14 @@ public class MainController {
             return;
         }
 
-        // 重複ID処理
+        // **修正箇所: 重複ID処理の確実な実行**
         if (importResult.hasDuplicateIds()) {
+            LogHandler.getInstance().log(Level.INFO, LogType.SYSTEM,
+                    "重複IDが検出されました: " + importResult.getDuplicateIds().size() + "件");
             handleDuplicateIds(importResult);
+        } else {
+            LogHandler.getInstance().log(Level.INFO, LogType.SYSTEM,
+                    "重複IDは検出されませんでした");
         }
 
         // データ更新処理
@@ -1893,6 +1898,54 @@ public class MainController {
             LogHandler.getInstance().logError(LogType.SYSTEM,
                     "インポートデータの処理中にエラーが発生しました", e);
             SwingUtilities.invokeLater(() -> handleImportError(e, currentPanel));
+        }
+    }
+
+    /**
+     * 既存データとの重複チェックを実行（新規メソッド）
+     * インポートデータと既存エンジニアデータを比較し、重複IDを検出
+     * 
+     * @param importResult     インポート結果オブジェクト
+     * @param currentEngineers 現在の既存エンジニアデータ
+     */
+    private void performDuplicateCheckWithExistingData(CSVAccessResult importResult,
+            List<EngineerDTO> currentEngineers) {
+
+        LogHandler.getInstance().log(Level.INFO, LogType.SYSTEM,
+                "既存データとの重複チェックを開始");
+
+        // 既存エンジニアのIDセットを作成（高速検索のため）
+        Set<String> existingIds = currentEngineers.stream()
+                .map(EngineerDTO::getId)
+                .filter(Objects::nonNull)
+                .collect(Collectors.toSet());
+
+        LogHandler.getInstance().log(Level.INFO, LogType.SYSTEM,
+                "既存エンジニアID数: " + existingIds.size());
+
+        // インポートデータから重複IDを検出
+        List<String> duplicateIds = new ArrayList<>();
+        List<EngineerDTO> successData = importResult.getSuccessData();
+
+        for (EngineerDTO engineer : successData) {
+            String engineerId = engineer.getId();
+            if (engineerId != null && existingIds.contains(engineerId)) {
+                if (!duplicateIds.contains(engineerId)) { // 重複排除
+                    duplicateIds.add(engineerId);
+                    LogHandler.getInstance().log(Level.INFO, LogType.SYSTEM,
+                            "重複ID検出: " + engineerId);
+                }
+            }
+        }
+
+        // 重複IDをCSVAccessResultに設定
+        if (!duplicateIds.isEmpty()) {
+            importResult.addDuplicateIds(duplicateIds);
+            LogHandler.getInstance().log(Level.INFO, LogType.SYSTEM,
+                    "重複ID検出完了: " + duplicateIds.size() + "件 - " + duplicateIds);
+        } else {
+            LogHandler.getInstance().log(Level.INFO, LogType.SYSTEM,
+                    "重複IDは検出されませんでした");
         }
     }
 

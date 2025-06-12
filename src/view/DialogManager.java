@@ -345,43 +345,71 @@ public class DialogManager {
      * @return 上書きする場合はtrue、そうでなければfalse
      */
     public boolean showDuplicateIdConfirmDialog(List<String> duplicateIds) {
+        // デバッグログの追加
+        LogHandler.getInstance().log(Level.INFO, LogType.SYSTEM,
+                "重複確認ダイアログの表示を開始: 重複ID数=" + duplicateIds.size());
+
         try {
             // 非同期処理でダイアログを表示し、結果を待機
             CompletableFuture<Boolean> future = new CompletableFuture<>();
 
             SwingUtilities.invokeLater(() -> {
-                // 重複IDの一覧を表示用に整形
-                String idListText = duplicateIds.stream()
-                        .limit(10) // 表示数を制限
-                        .collect(Collectors.joining(", "));
+                try {
+                    LogHandler.getInstance().log(Level.INFO, LogType.SYSTEM,
+                            "重複確認ダイアログをEDTで表示中");
 
-                // 表示IDが10個を超える場合は、省略表記を追加
-                if (duplicateIds.size() > 10) {
-                    idListText += "... 他 " + (duplicateIds.size() - 10) + " 件";
+                    // 重複IDの一覧を表示用に整形
+                    String idListText = duplicateIds.stream()
+                            .limit(10) // 表示数を制限
+                            .collect(Collectors.joining(", "));
+
+                    // 表示IDが10個を超える場合は、省略表記を追加
+                    if (duplicateIds.size() > 10) {
+                        idListText += "... 他 " + (duplicateIds.size() - 10) + " 件";
+                    }
+
+                    // メッセージの構築
+                    String message = String.format(
+                            "以下のIDが既に存在します。上書きしますか？\n\n%s\n\n" +
+                                    "「はい」：既存データを上書きします\n" +
+                                    "「いいえ」：既存データを保持し、新しいデータをスキップします",
+                            idListText);
+
+                    LogHandler.getInstance().log(Level.INFO, LogType.SYSTEM,
+                            "重複確認ダイアログメッセージ: " + message.substring(0, Math.min(100, message.length())) + "...");
+
+                    int result = JOptionPane.showConfirmDialog(
+                            getActiveFrame(),
+                            message,
+                            "ID重複確認",
+                            JOptionPane.YES_NO_OPTION,
+                            JOptionPane.WARNING_MESSAGE);
+
+                    boolean userChoice = (result == JOptionPane.YES_OPTION);
+
+                    LogHandler.getInstance().log(Level.INFO, LogType.SYSTEM,
+                            "重複確認ダイアログの結果: " + (userChoice ? "上書き" : "スキップ"));
+
+                    future.complete(userChoice);
+
+                } catch (Exception e) {
+                    LogHandler.getInstance().logError(LogType.SYSTEM,
+                            "重複確認ダイアログ内でエラーが発生しました", e);
+                    future.complete(false); // エラー時はスキップを選択
                 }
-
-                // メッセージの構築
-                String message = String.format(
-                        "以下のIDが既に存在します。上書きしますか？\n\n%s\n\n" +
-                                "「はい」：既存データを上書きします\n" +
-                                "「いいえ」：既存データを保持し、新しいデータをスキップします",
-                        idListText);
-
-                int result = JOptionPane.showConfirmDialog(
-                        getActiveFrame(),
-                        message,
-                        "ID重複確認",
-                        JOptionPane.YES_NO_OPTION,
-                        JOptionPane.WARNING_MESSAGE);
-
-                future.complete(result == JOptionPane.YES_OPTION);
             });
 
             // 結果が利用可能になるまで待機
-            return future.get();
+            boolean result = future.get();
+
+            LogHandler.getInstance().log(Level.INFO, LogType.SYSTEM,
+                    "重複確認ダイアログ処理完了: 結果=" + (result ? "上書き" : "スキップ"));
+
+            return result;
 
         } catch (InterruptedException | ExecutionException e) {
-            LogHandler.getInstance().logError(LogType.SYSTEM, "ID重複確認ダイアログの表示中にエラーが発生しました", e);
+            LogHandler.getInstance().logError(LogType.SYSTEM,
+                    "ID重複確認ダイアログの表示中にエラーが発生しました", e);
             Thread.currentThread().interrupt(); // 割り込みステータスを復元
             return false;
         }
