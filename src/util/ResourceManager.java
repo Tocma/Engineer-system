@@ -103,7 +103,7 @@ public class ResourceManager {
     private void setupTemporaryDirectories() throws IOException {
         // システム一時ディレクトリ下にアプリケーション専用フォルダを作成
         Path systemTempDir = Paths.get(System.getProperty("java.io.tmpdir"));
-        this.tempDirectoryPath = systemTempDir.resolve("engineer-management-system");
+        this.tempDirectoryPath = systemTempDir.resolve("Engineer-system");
         this.tempDataDirectoryPath = tempDirectoryPath.resolve(FileConstants.DATA_DIR_NAME);
         this.tempEngineerCsvPath = tempDataDirectoryPath.resolve(FileConstants.DEFAULT_ENGINEER_CSV);
 
