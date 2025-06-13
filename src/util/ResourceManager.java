@@ -35,9 +35,9 @@ public class ResourceManager {
     private ClassLoader classLoader;
 
     /** 一時ディレクトリパス（書き込み用） */
-    private Path tempDirectoryPath;
-    private Path tempDataDirectoryPath;
-    private Path tempEngineerCsvPath;
+    private Path projectDirectoryPath;
+    private Path projectDataDirectoryPath;
+    private Path projectEngineerCsvPath;
 
     /**
      * プライベートコンストラクタ
@@ -76,7 +76,7 @@ public class ResourceManager {
             logInfo("クラスパスベースのResourceManagerを初期化開始");
 
             // 一時ディレクトリの設定（書き込み可能な場所）
-            setupTemporaryDirectories();
+            setupProjectDirectories();
 
             // クラスパス内のリソースの確認
             verifyClasspathResources();
@@ -100,18 +100,14 @@ public class ResourceManager {
      * 一時ディレクトリの設定
      * 書き込み操作用の一時領域を準備
      */
-    private void setupTemporaryDirectories() throws IOException {
-        // システム一時ディレクトリ下にアプリケーション専用フォルダを作成
-        Path systemTempDir = Paths.get(System.getProperty("java.io.tmpdir"));
-        this.tempDirectoryPath = systemTempDir.resolve("Engineer-system");
-        this.tempDataDirectoryPath = tempDirectoryPath.resolve(FileConstants.DATA_DIR_NAME);
-        this.tempEngineerCsvPath = tempDataDirectoryPath.resolve(FileConstants.DEFAULT_ENGINEER_CSV);
+    private void setupProjectDirectories() throws IOException {
+        // プロジェクトルートディレクトリを取得
+        String projectRoot = System.getProperty("user.dir");
+        this.projectDirectoryPath = Paths.get(projectRoot);
+        this.projectDataDirectoryPath = projectDirectoryPath.resolve("src").resolve(FileConstants.DATA_DIR_NAME);
+        this.projectEngineerCsvPath = projectDataDirectoryPath.resolve(FileConstants.DEFAULT_ENGINEER_CSV);
 
-        // ディレクトリを作成
-        createDirectoryIfNotExists(tempDirectoryPath);
-        createDirectoryIfNotExists(tempDataDirectoryPath);
-
-        logInfo("一時ディレクトリを設定: " + tempDirectoryPath.toString());
+        createDirectoryIfNotExists(projectDataDirectoryPath);
     }
 
     /**
@@ -151,21 +147,20 @@ public class ResourceManager {
      * クラスパス内のリソースまたは一時ディレクトリにCSVファイルを準備
      */
     private void prepareDefaultCsvFile() throws IOException {
-        // まずクラスパス内のリソースを確認
         String csvResourcePath = "data/" + FileConstants.DEFAULT_ENGINEER_CSV;
         InputStream csvResourceStream = classLoader.getResourceAsStream(csvResourcePath);
 
         if (csvResourceStream != null) {
-            // クラスパス内にCSVリソースが存在する場合は一時ディレクトリにコピー
+            // クラスパス内にCSVリソースが存在する場合はプロジェクトディレクトリにコピー
             logInfo("クラスパス内のCSVリソースを検出: " + csvResourcePath);
             try (csvResourceStream) {
-                copyResourceToTempFile(csvResourceStream, tempEngineerCsvPath);
-                logInfo("CSVリソースを一時ファイルにコピー: " + tempEngineerCsvPath);
+                copyResourceToTempFile(csvResourceStream, projectEngineerCsvPath); // ←パス変更
+                logInfo("CSVリソースをプロジェクトファイルにコピー: " + projectEngineerCsvPath);
             }
         } else {
-            // クラスパス内にリソースが存在しない場合は新規作成
-            logInfo("CSVリソースが存在しないため、新規作成: " + tempEngineerCsvPath);
-            createInitialCsvFile(tempEngineerCsvPath.toFile());
+            // 新規作成
+            logInfo("CSVリソースが存在しないため、新規作成: " + projectEngineerCsvPath);
+            createInitialCsvFile(projectEngineerCsvPath.toFile()); // ←パス変更
         }
     }
 
@@ -281,7 +276,7 @@ public class ResourceManager {
         }
 
         try {
-            Path newDir = tempDataDirectoryPath.resolve(dirName);
+            Path newDir = projectDataDirectoryPath.resolve(dirName);
             if (!Files.exists(newDir)) {
                 Files.createDirectories(newDir);
                 logInfo("新しいディレクトリを作成: " + newDir.toString());
@@ -404,7 +399,7 @@ public class ResourceManager {
      * @return 一時データディレクトリのパス
      */
     public Path getDataDirectoryPath() {
-        return tempDataDirectoryPath;
+        return projectDataDirectoryPath;
     }
 
     /**
@@ -413,7 +408,7 @@ public class ResourceManager {
      * @return エンジニアCSVファイルのパス
      */
     public Path getEngineerCsvPath() {
-        return tempEngineerCsvPath;
+        return projectDataDirectoryPath;
     }
 
     /**
@@ -450,16 +445,16 @@ public class ResourceManager {
      * @return アプリケーションの一時ディレクトリパス
      */
     public Path getTempDirectoryPath() {
-        return tempDirectoryPath;
+        return projectEngineerCsvPath;
     }
 
     /**
      * 作成したパスをログに出力
      */
     private void logResourcePaths() {
-        logInfo("一時ディレクトリ: " + tempDirectoryPath.toString());
-        logInfo("データディレクトリ: " + tempDataDirectoryPath.toString());
-        logInfo("エンジニアCSVファイル: " + tempEngineerCsvPath.toString());
+        logInfo("一時ディレクトリ: " + projectDirectoryPath.toString());
+        logInfo("データディレクトリ: " + projectDataDirectoryPath.toString());
+        logInfo("エンジニアCSVファイル: " + projectEngineerCsvPath.toString());
     }
 
     /**
