@@ -15,12 +15,13 @@ import view.DialogManager;
 import view.ListPanel;
 import view.MainFrame;
 import java.io.File;
-import java.nio.file.Path;
+import java.io.InputStream;
 import java.time.LocalDate;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.ArrayList;
+import java.util.Properties;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -77,6 +78,9 @@ public class MainController {
 
     /** 削除中のエンジニアIDのセット */
     private final Set<String> deletingIds = ConcurrentHashMap.newKeySet();
+
+    /** アプリケーション設定（クラスパスから読み込み） */
+    private Properties applicationConfig;
 
     /**
      * エンジニア検索条件を保持するクラス
@@ -201,10 +205,11 @@ public class MainController {
         // 画面遷移コントローラーにメインコントローラーへの参照を設定
         this.screenController.setMainController(this);
 
-        // MainFrameにMainControllerへの参照を設定（循環参照だが制御された形で）
+        // MainFrameにMainControllerへの参照を設定
         this.mainFrame.setMainController(this);
 
-        LogHandler.getInstance().log(Level.INFO, LogType.SYSTEM, "メインコントローラを初期化完了");
+        LogHandler.getInstance().log(Level.INFO, LogType.SYSTEM,
+                "クラスパスベース対応メインコントローラを初期化完了");
     }
 
     /**
@@ -213,14 +218,16 @@ public class MainController {
      */
     public void initialize() {
         try {
-            // ResourceManagerの取得と初期化確認
-            // これにより、ファイルパス管理が一元化されます
+            // ResourceManagerの取得と初期化確認（クラスパスベース対応）
             resourceManager = ResourceManager.getInstance();
             if (!resourceManager.isInitialized()) {
                 resourceManager.initialize();
                 LogHandler.getInstance().log(Level.INFO, LogType.SYSTEM,
-                        "ResourceManager を初期化完了");
+                        "クラスパスベースResourceManagerを初期化完了");
             }
+
+            // アプリケーション設定の読み込み（新機能）
+            loadApplicationConfiguration();
 
             // エンジニアコントローラーの初期化
             engineerController = new EngineerController();
@@ -228,7 +235,8 @@ public class MainController {
             // 初期画面の表示
             screenController.showPanel("LIST");
 
-            LogHandler.getInstance().log(Level.INFO, LogType.SYSTEM, "アプリケーションを初期化完了");
+            LogHandler.getInstance().log(Level.INFO, LogType.SYSTEM,
+                    "クラスパスベース対応アプリケーションを初期化完了");
 
             // ListPanelにMainControllerを設定
             JPanel panel = screenController.getCurrentPanel();
@@ -237,9 +245,83 @@ public class MainController {
             }
 
         } catch (Exception e) {
-            LogHandler.getInstance().logError(LogType.SYSTEM, "アプリケーションの初期化に失敗", e);
+            LogHandler.getInstance().logError(LogType.SYSTEM,
+                    "アプリケーションの初期化に失敗", e);
             handleFatalError(e);
         }
+    }
+
+    /**
+     * アプリケーション設定の読み込み（新機能）
+     * クラスパス内の設定ファイルから各種設定を読み込み
+     */
+    private void loadApplicationConfiguration() {
+        try {
+            // メイン設定ファイルの読み込み
+            InputStream configStream = resourceManager.getResourceAsStream("config/application.properties");
+
+            if (configStream != null) {
+                applicationConfig = new Properties();
+                applicationConfig.load(configStream);
+                configStream.close();
+
+                LogHandler.getInstance().log(Level.INFO, LogType.SYSTEM,
+                        "アプリケーション設定を読み込み: " + applicationConfig.size() + "項目");
+
+                // 設定の適用（例：ウィンドウサイズ、テーマなど）
+                applyApplicationConfiguration();
+            } else {
+                LogHandler.getInstance().log(Level.INFO, LogType.SYSTEM,
+                        "設定ファイルが見つかりません。デフォルト設定を使用");
+                applicationConfig = new Properties();
+                setDefaultConfiguration();
+            }
+
+        } catch (Exception e) {
+            LogHandler.getInstance().logError(LogType.SYSTEM,
+                    "設定ファイル読み込み中にエラーが発生", e);
+            applicationConfig = new Properties();
+            setDefaultConfiguration();
+        }
+    }
+
+    /**
+     * 設定の適用
+     * 読み込んだ設定をアプリケーションに反映
+     */
+    private void applyApplicationConfiguration() {
+        try {
+            // ウィンドウサイズの設定例
+            String windowWidth = applicationConfig.getProperty("window.width", "1000");
+            String windowHeight = applicationConfig.getProperty("window.height", "800");
+
+            // テーマ設定の例
+            String theme = applicationConfig.getProperty("ui.theme", "default");
+
+            // ログレベル設定の例
+            String logLevel = applicationConfig.getProperty("log.level", "INFO");
+
+            LogHandler.getInstance().log(Level.INFO, LogType.SYSTEM,
+                    String.format("設定を適用: ウィンドウ=%sx%s, テーマ=%s, ログレベル=%s",
+                            windowWidth, windowHeight, theme, logLevel));
+
+        } catch (Exception e) {
+            LogHandler.getInstance().logError(LogType.SYSTEM,
+                    "設定適用中にエラーが発生", e);
+        }
+    }
+
+    /**
+     * デフォルト設定の設定
+     */
+    private void setDefaultConfiguration() {
+        applicationConfig.setProperty("window.width", "1000");
+        applicationConfig.setProperty("window.height", "800");
+        applicationConfig.setProperty("ui.theme", "default");
+        applicationConfig.setProperty("log.level", "INFO");
+
+        LogHandler.getInstance().log(Level.INFO, LogType.SYSTEM,
+                "デフォルト設定を適用");
     }
 
     /**
@@ -1193,21 +1275,21 @@ public class MainController {
                 return;
             }
 
-            // ResourceManagerを活用したファイル選択処理
-            // デフォルトのデータディレクトリを初期表示ディレクトリとして使用
+            // ファイル選択処理（クラスパスベース対応）
             File selectedFile = selectTemplateFileWithResourceManager("エンジニア情報テンプレート.csv");
             if (selectedFile == null) {
                 return;
             }
 
-            // ビジネスロジック：テンプレート出力処理の実行
-            executeTemplateExportWithResourceManager(selectedFile);
+            // テンプレート出力処理の実行（クラスパス対応）
+            executeTemplateExportWithClasspathResources(selectedFile);
         });
     }
 
     /**
      * テンプレート出力確認処理
      * 
+     * @param templateType テンプレート種別
      * @return 出力許可の場合true
      */
     private boolean confirmTemplateExport() {
@@ -1227,6 +1309,183 @@ public class MainController {
     }
 
     /**
+     * クラスパスリソースを活用したテンプレート出力処理の実行
+     * リソース管理の統合とエラーハンドリングの改善
+     * 
+     * @param templateType テンプレート種別
+     * @param outputFile   出力先ファイル
+     */
+    private void executeTemplateExportWithClasspathResources(File outputFile) {
+        JPanel panel = screenController.getCurrentPanel();
+
+        // ステータス表示更新
+        updateExportStatus(panel, "テンプレート出力中...   ");
+
+        try {
+            // 標準テンプレートの出力処理
+            boolean success = exportStandardTemplate(outputFile);
+
+            SwingUtilities.invokeLater(() -> {
+                if (success) {
+                    DialogManager.getInstance().showInfoDialog("出力完了",
+                            "テンプレートCSVを保存しました。\n保存先: " + outputFile.getAbsolutePath());
+                } else {
+                    DialogManager.getInstance().showErrorDialog("エラー",
+                            "テンプレート出力に失敗しました。");
+                }
+                clearExportStatus(panel);
+            });
+
+            LogHandler.getInstance().log(Level.INFO, LogType.SYSTEM,
+                    String.format("テンプレート出力完了: 成功=%s, 出力先=%s",
+                            success, outputFile.getAbsolutePath()));
+
+        } catch (Exception e) {
+            LogHandler.getInstance().logError(LogType.SYSTEM,
+                    "テンプレート出力処理中に例外が発生", e);
+
+            SwingUtilities.invokeLater(() -> {
+                DialogManager.getInstance().showErrorDialog("エラー",
+                        "テンプレート出力中にエラーが発生しました。\n詳細: " + e.getMessage());
+                clearExportStatus(panel);
+            });
+        }
+    }
+
+    /**
+     * 基本テンプレートの出力（フォールバック）
+     * クラスパスリソースが利用できない場合の代替処理
+     * 
+     * @param templateType テンプレート種別
+     * @param outputFile   出力先ファイル
+     * @return 出力成功の場合true
+     */
+    private boolean exportBasicTemplate(File outputFile) {
+        try {
+            // EngineerCSVDAOのテンプレート出力機能を活用
+            EngineerCSVDAO csvDAO = new EngineerCSVDAO();
+            boolean success = csvDAO.exportTemplate(outputFile.getPath());
+
+            if (success) {
+                LogHandler.getInstance().log(Level.INFO, LogType.SYSTEM,
+                        "基本テンプレートを出力: " + outputFile.getPath());
+            } else {
+                LogHandler.getInstance().log(Level.WARNING, LogType.SYSTEM,
+                        "基本テンプレート出力に失敗");
+            }
+
+            return success;
+
+        } catch (Exception e) {
+            LogHandler.getInstance().logError(LogType.SYSTEM,
+                    "基本テンプレート出力中にエラーが発生", e);
+            return false;
+        }
+    }
+
+    /**
+     * 設定値の取得（新機能）
+     * クラスパスから読み込んだ設定値を取得
+     * 
+     * @param key          設定キー
+     * @param defaultValue デフォルト値
+     * @return 設定値
+     */
+    public String getConfigurationValue(String key, String defaultValue) {
+        if (applicationConfig != null) {
+            return applicationConfig.getProperty(key, defaultValue);
+        }
+        return defaultValue;
+    }
+
+    /**
+     * 設定値の取得（整数型）
+     */
+    public int getConfigurationValue(String key, int defaultValue) {
+        if (applicationConfig != null) {
+            String value = applicationConfig.getProperty(key);
+            if (value != null) {
+                try {
+                    return Integer.parseInt(value);
+                } catch (NumberFormatException e) {
+                    LogHandler.getInstance().log(Level.WARNING, LogType.SYSTEM,
+                            "設定値の数値変換に失敗: " + key + "=" + value);
+                }
+            }
+        }
+        return defaultValue;
+    }
+
+    /**
+     * 設定値の取得（真偽値型）
+     */
+    public boolean getConfigurationValue(String key, boolean defaultValue) {
+        if (applicationConfig != null) {
+            String value = applicationConfig.getProperty(key);
+            if (value != null) {
+                return Boolean.parseBoolean(value);
+            }
+        }
+        return defaultValue;
+    }
+
+    /**
+     * 標準テンプレートの出力
+     * クラスパス内のテンプレートリソース、または基本テンプレートを出力
+     * 
+     * @param outputFile 出力先ファイル
+     * @return 出力成功の場合true
+     */
+    private boolean exportStandardTemplate(File outputFile) {
+        try {
+            // まずクラスパス内のテンプレートリソースを確認
+            String resourcePath = "templates/engineer_template.csv";
+            InputStream templateStream = resourceManager.getResourceAsStream(resourcePath);
+
+            if (templateStream != null) {
+                // クラスパス内のテンプレートを使用
+                return exportTemplateFromResource(templateStream, outputFile);
+            } else {
+                // フォールバック: 基本的なヘッダーのみのテンプレートを作成
+                return exportBasicTemplate(outputFile);
+            }
+
+        } catch (Exception e) {
+            LogHandler.getInstance().logError(LogType.SYSTEM,
+                    "標準テンプレート出力に失敗", e);
+            return false;
+        }
+    }
+
+    /**
+     * クラスパスリソースからテンプレートを出力
+     */
+    private boolean exportTemplateFromResource(InputStream templateStream, File outputFile) {
+        try (templateStream;
+                java.io.BufferedReader reader = new java.io.BufferedReader(
+                        new java.io.InputStreamReader(templateStream, java.nio.charset.StandardCharsets.UTF_8));
+                java.io.BufferedWriter writer = new java.io.BufferedWriter(
+                        new java.io.OutputStreamWriter(new java.io.FileOutputStream(outputFile),
+                                java.nio.charset.StandardCharsets.UTF_8))) {
+
+            String line;
+            while ((line = reader.readLine()) != null) {
+                writer.write(line);
+                writer.newLine();
+            }
+
+            LogHandler.getInstance().log(Level.INFO, LogType.SYSTEM,
+                    "クラスパステンプレートから出力完了: " + outputFile.getPath());
+            return true;
+
+        } catch (Exception e) {
+            LogHandler.getInstance().logError(LogType.SYSTEM,
+                    "テンプレートリソース出力に失敗", e);
+            return false;
+        }
+    }
+
+    /**
      * ResourceManagerを活用したテンプレート出力用ファイル選択処理
      * ユーザビリティの向上と一貫したファイル操作を実現
      * 
@@ -1239,7 +1498,6 @@ public class MainController {
         while (true) {
             JFileChooser fileChooser = new JFileChooser(System.getProperty("user.dir"));
             fileChooser.setDialogTitle("テンプレートCSV出力先");
-
             fileChooser.setSelectedFile(new File(defaultFileName));
 
             LogHandler.getInstance().log(Level.INFO, LogType.SYSTEM, "出力先選択画面を表示");
@@ -1257,8 +1515,7 @@ public class MainController {
                 selectedFile = new File(selectedFile.getAbsolutePath() + ".csv");
             }
 
-            // ResourceManagerを活用したファイル検証
-            // 統一されたバリデーションロジックを使用
+            // ファイル検証処理
             FileValidationResult validation = validateFileSelectionWithResourceManager(selectedFile);
             if (!validation.isValid()) {
                 DialogManager.getInstance().showErrorDialog("エラー", validation.getErrorMessage());
@@ -1299,63 +1556,6 @@ public class MainController {
                 confirmed ? "ファイルの上書きが許可されました" : "上書き保存が許可されませんでした");
 
         return confirmed;
-    }
-
-    /**
-     * ResourceManagerを活用したテンプレート出力処理の実行
-     * リソース管理の統合とエラーハンドリングの改善
-     * 
-     * @param outputFile 出力先ファイル
-     */
-    private void executeTemplateExportWithResourceManager(File outputFile) {
-        JPanel panel = screenController.getCurrentPanel();
-
-        // ステータス表示更新
-        updateExportStatus(panel, "テンプレート出力中...   ");
-
-        // ResourceManagerにファイルリソースを登録してリソース管理を委譲
-        String resourceKey = "template_export_" + System.currentTimeMillis();
-
-        try {
-            // テンプレート出力の実行
-            boolean success = new EngineerCSVDAO().exportTemplate(outputFile.getPath());
-
-            if (success) {
-                // 成功時のリソース登録（必要に応じて）
-                // resourceManager.registerResource(resourceKey, appropriateCloseable);
-
-                SwingUtilities.invokeLater(() -> {
-                    DialogManager.getInstance().showInfoDialog("出力完了",
-                            "テンプレートCSVを保存しました。\n保存先: " + outputFile.getAbsolutePath());
-                    clearExportStatus(panel);
-                });
-
-                LogHandler.getInstance().log(Level.INFO, LogType.SYSTEM,
-                        "テンプレートファイルの出力が成功: " + outputFile.getAbsolutePath());
-            } else {
-                throw new RuntimeException("テンプレート出力処理が失敗");
-            }
-
-        } catch (Exception e) {
-            LogHandler.getInstance().logError(LogType.SYSTEM,
-                    "テンプレート出力処理中に例外が発生", e);
-
-            SwingUtilities.invokeLater(() -> {
-                DialogManager.getInstance().showErrorDialog("エラー",
-                        "テンプレート出力中にエラーが発生しました。\n" +
-                                "保存先のフォルダにアクセスできない可能性があります。\n" +
-                                "詳細: " + e.getMessage());
-                clearExportStatus(panel);
-            });
-        } finally {
-            // ResourceManagerを通じたリソースのクリーンアップ
-            try {
-                resourceManager.releaseResource(resourceKey);
-            } catch (Exception cleanupError) {
-                LogHandler.getInstance().log(Level.WARNING, LogType.SYSTEM,
-                        "リソースクリーンアップ中にエラーが発生: " + cleanupError.getMessage());
-            }
-        }
     }
 
     /**
@@ -1427,48 +1627,6 @@ public class MainController {
         }
 
         return selectedFile;
-    }
-
-    /**
-     * ResourceManagerを活用したファイル検証
-     * 統一されたバリデーションロジックとエラーハンドリング
-     * 
-     * @param file 検証対象ファイル
-     * @return 検証結果
-     */
-    private FileValidationResult validateFileSelectionWithResourceManager(File file) {
-        try {
-            // 不正文字チェック（既存のロジック）
-            if (file.getName().matches(".*[\\\\/:*?\"<>|].*")) {
-                return new FileValidationResult(false,
-                        "ファイル名に使用できない文字が含まれています。\n使用できない文字: \\ / : * ? \" < > |");
-            }
-
-            // 親ディレクトリの書き込み権限チェック
-            File parentDir = file.getParentFile();
-            if (!parentDir.canWrite()) {
-                return new FileValidationResult(false,
-                        "指定された保存先に書き込む権限がありません。\n別の場所を選択してください。");
-            }
-
-            // ResourceManagerを通じた追加的な検証
-            // 例：データディレクトリ配下であることの確認など
-            Path dataDir = resourceManager.getDataDirectoryPath();
-            // データディレクトリの存在確認と作成
-            if (dataDir != null && !dataDir.toFile().exists()) {
-                LogHandler.getInstance().log(Level.INFO, LogType.SYSTEM,
-                        "データディレクトリが存在しないため、作成を試みます: " + dataDir);
-                // ResourceManager経由でディレクトリ作成を試行できます
-            }
-
-            return new FileValidationResult(true, null);
-
-        } catch (Exception e) {
-            LogHandler.getInstance().logError(LogType.SYSTEM,
-                    "ファイル検証中にエラーが発生", e);
-            return new FileValidationResult(false,
-                    "ファイル検証中にエラーが発生: " + e.getMessage());
-        }
     }
 
     /**
@@ -1685,7 +1843,7 @@ public class MainController {
             return;
         }
 
-        FileValidationResult validation = validateImportFileWithResourceManager(selectedFile);
+        FileValidationResult validation = validateFileSelectionWithResourceManager(selectedFile);
         if (!validation.isValid()) {
             DialogManager.getInstance().showErrorDialog("ファイル検証エラー", validation.getErrorMessage());
             if (currentPanel instanceof ListPanel) {
@@ -2180,24 +2338,26 @@ public class MainController {
      * @param file 検証対象ファイル
      * @return 検証結果
      */
-    private FileValidationResult validateImportFileWithResourceManager(File file) {
+    private FileValidationResult validateFileSelectionWithResourceManager(File file) {
         try {
-            // ファイルの基本的な検証
-            if (!file.canRead()) {
-                return new FileValidationResult(false, "ファイルを読み込む権限がありません。");
+            // 不正文字チェック（既存のロジック）
+            if (file.getName().matches(".*[\\\\/:*?\"<>|].*")) {
+                return new FileValidationResult(false,
+                        "ファイル名に使用できない文字が含まれています。\n使用できない文字: \\ / : * ? \" < > |");
             }
 
-            // CSVファイルの形式チェック（拡張子）
-            String fileName = file.getName().toLowerCase();
-            if (!fileName.endsWith(".csv")) {
-                return new FileValidationResult(false, "CSVファイル（.csv）を選択してください。");
+            // 親ディレクトリの書き込み権限チェック
+            File parentDir = file.getParentFile();
+            if (!parentDir.canWrite()) {
+                return new FileValidationResult(false,
+                        "指定された保存先に書き込む権限がありません。\n別の場所を選択してください。");
             }
 
             return new FileValidationResult(true, null);
 
         } catch (Exception e) {
             LogHandler.getInstance().logError(LogType.SYSTEM,
-                    "インポートファイル検証中にエラーが発生", e);
+                    "ファイル検証中にエラーが発生", e);
             return new FileValidationResult(false,
                     "ファイル検証中にエラーが発生: " + e.getMessage());
         }

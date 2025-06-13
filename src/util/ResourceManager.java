@@ -1,6 +1,7 @@
 package util;
 
 import java.io.*;
+import java.net.URL;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.*;
 import java.util.*;
@@ -10,8 +11,9 @@ import util.LogHandler.LogType;
 import util.Constants.FileConstants;
 
 /**
- * アプリケーションリソースを総合的に管理するシングルトンクラス
- * プロジェクトのsrcディレクトリ内に絶対パスでリソースを管理
+ * クラスパスベースのアプリケーションリソース管理シングルトンクラス
+ * 従来のファイルシステム依存から、クラスパス内リソースアクセスに変更
+ * より安全で可搬性の高いリソース管理を実現
  *
  * @author Nakano
  */
@@ -20,34 +22,34 @@ public class ResourceManager {
     /** シングルトンインスタンス */
     private static final ResourceManager INSTANCE = new ResourceManager();
 
-    /**
-     * CSVヘッダー定義
-     */
+    /** CSVヘッダー定義 */
     private static final String DEFAULT_CSV_HEADER = "社員ID(必須),氏名(必須),フリガナ(必須),生年月日(必須),入社年月(必須),エンジニア歴(必須),扱える言語(必須),経歴,研修の受講歴,技術力,受講態度,コミュニケーション能力,リーダーシップ,備考";
 
-    /**
-     * オープンしているリソースの追跡用マップ
-     */
+    /** オープンしているリソースの追跡用マップ */
     private final Map<String, Closeable> openResources = new ConcurrentHashMap<>();
 
-    /**
-     * 初期化済みフラグ
-     */
+    /** 初期化済みフラグ */
     private boolean initialized = false;
 
-    /**
-     * ディレクトリパス
-     */
-    private Path srcDirectoryPath;
-    private Path dataDirectoryPath;
-    private Path engineerCsvPath;
+    /** クラスローダー（リソースアクセス用） */
+    private ClassLoader classLoader;
+
+    /** 一時ディレクトリパス（書き込み用） */
+    private Path tempDirectoryPath;
+    private Path tempDataDirectoryPath;
+    private Path tempEngineerCsvPath;
 
     /**
      * プライベートコンストラクタ
      * シングルトンパターンを実現するため、外部からのインスタンス化を防止
      */
     private ResourceManager() {
-        // 初期化はinitializeメソッドで行う
+        // クラスローダーを取得（コンテキストクラスローダーを優先）
+        this.classLoader = Thread.currentThread().getContextClassLoader();
+        if (this.classLoader == null) {
+            // フォールバック：このクラスのクラスローダーを使用
+            this.classLoader = ResourceManager.class.getClassLoader();
+        }
     }
 
     /**
@@ -61,8 +63,9 @@ public class ResourceManager {
 
     /**
      * リソースマネージャーを初期化
+     * クラスパスベースのリソース管理システムを構築
      * 
-     * @throws IOException ディレクトリやファイルの作成に失敗した場合
+     * @throws IOException リソースアクセスに失敗した場合
      */
     public void initialize() throws IOException {
         if (initialized) {
@@ -70,67 +73,178 @@ public class ResourceManager {
         }
 
         try {
-            // プロジェクトのベースディレクトリを取得
-            String projectDir = System.getProperty("user.dir");
+            logInfo("クラスパスベースのResourceManagerを初期化開始");
 
-            // srcディレクトリへの絶対パスを構築
-            this.srcDirectoryPath = Paths.get(projectDir, "src").toAbsolutePath();
+            // 一時ディレクトリの設定（書き込み可能な場所）
+            setupTemporaryDirectories();
 
-            System.out.println("プロジェクトディレクトリ: " + projectDir);
-            System.out.println("SRCディレクトリの絶対パス: " + srcDirectoryPath);
+            // クラスパス内のリソースの確認
+            verifyClasspathResources();
 
-            // 各ディレクトリパスの設定
-            setDirectoryPaths();
-
-            // ディレクトリの確認と作成
-            checkAndCreateDirectories();
-
-            // CSVファイルの確認と作成
-            checkAndCreateCsvFile();
+            // デフォルトCSVファイルの準備
+            prepareDefaultCsvFile();
 
             // 初期化完了
             initialized = true;
 
-            // ログに記録
-            logInfo("リソースマネージャーを初期化完了");
-            logPaths();
+            logInfo("クラスパスベースのResourceManagerを初期化完了");
+            logResourcePaths();
+
         } catch (IOException e) {
-            // ログに記録
-            logError("リソースマネージャーの初期化に失敗", e);
-            throw new IOException("リソースマネージャーの初期化に失敗", e);
+            logError("ResourceManagerの初期化に失敗", e);
+            throw new IOException("ResourceManagerの初期化に失敗", e);
         }
     }
 
     /**
-     * ディレクトリパスを設定
+     * 一時ディレクトリの設定
+     * 書き込み操作用の一時領域を準備
      */
-    private void setDirectoryPaths() {
-        dataDirectoryPath = srcDirectoryPath.resolve(FileConstants.DATA_DIR_NAME);
-        engineerCsvPath = dataDirectoryPath.resolve(FileConstants.DEFAULT_ENGINEER_CSV);
+    private void setupTemporaryDirectories() throws IOException {
+        // システム一時ディレクトリ下にアプリケーション専用フォルダを作成
+        Path systemTempDir = Paths.get(System.getProperty("java.io.tmpdir"));
+        this.tempDirectoryPath = systemTempDir.resolve("engineer-management-system");
+        this.tempDataDirectoryPath = tempDirectoryPath.resolve(FileConstants.DATA_DIR_NAME);
+        this.tempEngineerCsvPath = tempDataDirectoryPath.resolve(FileConstants.DEFAULT_ENGINEER_CSV);
+
+        // ディレクトリを作成
+        createDirectoryIfNotExists(tempDirectoryPath);
+        createDirectoryIfNotExists(tempDataDirectoryPath);
+
+        logInfo("一時ディレクトリを設定: " + tempDirectoryPath.toString());
     }
 
     /**
-     * 作成したパスをログに出力
+     * クラスパス内のリソース確認
+     * 必要なリソースがクラスパス内に存在することを確認
      */
-    private void logPaths() {
-        logInfo("SRCディレクトリ: " + srcDirectoryPath.toString());
-        logInfo("データディレクトリ: " + dataDirectoryPath.toString());
-        logInfo("エンジニアCSVファイル: " + engineerCsvPath.toString());
+    private void verifyClasspathResources() {
+        logInfo("クラスパス内リソースの確認を開始");
+
+        // リソースディレクトリの存在確認（任意）
+        URL dataResource = classLoader.getResource("data/");
+        if (dataResource != null) {
+            logInfo("データリソースディレクトリを確認: " + dataResource.toString());
+        } else {
+            logInfo("データリソースディレクトリは存在しません（必要に応じて作成されます）");
+        }
+
+        // その他の重要なリソースファイルの確認
+        checkOptionalResource("data/" + FileConstants.DEFAULT_ENGINEER_CSV);
+        checkOptionalResource("config/app.properties"); // 設定ファイルの例
     }
 
     /**
-     * 必要なディレクトリを確認し、存在しない場合は作成
-     *
-     * @throws IOException ディレクトリの作成に失敗した場合
+     * オプショナルリソースの確認
      */
-    private void checkAndCreateDirectories() throws IOException {
-        try {
-            // 各ディレクトリの確認と作成
-            createDirectoryIfNotExists(srcDirectoryPath);
-            createDirectoryIfNotExists(dataDirectoryPath);
-        } catch (IOException e) {
-            logError("ディレクトリの作成に失敗", e);
-            throw new IOException("必要なディレクトリの作成に失敗", e);
+    private void checkOptionalResource(String resourcePath) {
+        URL resource = classLoader.getResource(resourcePath);
+        if (resource != null) {
+            logInfo("リソースを確認: " + resourcePath + " -> " + resource.toString());
+        } else {
+            logInfo("オプショナルリソース未検出: " + resourcePath);
+        }
+    }
+
+    /**
+     * デフォルトCSVファイルの準備
+     * クラスパス内のリソースまたは一時ディレクトリにCSVファイルを準備
+     */
+    private void prepareDefaultCsvFile() throws IOException {
+        // まずクラスパス内のリソースを確認
+        String csvResourcePath = "data/" + FileConstants.DEFAULT_ENGINEER_CSV;
+        InputStream csvResourceStream = classLoader.getResourceAsStream(csvResourcePath);
+
+        if (csvResourceStream != null) {
+            // クラスパス内にCSVリソースが存在する場合は一時ディレクトリにコピー
+            logInfo("クラスパス内のCSVリソースを検出: " + csvResourcePath);
+            try (csvResourceStream) {
+                copyResourceToTempFile(csvResourceStream, tempEngineerCsvPath);
+                logInfo("CSVリソースを一時ファイルにコピー: " + tempEngineerCsvPath);
+            }
+        } else {
+            // クラスパス内にリソースが存在しない場合は新規作成
+            logInfo("CSVリソースが存在しないため、新規作成: " + tempEngineerCsvPath);
+            createInitialCsvFile(tempEngineerCsvPath.toFile());
+        }
+    }
+
+    /**
+     * リソースを一時ファイルにコピー
+     */
+    private void copyResourceToTempFile(InputStream resourceStream, Path targetPath) throws IOException {
+        try (BufferedReader reader = new BufferedReader(
+                new InputStreamReader(resourceStream, StandardCharsets.UTF_8));
+                BufferedWriter writer = Files.newBufferedWriter(targetPath, StandardCharsets.UTF_8)) {
+
+            String line;
+            while ((line = reader.readLine()) != null) {
+                writer.write(line);
+                writer.newLine();
+            }
+        }
+    }
+
+    /**
+     * クラスパス内のリソースを取得
+     * リソースパスを指定して、クラスパス内のリソースにアクセス
+     * 
+     * @param resourcePath リソースパス（"data/engineers.csv" など）
+     * @return InputStreamまたはnull（リソースが存在しない場合）
+     */
+    public InputStream getResourceAsStream(String resourcePath) {
+        InputStream stream = classLoader.getResourceAsStream(resourcePath);
+
+        if (stream != null) {
+            logInfo("リソースにアクセス: " + resourcePath);
+        } else {
+            logInfo("リソースが見つかりません: " + resourcePath);
+        }
+
+        return stream;
+    }
+
+    /**
+     * クラスパス内のリソースURLを取得
+     * 
+     * @param resourcePath リソースパス
+     * @return リソースのURLまたはnull
+     */
+    public URL getResourceURL(String resourcePath) {
+        URL url = classLoader.getResource(resourcePath);
+
+        if (url != null) {
+            logInfo("リソースURLを取得: " + resourcePath + " -> " + url.toString());
+        } else {
+            logInfo("リソースURLが見つかりません: " + resourcePath);
+        }
+
+        return url;
+    }
+
+    /**
+     * リソースをテキストとして読み込み
+     * クラスパス内のテキストリソースを文字列として取得
+     * 
+     * @param resourcePath リソースパス
+     * @return リソースの内容（文字列）
+     * @throws IOException 読み込みに失敗した場合
+     */
+    public String readResourceAsString(String resourcePath) throws IOException {
+        try (InputStream stream = getResourceAsStream(resourcePath)) {
+            if (stream == null) {
+                throw new IOException("リソースが見つかりません: " + resourcePath);
+            }
+
+            try (BufferedReader reader = new BufferedReader(
+                    new InputStreamReader(stream, StandardCharsets.UTF_8))) {
+                StringBuilder content = new StringBuilder();
+                String line;
+                while ((line = reader.readLine()) != null) {
+                    content.append(line).append(System.lineSeparator());
+                }
+                return content.toString();
+            }
         }
     }
 
@@ -141,49 +255,16 @@ public class ResourceManager {
      * @throws IOException ディレクトリ作成に失敗した場合
      */
     private void createDirectoryIfNotExists(Path dirPath) throws IOException {
-        System.out.println("ディレクトリ確認: " + dirPath);
         if (!Files.exists(dirPath)) {
             try {
                 Files.createDirectories(dirPath);
-                System.out.println("ディレクトリを作成: " + dirPath.toString());
+                logInfo("ディレクトリを作成: " + dirPath.toString());
             } catch (IOException e) {
-                System.err.println("ディレクトリの作成に失敗: " + dirPath + ", エラー: " + e.getMessage());
+                logError("ディレクトリの作成に失敗: " + dirPath, e);
                 throw e;
             }
         } else {
-            System.out.println("既存のディレクトリを使用: " + dirPath);
-        }
-    }
-
-    /**
-     * CSVファイルの確認と作成
-     * ファイルが存在しない場合は、ヘッダー行を持つ新しいファイルを作成
-     *
-     * @throws IOException ファイルの作成に失敗した場合
-     */
-    private void checkAndCreateCsvFile() throws IOException {
-        try {
-            if (!Files.exists(engineerCsvPath)) {
-                // 親ディレクトリが存在することを確認
-                if (!Files.exists(dataDirectoryPath)) {
-                    Files.createDirectories(dataDirectoryPath);
-                }
-
-                // CSVファイルが存在しない場合、新規作成、try-with-resourcesを使用
-                System.out.println("CSVファイルを作成: " + engineerCsvPath);
-                try (BufferedWriter writer = Files.newBufferedWriter(engineerCsvPath, StandardCharsets.UTF_8)) {
-                    writer.write(DEFAULT_CSV_HEADER);
-                    writer.newLine();
-                }
-
-                logInfo("新しいCSVファイルを作成: " + engineerCsvPath.toString());
-            } else {
-                System.out.println("既存のCSVファイルを使用: " + engineerCsvPath);
-            }
-        } catch (IOException e) {
-            System.err.println("新しいCSVファイルの作成に失敗: " + e.getMessage());
-            logError("新しいCSVファイルの作成に失敗", e);
-            throw new IOException("新しいCSVファイルの作成に失敗", e);
+            logInfo("既存のディレクトリを使用: " + dirPath);
         }
     }
 
@@ -196,11 +277,11 @@ public class ResourceManager {
      */
     public Path createDirectory(String dirName) throws IOException {
         if (!initialized) {
-            throw new IllegalStateException("リソースマネージャーが初期化されていません");
+            throw new IllegalStateException("ResourceManagerが初期化されていません");
         }
 
         try {
-            Path newDir = dataDirectoryPath.resolve(dirName);
+            Path newDir = tempDataDirectoryPath.resolve(dirName);
             if (!Files.exists(newDir)) {
                 Files.createDirectories(newDir);
                 logInfo("新しいディレクトリを作成: " + newDir.toString());
@@ -209,6 +290,35 @@ public class ResourceManager {
         } catch (IOException e) {
             logError("新しいディレクトリの作成に失敗: " + dirName, e);
             throw new IOException("新しいディレクトリの作成に失敗", e);
+        }
+    }
+
+    /**
+     * 初期CSVファイルの作成処理
+     * ヘッダー行を含む新しいCSVファイルを作成
+     * 
+     * @param csvFile 作成するCSVファイル
+     * @throws IOException ファイル作成に失敗した場合
+     */
+    private void createInitialCsvFile(File csvFile) throws IOException {
+        String resourceKey = "csv_initial_writer_" + System.currentTimeMillis();
+
+        try (BufferedWriter writer = new BufferedWriter(
+                new OutputStreamWriter(new FileOutputStream(csvFile), StandardCharsets.UTF_8))) {
+
+            // ResourceManagerにファイルストリームを登録
+            registerResource(resourceKey, writer);
+
+            // CSVヘッダーの書き込み
+            writer.write(DEFAULT_CSV_HEADER);
+            writer.newLine();
+
+            // 処理完了後にResourceManagerからリソースを解除
+            releaseResource(resourceKey);
+
+        } catch (IOException e) {
+            logError("初期CSVファイルの作成に失敗: " + csvFile.getPath(), e);
+            throw e;
         }
     }
 
@@ -278,12 +388,10 @@ public class ResourceManager {
             }
         }
 
-        // 失敗したリソースがあればログに記録
         if (!failedResources.isEmpty()) {
             logWarning("以下のリソースの解放に失敗: " + String.join(", ", failedResources));
         }
 
-        // マップをクリア
         openResources.clear();
         logInfo("全リソースの解放処理を完了");
 
@@ -291,21 +399,21 @@ public class ResourceManager {
     }
 
     /**
-     * ゲッター：データディレクトリのパスを取得
-     *
-     * @return データディレクトリのパス
+     * 書き込み可能な一時データディレクトリのパスを取得
+     * 
+     * @return 一時データディレクトリのパス
      */
     public Path getDataDirectoryPath() {
-        return dataDirectoryPath;
+        return tempDataDirectoryPath;
     }
 
     /**
-     * ゲッター：エンジニアCSVファイルのパスを取得
-     *
+     * 書き込み可能なエンジニアCSVファイルのパスを取得
+     * 
      * @return エンジニアCSVファイルのパス
      */
     public Path getEngineerCsvPath() {
-        return engineerCsvPath;
+        return tempEngineerCsvPath;
     }
 
     /**
@@ -337,12 +445,21 @@ public class ResourceManager {
     }
 
     /**
-     * SRCディレクトリパスを取得
+     * 一時ディレクトリパスを取得
      * 
-     * @return アプリケーションのSRCディレクトリパス
+     * @return アプリケーションの一時ディレクトリパス
      */
-    public Path getSrcDirectoryPath() {
-        return srcDirectoryPath;
+    public Path getTempDirectoryPath() {
+        return tempDirectoryPath;
+    }
+
+    /**
+     * 作成したパスをログに出力
+     */
+    private void logResourcePaths() {
+        logInfo("一時ディレクトリ: " + tempDirectoryPath.toString());
+        logInfo("データディレクトリ: " + tempDataDirectoryPath.toString());
+        logInfo("エンジニアCSVファイル: " + tempEngineerCsvPath.toString());
     }
 
     /**
