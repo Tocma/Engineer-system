@@ -67,7 +67,7 @@ public final class SystemConstants {
     public static final String DEFAULT_ENCODING = "UTF-8";
 
     /** システムバージョン */
-    public static final String SYSTEM_VERSION = "4.15.17";
+    public static final String SYSTEM_VERSION = "4.15.19";
 
     /** システム名 */
     public static final String SYSTEM_NAME = "エンジニア人材管理システム";

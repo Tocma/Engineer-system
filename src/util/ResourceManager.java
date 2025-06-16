@@ -73,8 +73,8 @@ public class ResourceManager {
             // プロジェクトのベースディレクトリを取得
             String projectDir = System.getProperty("user.home") + File.separator + "EngineerSystem";
 
-            // srcディレクトリへの絶対パスを構築
-            this.srcDirectoryPath = Paths.get(projectDir, FileConstants.DATA_DIR_NAME).toAbsolutePath();
+            // ディレクトリへの絶対パスを構築
+            this.srcDirectoryPath = Paths.get(projectDir).toAbsolutePath();
 
             System.out.println("プロジェクトディレクトリ: " + projectDir);
             System.out.println("SRCディレクトリの絶対パス: " + srcDirectoryPath);
@@ -113,7 +113,7 @@ public class ResourceManager {
      * 作成したパスをログに出力
      */
     private void logPaths() {
-        logInfo("SRCディレクトリ: " + srcDirectoryPath.toString());
+        logInfo("プロジェクトルートディレクトリ: " + srcDirectoryPath.toString());
         logInfo("データディレクトリ: " + dataDirectoryPath.toString());
         logInfo("エンジニアCSVファイル: " + engineerCsvPath.toString());
     }
@@ -125,8 +125,7 @@ public class ResourceManager {
      */
     private void checkAndCreateDirectories() throws IOException {
         try {
-            // 各ディレクトリの確認と作成
-            createDirectoryIfNotExists(srcDirectoryPath);
+            // dataディレクトリのみを作成（srcDirectoryPathは作成しない）
             createDirectoryIfNotExists(dataDirectoryPath);
         } catch (IOException e) {
             logError("ディレクトリの作成に失敗", e);
