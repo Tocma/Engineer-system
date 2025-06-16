@@ -71,10 +71,10 @@ public class ResourceManager {
 
         try {
             // プロジェクトのベースディレクトリを取得
-            String projectDir = System.getProperty("user.dir");
+            String projectDir = System.getProperty("user.home") + File.separator + "EngineerSystem";
 
             // srcディレクトリへの絶対パスを構築
-            this.srcDirectoryPath = Paths.get(projectDir, "src").toAbsolutePath();
+            this.srcDirectoryPath = Paths.get(projectDir, FileConstants.DATA_DIR_NAME).toAbsolutePath();
 
             System.out.println("プロジェクトディレクトリ: " + projectDir);
             System.out.println("SRCディレクトリの絶対パス: " + srcDirectoryPath);

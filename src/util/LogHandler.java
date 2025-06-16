@@ -89,10 +89,10 @@ public class LogHandler {
      */
     public synchronized void initialize() throws IOException {
         // プロジェクトのベースディレクトリを取得
-        String projectDir = System.getProperty("user.dir");
+        String projectDir = System.getProperty("user.home") + File.separator + "EngineerSystem";
 
         // src/logsへの絶対パスを構築
-        Path defaultLogDir = Paths.get(projectDir, "src", FileConstants.LOG_DIR_NAME).toAbsolutePath();
+        Path defaultLogDir = Paths.get(projectDir, FileConstants.LOG_DIR_NAME).toAbsolutePath();
 
         System.out.println("ログディレクトリの絶対パス: " + defaultLogDir);
         initialize(defaultLogDir.toString());
