@@ -3,6 +3,8 @@ package controller;
 import model.CSVAccessResult;
 import model.EngineerCSVDAO;
 import model.EngineerDTO;
+import service.EngineerSearchService;
+import service.CSVExportService;
 import util.LogHandler;
 import util.LogHandler.LogType;
 import util.ResourceManager;
@@ -15,6 +17,7 @@ import view.DialogManager;
 import view.ListPanel;
 import view.MainFrame;
 import java.io.File;
+import java.io.FileOutputStream;
 import java.nio.file.Path;
 import java.time.LocalDate;
 import java.util.List;
@@ -56,6 +59,12 @@ public class MainController {
 
     /** エンジニアデータコントローラー */
     private EngineerController engineerController;
+
+    /** エンジニア検索サービス */
+    private EngineerSearchService searchService;
+
+    /** CSV出力サービス */
+    private CSVExportService exportService;
 
     /** リソースマネージャー - ファイル操作の中心的な管理クラス */
     private ResourceManager resourceManager;
@@ -225,6 +234,11 @@ public class MainController {
             // エンジニアコントローラーの初期化
             engineerController = new EngineerController();
 
+            // サービスの初期化
+            EngineerCSVDAO csvDAO = new EngineerCSVDAO();
+            searchService = new EngineerSearchService(csvDAO);
+            exportService = new CSVExportService(csvDAO);
+
             // 初期画面の表示
             screenController.showPanel("LIST");
 
@@ -250,180 +264,7 @@ public class MainController {
      * @return 検索結果オブジェクト（結果リストとエラー情報を含む）
      */
     public SearchResult searchEngineers(SearchCriteria searchCriteria) {
-        try {
-            LogHandler.getInstance().log(Level.INFO, LogType.SYSTEM,
-                    "エンジニア検索処理を開始します");
-
-            // 入力検証の実行
-            List<String> validationErrors = validateSearchCriteria(searchCriteria);
-            if (!validationErrors.isEmpty()) {
-                LogHandler.getInstance().log(Level.WARNING, LogType.SYSTEM,
-                        "検索条件の検証でエラーが発生: " + String.join(", ", validationErrors));
-                return new SearchResult(new ArrayList<>(), validationErrors);
-            }
-
-            // データ取得と検索実行
-            List<EngineerDTO> allEngineers = engineerController.loadEngineers();
-            List<EngineerDTO> filteredEngineers = filterEngineersByCriteria(allEngineers, searchCriteria);
-
-            LogHandler.getInstance().log(Level.INFO, LogType.SYSTEM,
-                    String.format("検索実行完了: %d件のデータがヒット（全%d件中）",
-                            filteredEngineers.size(), allEngineers.size()));
-
-            return new SearchResult(filteredEngineers, new ArrayList<>());
-
-        } catch (Exception e) {
-            LogHandler.getInstance().logError(LogType.SYSTEM, "検索処理中にエラーが発生", e);
-            return new SearchResult(new ArrayList<>(), List.of("検索処理中にエラーが発生: " + e.getMessage()));
-        }
-    }
-
-    /**
-     * 検索条件の妥当性検証
-     * 各検索条件フィールドに対して適切な検証を実行
-     * 
-     * @param criteria 検証対象の検索条件
-     * @return 検証エラーメッセージのリスト（エラーがない場合は空リスト）
-     */
-    private List<String> validateSearchCriteria(SearchCriteria criteria) {
-        List<String> errors = new ArrayList<>();
-
-        // 社員ID検証
-        if (criteria.getId() != null && !criteria.getId().trim().isEmpty()) {
-            String id = criteria.getId().trim();
-            // 全角数字を半角に変換してから検証
-            String convertedId = id
-                    .replace("0", "0")
-                    .replace("1", "1")
-                    .replace("2", "2")
-                    .replace("3", "3")
-                    .replace("4", "4")
-                    .replace("5", "5")
-                    .replace("6", "6")
-                    .replace("7", "7")
-                    .replace("8", "8")
-                    .replace("9", "9");
-            if (!convertedId.matches("^[0-9]{1,5}$")) {
-                errors.add("社員IDは5桁以内の数字で入力してください");
-            }
-        }
-
-        // 氏名検証
-        if (criteria.getName() != null && !criteria.getName().trim().isEmpty()) {
-            String name = criteria.getName().trim().replaceAll("\\s{2,}", " ");
-            if (name.length() > 20) {
-                errors.add("氏名は20文字以内で入力してください");
-            }
-            if (!name.matches("[ぁ-んァ-ヶ一-龯々〆〤ー\\s]*")) {
-                errors.add("氏名は日本語のみで入力してください");
-            }
-        }
-
-        // 生年月日検証（年月日の組み合わせチェック）
-        boolean hasYear = criteria.getYear() != null && !criteria.getYear().isEmpty();
-        boolean hasMonth = criteria.getMonth() != null && !criteria.getMonth().isEmpty();
-        boolean hasDay = criteria.getDay() != null && !criteria.getDay().isEmpty();
-
-        if ((hasYear || hasMonth || hasDay) && !(hasYear && hasMonth && hasDay)) {
-            errors.add("生年月日は年・月・日すべてを選択してください");
-        }
-
-        // エンジニア歴検証
-        if (criteria.getCareer() != null && !criteria.getCareer().trim().isEmpty()) {
-            try {
-                int careerValue = Integer.parseInt(criteria.getCareer());
-                if (careerValue < 0 || careerValue > 50) {
-                    errors.add("エンジニア歴は0年から50年の範囲で入力してください");
-                }
-            } catch (NumberFormatException e) {
-                errors.add("エンジニア歴は数値で入力してください");
-            }
-        }
-
-        return errors;
-    }
-
-    /**
-     * 検索条件によるエンジニアリストのフィルタリング
-     * 指定された検索条件に一致するエンジニアのみを抽出
-     * 
-     * @param engineers 全エンジニアのリスト
-     * @param criteria  検索条件
-     * @return フィルタリングされたエンジニアのリスト
-     */
-    private List<EngineerDTO> filterEngineersByCriteria(List<EngineerDTO> engineers, SearchCriteria criteria) {
-        return engineers.stream()
-                .filter(engineer -> matchesCriteria(engineer, criteria))
-                .collect(Collectors.toList());
-    }
-
-    /**
-     * エンジニアが検索条件にマッチするかチェック
-     * 各検索条件項目について個別に適合性を判定
-     * 
-     * @param engineer 判定対象のエンジニア
-     * @param criteria 検索条件
-     * @return すべての条件にマッチする場合はtrue
-     */
-    private boolean matchesCriteria(EngineerDTO engineer, SearchCriteria criteria) {
-        // 社員ID検索（部分一致、大文字小文字を区別しない）
-        if (criteria.getId() != null && !criteria.getId().trim().isEmpty()) {
-            if (engineer.getId() == null ||
-                    !engineer.getId().toLowerCase().contains(criteria.getId().toLowerCase())) {
-                return false;
-            }
-        }
-
-        // 氏名検索（部分一致、大文字小文字を区別しない）
-        if (criteria.getName() != null && !criteria.getName().trim().isEmpty()) {
-            if (engineer.getName() == null ||
-                    !engineer.getName().toLowerCase().contains(criteria.getName().toLowerCase())) {
-                return false;
-            }
-        }
-
-        // 生年月日検索（完全一致）
-        if (engineer.getBirthDate() != null && criteria.hasDateCriteria()) {
-            String birthDateStr = engineer.getBirthDate().toString();
-
-            // 年の検証
-            if (!criteria.getYear().isEmpty() && !birthDateStr.startsWith(criteria.getYear())) {
-                return false;
-            }
-
-            // 月の検証（ゼロパディング対応）
-            if (!criteria.getMonth().isEmpty()) {
-                String monthPart = criteria.getMonth().length() == 1 ? "0" + criteria.getMonth() : criteria.getMonth();
-                if (!birthDateStr.substring(5, 7).equals(monthPart)) {
-                    return false;
-                }
-            }
-
-            // 日の検証（ゼロパディング対応）
-            if (!criteria.getDay().isEmpty()) {
-                String dayPart = criteria.getDay().length() == 1 ? "0" + criteria.getDay() : criteria.getDay();
-                if (!birthDateStr.substring(8, 10).equals(dayPart)) {
-                    return false;
-                }
-            }
-        } else if (criteria.hasDateCriteria()) {
-            // 生年月日がnullで検索条件が指定されている場合は不一致
-            return false;
-        }
-
-        // エンジニア歴検索（完全一致）
-        if (criteria.getCareer() != null && !criteria.getCareer().trim().isEmpty()) {
-            try {
-                int searchCareerValue = Integer.parseInt(criteria.getCareer());
-                if (engineer.getCareer() != searchCareerValue) {
-                    return false;
-                }
-            } catch (NumberFormatException e) {
-                return false;
-            }
-        }
-
-        return true;
+        return searchService.searchEngineers(searchCriteria);
     }
 
     /**
@@ -1307,54 +1148,35 @@ public class MainController {
      * 
      * @param outputFile 出力先ファイル
      */
-    private void executeTemplateExportWithResourceManager(File outputFile) {
-        JPanel panel = screenController.getCurrentPanel();
-
-        // ステータス表示更新
-        updateExportStatus(panel, "テンプレート出力中...   ");
-
-        // ResourceManagerにファイルリソースを登録してリソース管理を委譲
+    private void executeTemplateExportWithResourceManager(File selectedFile) {
         String resourceKey = "template_export_" + System.currentTimeMillis();
 
-        try {
-            // テンプレート出力の実行
-            boolean success = new EngineerCSVDAO().exportTemplate(outputFile.getPath());
+        try (FileOutputStream fos = new FileOutputStream(selectedFile)) {
+            resourceManager.registerResource(resourceKey, fos);
 
-            if (success) {
-                // 成功時のリソース登録（必要に応じて）
-                // resourceManager.registerResource(resourceKey, appropriateCloseable);
+            boolean success = exportService.exportTemplate(selectedFile);
 
-                SwingUtilities.invokeLater(() -> {
-                    DialogManager.getInstance().showInfoDialog("出力完了",
-                            "テンプレートCSVを保存しました。\n保存先: " + outputFile.getAbsolutePath());
-                    clearExportStatus(panel);
-                });
-
-                LogHandler.getInstance().log(Level.INFO, LogType.SYSTEM,
-                        "テンプレートファイルの出力が成功: " + outputFile.getAbsolutePath());
-            } else {
-                throw new RuntimeException("テンプレート出力処理が失敗");
-            }
+            SwingUtilities.invokeLater(() -> {
+                if (success) {
+                    DialogManager.getInstance().showCompletionDialog(
+                            "テンプレート出力が完了しました。",
+                            () -> LogHandler.getInstance().log(Level.INFO, LogType.UI,
+                                    "テンプレート出力完了ダイアログを閉じました"));
+                } else {
+                    DialogManager.getInstance().showErrorDialog("出力エラー",
+                            "テンプレート出力に失敗しました。");
+                }
+            });
 
         } catch (Exception e) {
             LogHandler.getInstance().logError(LogType.SYSTEM,
-                    "テンプレート出力処理中に例外が発生", e);
-
+                    "テンプレート出力実行中にエラー発生", e);
             SwingUtilities.invokeLater(() -> {
-                DialogManager.getInstance().showErrorDialog("エラー",
-                        "テンプレート出力中にエラーが発生しました。\n" +
-                                "保存先のフォルダにアクセスできない可能性があります。\n" +
-                                "詳細: " + e.getMessage());
-                clearExportStatus(panel);
+                DialogManager.getInstance().showErrorDialog("システムエラー",
+                        "出力中にエラーが発生しました。");
             });
         } finally {
-            // ResourceManagerを通じたリソースのクリーンアップ
-            try {
-                resourceManager.releaseResource(resourceKey);
-            } catch (Exception cleanupError) {
-                LogHandler.getInstance().log(Level.WARNING, LogType.SYSTEM,
-                        "リソースクリーンアップ中にエラーが発生: " + cleanupError.getMessage());
-            }
+            resourceManager.releaseResource(resourceKey);
         }
     }
 
@@ -1501,63 +1323,39 @@ public class MainController {
      * @param targetList 出力対象データ
      * @param outputFile 出力先ファイル
      */
-    private void executeCSVExportWithResourceManager(List<EngineerDTO> targetList, File outputFile) {
+    private void executeCSVExportWithResourceManager(List<EngineerDTO> targetList, File selectedFile) {
         JPanel panel = screenController.getCurrentPanel();
-
-        // ステータス表示更新
-        updateExportStatus(panel, "CSV出力中...   ");
-
-        // ResourceManagerにリソースを登録してライフサイクル管理
         String resourceKey = "csv_export_" + System.currentTimeMillis();
 
-        try {
-            EngineerCSVDAO csvDAO = new EngineerCSVDAO();
-            boolean success = csvDAO.exportCSV(targetList, outputFile.getAbsolutePath());
+        try (FileOutputStream fos = new FileOutputStream(selectedFile)) {
+            resourceManager.registerResource(resourceKey, fos);
 
-            // 結果表示
+            boolean success = exportService.exportTemplate(selectedFile);
+
             SwingUtilities.invokeLater(() -> {
                 if (success) {
-                    showExportResult(true, "CSV出力");
-                    LogHandler.getInstance().log(Level.INFO, LogType.SYSTEM,
-                            "CSV出力が成功しました: " + outputFile.getAbsolutePath() +
-                                    ", 件数: " + targetList.size());
+                    DialogManager.getInstance().showCompletionDialog(
+                            "CSV出力が完了しました。",
+                            () -> LogHandler.getInstance().log(Level.INFO, LogType.UI,
+                                    "CSV出力完了ダイアログを閉じました"));
                 } else {
-                    showExportResult(false, "CSV出力");
+                    clearExportStatus(panel);
+                    DialogManager.getInstance().showErrorDialog("出力エラー",
+                            "CSV出力に失敗しました。");
                 }
-                clearExportStatus(panel);
             });
 
         } catch (Exception e) {
             LogHandler.getInstance().logError(LogType.SYSTEM,
-                    "CSV出力処理中に例外が発生", e);
-
+                    "CSV出力実行中にエラー発生", e);
             SwingUtilities.invokeLater(() -> {
-                showExportError("CSV出力", e);
+                DialogManager.getInstance().showErrorDialog("システムエラー",
+                        "出力中にエラーが発生しました。");
                 clearExportStatus(panel);
             });
         } finally {
-            // ResourceManagerを通じたリソースクリーンアップ
-            try {
-                resourceManager.releaseResource(resourceKey);
-            } catch (Exception cleanupError) {
-                LogHandler.getInstance().log(Level.WARNING, LogType.SYSTEM,
-                        "CSV出力リソースクリーンアップ中にエラーが発生: " + cleanupError.getMessage());
-            }
+            resourceManager.releaseResource(resourceKey);
         }
-    }
-
-    /**
-     * エクスポートステータスの更新
-     * 
-     * @param panel  対象パネル
-     * @param status ステータスメッセージ
-     */
-    private void updateExportStatus(JPanel panel, String status) {
-        SwingUtilities.invokeLater(() -> {
-            if (panel instanceof ListPanel listPanel) {
-                listPanel.setStatus(status);
-            }
-        });
     }
 
     /**
@@ -1571,33 +1369,6 @@ public class MainController {
                 listPanel.setStatus("");
             }
         });
-    }
-
-    /**
-     * エクスポート結果の表示
-     * 
-     * @param success   成功フラグ
-     * @param operation 操作名
-     */
-    private void showExportResult(boolean success, String operation) {
-        if (success) {
-            JOptionPane.showMessageDialog(listPanel, "出力に成功しました。", "完了", JOptionPane.INFORMATION_MESSAGE);
-        } else {
-            JOptionPane.showMessageDialog(listPanel, "出力に失敗しました。アクセス権限などを確認してください。",
-                    "エラー", JOptionPane.ERROR_MESSAGE);
-        }
-    }
-
-    /**
-     * エクスポートエラーの表示
-     * 
-     * @param operation 操作名
-     * @param exception 発生した例外
-     */
-    private void showExportError(String operation, Exception exception) {
-        JOptionPane.showMessageDialog(listPanel,
-                operation + "中にエラーが発生:\n" + exception.getMessage(),
-                "エラー", JOptionPane.ERROR_MESSAGE);
     }
 
     /**
