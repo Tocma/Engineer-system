@@ -55,59 +55,71 @@ public class CSVAccess extends AccessThread {
     private Map<String, FieldValidator> csvValidators;
 
     /**
-     * デフォルトコンストラクタ（更新版）
+     * デフォルトコンストラクタ
+     * ResourceManagerのデフォルトパスを使用
      */
     public CSVAccess(String operation, Object data) {
-        this(operation, data, false);
+        this(operation, data, false, null);
     }
 
     /**
-     * ResourceManager統合コンストラクタ（更新版）
+     * 追記モード指定コンストラクタ
+     * ResourceManagerのデフォルトパスを使用し、追記モードを指定
      */
     public CSVAccess(String operation, Object data, boolean appendMode) {
-        // 既存の初期化処理...
+        this(operation, data, appendMode, null);
+    }
+
+    /**
+     * ファイル指定コンストラクタ
+     * 特定のファイルを対象とする場合に使用
+     */
+    public CSVAccess(String operation, Object data, File targetFile) {
+        this(operation, data, false, targetFile);
+    }
+
+    /**
+     * 統合プライベートコンストラクタ
+     * すべての初期化ロジックを一元管理
+     * 
+     * @param operation  操作種別（"read"または"write"）
+     * @param data       操作対象データ
+     * @param appendMode 追記モードフラグ
+     * @param targetFile 対象ファイル（nullの場合はResourceManagerのデフォルトパスを使用）
+     */
+    private CSVAccess(String operation, Object data, boolean appendMode, File targetFile) {
+        // ResourceManagerの初期化確認
         this.resourceManager = ResourceManager.getInstance();
         if (!resourceManager.isInitialized()) {
             throw new IllegalStateException("ResourceManagerが初期化されていません");
         }
 
+        // 基本パラメータの設定
         this.operation = operation;
         this.data = data;
-        this.csvFile = resourceManager.getEngineerCsvPath().toFile();
-        this.lock = new ReentrantReadWriteLock();
         this.appendMode = appendMode;
-        this.existingIds = new HashMap<>();
-        this.useResourceManager = true;
 
-        // バリデーションシステムの初期化
+        // 共通オブジェクトの初期化
+        this.lock = new ReentrantReadWriteLock();
+        this.existingIds = new HashMap<>();
         this.validationService = ValidationService.getInstance();
         this.csvValidators = ValidatorFactory.createCSVValidators();
 
-        LogHandler.getInstance().log(Level.INFO, LogType.SYSTEM,
-                "CSVAccessを初期化完了: " + csvFile.getPath());
-    }
-
-    // CSVAccessクラスに、ファイルを指定できるコンストラクタを追加
-    public CSVAccess(String operation, Object data, File targetFile) {
-        this.resourceManager = ResourceManager.getInstance();
-        this.operation = operation;
-        this.data = data;
-
-        // ターゲットファイルが指定されている場合はそれを使用
+        // ターゲットファイルの設定
         if (targetFile != null) {
+            // 外部ファイル指定の場合
             this.csvFile = targetFile;
-            this.useResourceManager = false; // 外部ファイルの場合
+            this.useResourceManager = false;
         } else {
-            // デフォルトのCSVファイルを使用
+            // ResourceManagerのデフォルトパスを使用
             this.csvFile = resourceManager.getEngineerCsvPath().toFile();
             this.useResourceManager = true;
         }
 
-        this.lock = new ReentrantReadWriteLock();
-        this.appendMode = false;
-        this.existingIds = new HashMap<>();
-        this.validationService = ValidationService.getInstance();
-        this.csvValidators = ValidatorFactory.createCSVValidators();
+        LogHandler.getInstance().log(Level.INFO, LogType.SYSTEM,
+                "CSVAccessを初期化完了: " + csvFile.getPath() +
+                        " (操作: " + operation + ", 追記モード: " + appendMode +
+                        ", ResourceManager使用: " + useResourceManager + ")");
     }
 
     /**
@@ -272,16 +284,17 @@ public class CSVAccess extends AccessThread {
      * 指定された操作に基づいてファイル操作を実行
      */
     public void execute() {
-        start();
-
-        // スレッド完了を待機
-        try {
-            if (thread != null) {
-                thread.join(); // スレッドの完了を待機
-            }
-        } catch (InterruptedException e) {
-            Thread.currentThread().interrupt();
-            LogHandler.getInstance().logError(LogType.SYSTEM, "CSVアクセス処理の待機中に割り込みが発生", e);
+        switch (operation) {
+            case "read":
+                result = readCSV();
+                break;
+            case "write":
+                result = writeCSV((List<String>) data);
+                break;
+            default:
+                LogHandler.getInstance().log(Level.WARNING, LogType.SYSTEM,
+                        "不明な操作: " + operation);
+                result = null;
         }
     }
 
