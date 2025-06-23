@@ -64,9 +64,23 @@ public class CSVExportService {
      */
     public boolean exportCSV(List<EngineerDTO> targetList, File selectedFile) {
         try {
+            if (targetList == null || targetList.isEmpty()) {
+                LogHandler.getInstance().log(Level.WARNING, LogType.SYSTEM,
+                        "CSV出力対象リストが空です");
+                return false;
+            }
+
             LogHandler.getInstance().log(Level.INFO, LogType.SYSTEM,
                     String.format("CSV出力を開始: %d件のデータを %s に出力",
                             targetList.size(), selectedFile.getPath()));
+
+            // 出力前にデータ内容を確認
+            for (int i = 0; i < Math.min(3, targetList.size()); i++) {
+                EngineerDTO engineer = targetList.get(i);
+                LogHandler.getInstance().log(Level.FINE, LogType.SYSTEM,
+                        String.format("出力データ[%d]: ID=%s, 名前=%s",
+                                i, engineer.getId(), engineer.getName()));
+            }
 
             boolean success = engineerDAO.exportCSV(targetList, selectedFile.getPath());
 

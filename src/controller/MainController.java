@@ -1331,7 +1331,8 @@ public class MainController {
         try (FileOutputStream fos = new FileOutputStream(selectedFile)) {
             resourceManager.registerResource(resourceKey, fos);
 
-            boolean success = exportService.exportTemplate(selectedFile);
+            // 修正: exportTemplate() から exportCSV() に変更
+            boolean success = exportService.exportCSV(targetList, selectedFile);
 
             SwingUtilities.invokeLater(() -> {
                 if (success) {
@@ -1339,6 +1340,9 @@ public class MainController {
                             "CSV出力が完了しました。",
                             () -> LogHandler.getInstance().log(Level.INFO, LogType.UI,
                                     "CSV出力完了ダイアログを閉じました"));
+
+                    // 出力完了後にボタン状態を復元
+                    clearExportStatus(panel);
                 } else {
                     clearExportStatus(panel);
                     DialogManager.getInstance().showErrorDialog("出力エラー",
@@ -1368,7 +1372,11 @@ public class MainController {
         SwingUtilities.invokeLater(() -> {
             if (panel instanceof ListPanel listPanel) {
                 listPanel.setStatus("");
+                // ボタン状態を有効化
+                listPanel.setButtonsEnabled(true);
             }
+            // 登録ボタンも有効化
+            screenController.setRegisterButtonEnabled(true);
         });
     }
 
