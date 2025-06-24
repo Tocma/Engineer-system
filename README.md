@@ -1,12 +1,12 @@
-# Engineer Management System
+# Engineer-System
 
 [![Java](https://img.shields.io/badge/Java-17+-orange.svg)](https://www.oracle.com/java/)
 [![Swing](https://img.shields.io/badge/GUI-Java%20Swing-blue.svg)](https://docs.oracle.com/javase/tutorial/uiswing/)
 [![License](https://img.shields.io/badge/License-MIT-green.svg)](LICENSE)
-[![Platform](https://img.shields.io/badge/Platform-Windows%20%7C%20macOS%20%7C%20Linux-lightgrey.svg)]()
-[![Version](https://img.shields.io/badge/Version-v4.15.11-brightgreen.svg)]()
+[![Platform](https://img.shields.io/badge/Platform-Windows%20%7C%20macOS%20%7C%20-lightgrey.svg)]()
+[![Version](https://img.shields.io/badge/Version-v5.0.0-brightgreen.svg)]()
 
-エンジニア人材情報を効率的に管理するためのデスクトップアプリケーションです。直感的なGUIと豊富な機能を提供し、企業や組織でのエンジニア情報管理を強力にサポートします。
+エンジニア人材情報を効率的に管理するためのデスクトップアプリケーションです。直感的なGUIと豊富な機能を提供し、企業や組織でのエンジニア情報を管理します。
 
 ##  主な特徴
 
