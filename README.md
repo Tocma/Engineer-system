@@ -4,10 +4,11 @@
 [![Swing](https://img.shields.io/badge/GUI-Java%20Swing-blue.svg)](https://docs.oracle.com/javase/tutorial/uiswing/)
 [![License](https://img.shields.io/badge/License-MIT-green.svg)](LICENSE)
 [![Platform](https://img.shields.io/badge/Platform-Windows%20%7C%20macOS%20%7C%20Linux-lightgrey.svg)]()
+[![Version](https://img.shields.io/badge/Version-v4.15.11-brightgreen.svg)]()
 
 エンジニア人材情報を効率的に管理するためのデスクトップアプリケーションです。直感的なGUIと豊富な機能を提供し、企業や組織でのエンジニア情報管理を強力にサポートします。
 
-## 🌟 主な特徴
+##  主な特徴
 
 ### 包括的なエンジニア情報管理
 - **基本情報管理**: 社員ID、氏名、フリガナ、生年月日、入社年月
@@ -32,8 +33,9 @@
 - **包括的バリデーション**: 入力データの厳密な検証
 - **詳細ログ管理**: 操作履歴の完全記録
 - **エラーハンドリング**: 例外状況での安全な動作保証
+- **ListenerManager統合**: 統合リスナー管理によるメモリ効率化
 
-## 📱 ユーザーインターフェース
+##  ユーザーインターフェース
 
 ### メイン画面構成
 ```
@@ -54,18 +56,18 @@
 ```
 
 ### 機能別画面
-- **エンジニア一覧**: 登録済みエンジニアの一覧表示・検索・操作
+- **エンジニア一覧画面**: 登録済みエンジニアの一覧表示・検索・操作
 - **新規登録画面**: 新しいエンジニア情報の入力・登録
 - **詳細・編集画面**: 既存情報の表示・編集・更新
 - **インポート機能**: CSVファイルからの一括データ取り込み
 
-## 🚀 クイックスタート
+##  クイックスタート
 
 ### 必要環境
 - **Java**: JDK 17以上
-- **OS**: Windows 10+, macOS 10.14+, Ubuntu 18.04+
+- **OS**: Windows 10+, macOS 10.14+,
 - **メモリ**: 最小512MB（推奨1GB以上）
-- **ストレージ**: 100MB以上の空き容量
+- **ストレージ**: 1GB以上の空き容量
 
 ### インストール手順
 
@@ -93,14 +95,7 @@ java -cp bin main.Main
 java -cp bin main.Main
 ```
 
-### 開発環境での実行
-
-**Eclipse/IntelliJ IDEA**を使用する場合：
-1. プロジェクトをIDEにインポート
-2. `src/main/Main.java`を右クリック
-3. "Run As" → "Java Application"を選択
-
-## 📖 使用方法
+##  使用方法
 
 ### 基本操作の流れ
 
@@ -137,7 +132,7 @@ java -cp bin main.Main
 - **詳細エラー表示**: 具体的な修正指示
 - **安全な削除**: 確認ダイアログでの誤操作防止
 
-## 🏗️ アーキテクチャ
+##  アーキテクチャ
 
 ### システム設計思想
 このシステムは**Model-View-Controller (MVC)パターン**を基盤とし、保守性と拡張性を重視した設計となっています。
@@ -147,6 +142,9 @@ java -cp bin main.Main
 │                   View Layer                    │
 │ ┌─────────────┐ ┌─────────────┐ ┌─────────────┐ │
 │ │  ListPanel  │ │  AddPanel   │ │ DetailPanel │ │
+│ │             │ │             │ │             │ │
+│ │ Abstract    │ │   ← extends │ │   ← extends │ │
+│ │EngineerPanel│ │             │ │             │ │
 │ └─────────────┘ └─────────────┘ └─────────────┘ │
 └─────────────────────┬───────────────────────────┘
                       │
@@ -154,6 +152,8 @@ java -cp bin main.Main
 │                Controller Layer                 │
 │  ┌─────────────────┐ ┌───────────────────────┐  │
 │  │ MainController  │ │ScreenTransitionCtrl   │  │
+│  │                 │ │                       │  │
+│  │ EngineerCtrl    │ │   ListenerManager     │  │
 │  └─────────────────┘ └───────────────────────┘  │
 └─────────────────────┬───────────────────────────┘
                       │
@@ -161,6 +161,8 @@ java -cp bin main.Main
 │                 Model Layer                     │
 │ ┌─────────────┐ ┌─────────────┐ ┌─────────────┐ │
 │ │EngineerDTO  │ │EngineerDAO  │ │ CSVAccess   │ │
+│ │             │ │             │ │             │ │
+│ │EngineerBlder│ │ResourceMgr  │ │LogHandler   │ │
 │ └─────────────┘ └─────────────┘ └─────────────┘ │
 └─────────────────────────────────────────────────┘
 ```
@@ -182,14 +184,18 @@ java -cp bin main.Main
 - **CompletableFuture**: 複雑な非同期フロー制御
 - **Thread Safety**: マルチスレッド環境での安全なデータアクセス
 
+#### ListenerManager統合
+- **統合リスナー管理**: メモリリーク防止とパフォーマンス最適化
+- **ライフサイクル管理**: 適切なリスナー登録・解除タイミング
+
 ### データ永続化戦略
 ```
 Application Data
-├── src/
-│   ├── data/           # CSVデータファイル
+├── EngineerSystem/         # ホームディレクトリ配下
+│   ├── data/              # CSVデータファイル
 │   │   └── engineers.csv
-│   └── logs/           # システムログ
-│       └── system-2024-06-12.log
+│   └── logs/              # システムログ
+│       └── system-2024-06-24.log
 ```
 
 ## 🔧 技術仕様
@@ -205,10 +211,7 @@ Application Data
 | **文字エンコーディング** | UTF-8 | 日本語対応 |
 
 ### パフォーマンス特性
-- **起動時間**: 3秒以内（標準環境）
 - **データ容量**: 最大1,000件のエンジニア情報
-- **メモリ使用量**: 通常50-100MB
-- **検索速度**: 1,000件中0.1秒以内
 
 ### 対応データ形式
 
@@ -225,7 +228,7 @@ ID00001,山田太郎,ヤマダタロウ,1990-01-15,2020-04-01,5,Java;Python,Web�
 - **スキル評価**: 1.0-5.0の0.5刻み
 - **プログラミング言語**: セミコロン区切りリスト
 
-## 🧪 テスト・品質保証
+##  テスト・品質保証
 
 ### 自動テスト実行
 ```bash
@@ -242,17 +245,14 @@ java -cp bin main.Main --test=core
 ### ログ監視
 ```bash
 # リアルタイムログ監視
-tail -f src/logs/system-$(date +%Y-%m-%d).log
+tail -f ~/EngineerSystem/logs/system-$(date +%Y-%m-%d).log
 ```
 
-## 🤝 貢献方法
+##  貢献方法
 
 ### 開発参加の流れ
 1. **Issue確認**: [Issues](https://github.com/yourusername/engineer-system/issues)で作業対象を選択
-2. **フォーク**: 個人リポジトリにフォーク
-3. **ブランチ作成**: `feature/your-feature-name`形式
-4. **開発・テスト**: 変更実装とテスト実行
-5. **プルリクエスト**: 詳細な説明とともに提出
+2. **開発・テスト**: 変更実装とテスト実行
 
 ### コーディング規約
 - **Java Naming Conventions**: Oracle標準に準拠
@@ -264,9 +264,8 @@ tail -f src/logs/system-$(date +%Y-%m-%d).log
 - **データベース連携**: CSV → SQLite/H2 Database移行
 - **Web UI**: Swing → Spring Boot + Thymeleaf
 - **API化**: REST API提供でのシステム間連携
-- **多言語対応**: 英語・中国語などの国際化
 
-## 📄 ライセンス
+##  ライセンス
 
 ```
 MIT License
@@ -297,15 +296,12 @@ SOFTWARE.
 ### ヘルプとサポート
 - **GitHub Issues**: [バグ報告・機能要望](https://github.com/yourusername/engineer-system/issues)
 - **GitHub Discussions**: [質問・アイデア共有](https://github.com/yourusername/engineer-system/discussions)
-- **Wiki**: [詳細ドキュメント](https://github.com/yourusername/engineer-system/wiki)
 
 ### 更新履歴
-- **v4.15.11**: 新バリデーションシステム統合、検索機能強化
+- **v4.15.11** (最新): 新バリデーションシステム統合、検索機能強化
 - **v4.13.0**: ListenerManager統合、リソース管理改善
 - **v4.4.2**: ResourceManager統合、ファイル管理一元化
 
 ---
 
-**Engineer Management System**は、現代の開発現場で求められるエンジニア情報管理の課題を解決するために設計されました。シンプルな操作性と堅牢な設計により、あらゆる規模の組織でご活用いただけます。
-
-[⭐ Star this repository](https://github.com/yourusername/engineer-system) if you find it helpful!
+**Engineer System**は、現代の開発現場で求められるエンジニア情報管理の課題を解決するために設計されました。シンプルな操作性と堅牢な設計により、あらゆる規模の組織でご活用いただけます。
