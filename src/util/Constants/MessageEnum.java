@@ -273,7 +273,7 @@ public enum MessageEnum {
 
         try {
             return String.format(this.message, args);
-        } catch (java.util.IllegalFormatException e) {
+        } catch (java.util.IllegalFormatException _e) {
             // フォーマットエラーの場合は基本メッセージと警告を返す
             return this.message + " [フォーマットエラー]";
         }

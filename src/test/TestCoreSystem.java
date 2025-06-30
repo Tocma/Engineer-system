@@ -236,9 +236,9 @@ public class TestCoreSystem {
             // テストレポートにヘッダー情報を追加
             addReportHeader();
 
-        } catch (IOException e) {
-            System.err.println("テスト環境の初期化に失敗しました: " + e.getMessage());
-            e.printStackTrace();
+        } catch (IOException _e) {
+            System.err.println("テスト環境の初期化に失敗しました: " + _e.getMessage());
+            _e.printStackTrace();
         }
     }
 
@@ -341,9 +341,9 @@ public class TestCoreSystem {
                 System.exit(1);
             }
 
-        } catch (Exception e) {
-            System.err.println("テスト実行中にエラーが発生しました: " + e.getMessage());
-            e.printStackTrace();
+        } catch (Exception _e) {
+            System.err.println("テスト実行中にエラーが発生しました: " + _e.getMessage());
+            _e.printStackTrace();
             System.exit(1);
         }
     }
@@ -409,8 +409,8 @@ public class TestCoreSystem {
                     applicationStarted = true;
                     startupLatch.countDown(); // 初期化完了を通知
 
-                } catch (Exception e) {
-                    LogHandler.getInstance().logError(LogType.SYSTEM, "テスト起動中にエラーが発生しました", e);
+                } catch (Exception _e) {
+                    LogHandler.getInstance().logError(LogType.SYSTEM, "テスト起動中にエラーが発生しました", _e);
                     applicationStarted = false;
                     startupLatch.countDown(); // エラーの場合も通知
                 }
@@ -458,10 +458,10 @@ public class TestCoreSystem {
             passTest("起動テスト");
             return true;
 
-        } catch (Exception e) {
-            testReport.append("❌ 起動テスト実行中に例外が発生しました: " + e.getMessage() + "\n");
-            e.printStackTrace();
-            failTest("起動テスト例外: " + e.getMessage());
+        } catch (Exception _e) {
+            testReport.append("❌ 起動テスト実行中に例外が発生しました: " + _e.getMessage() + "\n");
+            _e.printStackTrace();
+            failTest("起動テスト例外: " + _e.getMessage());
             return false;
         } finally {
             testReport.append("\n");
@@ -522,7 +522,7 @@ public class TestCoreSystem {
 
                     // タイムアウト
                     shutdownLatch.countDown();
-                } catch (InterruptedException e) {
+                } catch (InterruptedException _e) {
                     Thread.currentThread().interrupt();
                     shutdownLatch.countDown();
                 }
@@ -576,10 +576,10 @@ public class TestCoreSystem {
             passTest("終了テスト");
             return true;
 
-        } catch (Exception e) {
-            testReport.append("❌ 終了テスト実行中に例外が発生しました: " + e.getMessage() + "\n");
-            e.printStackTrace();
-            failTest("終了テスト例外: " + e.getMessage());
+        } catch (Exception _e) {
+            testReport.append("❌ 終了テスト実行中に例外が発生しました: " + _e.getMessage() + "\n");
+            _e.printStackTrace();
+            failTest("終了テスト例外: " + _e.getMessage());
             return false;
         } finally {
             testReport.append("\n");
@@ -648,7 +648,7 @@ public class TestCoreSystem {
                             // 読み込み完了までの待機時間
                             Thread.sleep(3000);
                             dataLoadLatch.countDown();
-                        } catch (InterruptedException e) {
+                        } catch (InterruptedException _e) {
                             Thread.currentThread().interrupt();
                             dataLoadLatch.countDown();
                         }
@@ -691,10 +691,10 @@ public class TestCoreSystem {
             passTest("CSV読み込みテスト");
             return true;
 
-        } catch (Exception e) {
-            testReport.append("❌ CSV読み込みテスト実行中に例外が発生しました: " + e.getMessage() + "\n");
-            e.printStackTrace();
-            failTest("CSV読み込みテスト例外: " + e.getMessage());
+        } catch (Exception _e) {
+            testReport.append("❌ CSV読み込みテスト実行中に例外が発生しました: " + _e.getMessage() + "\n");
+            _e.printStackTrace();
+            failTest("CSV読み込みテスト例外: " + _e.getMessage());
             return false;
         } finally {
             testReport.append("\n");
@@ -969,8 +969,8 @@ public class TestCoreSystem {
 
             return true;
 
-        } catch (IOException e) {
-            testReport.append("ログファイルの読み込みに失敗しました: " + e.getMessage() + "\n");
+        } catch (IOException _e) {
+            testReport.append("ログファイルの読み込みに失敗しました: " + _e.getMessage() + "\n");
             return false;
         }
     }
@@ -1020,8 +1020,8 @@ public class TestCoreSystem {
 
             return true;
 
-        } catch (IOException e) {
-            testReport.append("ログファイルの読み込みに失敗しました: " + e.getMessage() + "\n");
+        } catch (IOException _e) {
+            testReport.append("ログファイルの読み込みに失敗しました: " + _e.getMessage() + "\n");
             return false;
         }
     }
@@ -1070,8 +1070,8 @@ public class TestCoreSystem {
 
             return true;
 
-        } catch (IOException e) {
-            testReport.append("ログファイルの読み込みに失敗しました: " + e.getMessage() + "\n");
+        } catch (IOException _e) {
+            testReport.append("ログファイルの読み込みに失敗しました: " + _e.getMessage() + "\n");
             return false;
         }
     }
@@ -1117,9 +1117,9 @@ public class TestCoreSystem {
 
             return true;
 
-        } catch (Exception e) {
-            testReport.append("UI検証中に例外が発生しました: " + e.getMessage() + "\n");
-            e.printStackTrace();
+        } catch (Exception _e) {
+            testReport.append("UI検証中に例外が発生しました: " + _e.getMessage() + "\n");
+            _e.printStackTrace();
             return false;
         }
     }
@@ -1175,9 +1175,9 @@ public class TestCoreSystem {
 
             return true;
 
-        } catch (Exception e) {
-            testReport.append("データ表示検証中に例外が発生しました: " + e.getMessage() + "\n");
-            e.printStackTrace();
+        } catch (Exception _e) {
+            testReport.append("データ表示検証中に例外が発生しました: " + _e.getMessage() + "\n");
+            _e.printStackTrace();
             return false;
         }
     }
@@ -1210,7 +1210,7 @@ public class TestCoreSystem {
 
             return false;
 
-        } catch (IOException e) {
+        } catch (IOException _e) {
             return false;
         }
     }
@@ -1261,9 +1261,9 @@ public class TestCoreSystem {
 
             System.out.println("テスト結果レポートを保存しました: " + reportPath);
 
-        } catch (IOException e) {
-            System.err.println("テストレポートの保存に失敗しました: " + e.getMessage());
-            e.printStackTrace();
+        } catch (IOException _e) {
+            System.err.println("テストレポートの保存に失敗しました: " + _e.getMessage());
+            _e.printStackTrace();
         }
     }
 
@@ -1310,8 +1310,8 @@ public class TestCoreSystem {
                 if (!Files.exists(path)) {
                     Files.createDirectories(path);
                 }
-            } catch (IOException e) {
-                System.err.println("出力ディレクトリの作成に失敗しました: " + e.getMessage());
+            } catch (IOException _e) {
+                System.err.println("出力ディレクトリの作成に失敗しました: " + _e.getMessage());
                 this.outputDir = DEFAULT_OUTPUT_DIR;
             }
         }

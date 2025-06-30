@@ -96,7 +96,7 @@ public class CareerValidator extends AbstractValidator {
         int intValue;
         try {
             intValue = Integer.parseInt(value);
-        } catch (NumberFormatException e) {
+        } catch (NumberFormatException _e) {
             logWarning("エンジニア歴検証失敗: 数値形式エラー - " + value);
             return false;
         }

@@ -187,7 +187,7 @@ public class IDValidator extends AbstractValidator {
             // IDプレフィックスを付加
             return "ID" + paddedId;
 
-        } catch (NumberFormatException e) {
+        } catch (NumberFormatException _e) {
             return idValue;
         }
     }

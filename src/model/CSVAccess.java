@@ -152,9 +152,9 @@ public class CSVAccess extends AccessThread {
             // バリデーション成功：前処理済みデータでDTOを構築
             return buildEngineerFromValidatedData(validationResult.getProcessedValues());
 
-        } catch (Exception e) {
+        } catch (Exception _e) {
             LogHandler.getInstance().logError(LogType.SYSTEM,
-                    "CSV行の変換中にエラーが発生（行 " + lineNumber + "）", e);
+                    "CSV行の変換中にエラーが発生（行 " + lineNumber + "）", _e);
             return null;
         }
     }
@@ -323,12 +323,12 @@ public class CSVAccess extends AccessThread {
                 LogHandler.getInstance().log(Level.WARNING, LogType.SYSTEM, "未知の操作種別: " + operation);
                 result = null;
             }
-        } catch (Exception e) {
-            LogHandler.getInstance().logError(LogType.SYSTEM, "CSVアクセス処理中にエラーが発生: " + operation, e);
+        } catch (Exception _e) {
+            LogHandler.getInstance().logError(LogType.SYSTEM, "CSVアクセス処理中にエラーが発生: " + operation, _e);
 
             // エラー時は空の結果オブジェクトを返す
             if ("read".equalsIgnoreCase(operation)) {
-                result = new CSVAccessResult(new ArrayList<>(), new ArrayList<>(), true, e.getMessage());
+                result = new CSVAccessResult(new ArrayList<>(), new ArrayList<>(), true, _e.getMessage());
             } else {
                 result = Boolean.FALSE;
             }
@@ -401,11 +401,11 @@ public class CSVAccess extends AccessThread {
             LogHandler.getInstance().log(Level.INFO, LogType.SYSTEM,
                     "CSVファイル読み込み完了: " + csvFile.getPath() + ", " + csvRows.size() + "行");
 
-        } catch (IOException e) {
+        } catch (IOException _e) {
             LogHandler.getInstance().logError(LogType.SYSTEM,
-                    "CSVファイルの読み込みに失敗: " + csvFile.getPath(), e);
+                    "CSVファイルの読み込みに失敗: " + csvFile.getPath(), _e);
             return new CSVAccessResult(successData, errorData, true,
-                    "CSVファイルの読み込みに失敗: " + e.getMessage());
+                    "CSVファイルの読み込みに失敗: " + _e.getMessage());
         } finally {
             if (useResourceManager && resourceManager != null && resourceKey != null) {
                 resourceManager.releaseResource(resourceKey);
@@ -442,11 +442,11 @@ public class CSVAccess extends AccessThread {
 
                 successData.add(engineer);
 
-            } catch (Exception e) {
+            } catch (Exception _e) {
                 LogHandler.getInstance().logError(LogType.SYSTEM,
-                        "CSV行の処理中にエラーが発生 (行 " + lineNumber + ")", e);
+                        "CSV行の処理中にエラーが発生 (行 " + lineNumber + ")", _e);
                 ValidationResult errorResult = new ValidationResult();
-                errorResult.addError("error", "処理エラー (行 " + lineNumber + "): " + e.getMessage());
+                errorResult.addError("error", "処理エラー (行 " + lineNumber + "): " + _e.getMessage());
                 EngineerDTO errorEngineer = createErrorEngineer(row, lineNumber, errorResult);
                 errorData.add(errorEngineer);
             }
@@ -521,9 +521,9 @@ public class CSVAccess extends AccessThread {
                         created = true;
                         LogHandler.getInstance().log(Level.INFO, LogType.SYSTEM,
                                 "ResourceManager経由でディレクトリを作成: " + parentDir.getPath());
-                    } catch (IOException e) {
+                    } catch (IOException _e) {
                         LogHandler.getInstance().logError(LogType.SYSTEM,
-                                "ResourceManager経由でのディレクトリ作成に失敗", e);
+                                "ResourceManager経由でのディレクトリ作成に失敗", _e);
                         created = false;
                     }
                 } else {
@@ -557,8 +557,8 @@ public class CSVAccess extends AccessThread {
 
             return true;
 
-        } catch (IOException e) {
-            LogHandler.getInstance().logError(LogType.SYSTEM, "CSVファイルの書き込みに失敗: " + csvFile.getPath(), e);
+        } catch (IOException _e) {
+            LogHandler.getInstance().logError(LogType.SYSTEM, "CSVファイルの書き込みに失敗: " + csvFile.getPath(), _e);
             return false;
         } finally {
             // リソースのクリーンアップ

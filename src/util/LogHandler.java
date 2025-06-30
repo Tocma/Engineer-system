@@ -18,6 +18,13 @@ import util.Constants.FileConstants;
  */
 public class LogHandler {
 
+    /** プロパティマネージャのインスタンス */
+    private static final PropertiesManager props = PropertiesManager.getInstance();
+
+    // プロパティからログフォーマットを取得
+    private static final String LOG_FORMAT = props.getString("log.format", 
+        "[%1$tY-%1$tm-%1$td %1$tH:%1$tM:%1$tS] [%4$s] [%7$s] [%8$s.%9$s:%10$s] %5$s%6$s%n");
+    
     /**
      * ログの種類を定義するEnum
      * システム内のログをUIとSYSTEMに分類
@@ -42,10 +49,6 @@ public class LogHandler {
     /** シングルトンインスタンス */
     private static final LogHandler INSTANCE = new LogHandler();
 
-    /** ログ関連の定数定義 */
-
-    /** 拡張されたログフォーマット（クラス・メソッド・行番号を先頭に追加） */
-    private static final String LOG_FORMAT = "[%1$tY-%1$tm-%1$td %1$tH:%1$tM:%1$tS] [%4$s] [%7$s] [%8$s.%9$s:%10$s] %5$s%6$s%n";
 
     /** ロガー設定 */
     private Logger logger;
@@ -72,9 +75,9 @@ public class LogHandler {
         if (!INSTANCE.isInitialized) {
             try {
                 INSTANCE.initialize();
-            } catch (IOException e) {
+            } catch (IOException _e) {
                 // 初期化に失敗した場合は標準出力にフォールバック
-                System.err.println("ログシステムの自動初期化に失敗: " + e.getMessage());
+                System.err.println("ログシステムの自動初期化に失敗: " + _e.getMessage());
                 System.err.println("標準出力へのフォールバックを使用");
             }
         }
@@ -125,10 +128,10 @@ public class LogHandler {
             // 初期化完了のログを出力
             log(LogType.SYSTEM, "ログシステムを初期化完了: " + this.logDirectory);
 
-        } catch (IOException e) {
-            System.err.println("ログシステムの初期化に失敗: " + e.getMessage());
-            e.printStackTrace();
-            throw new IOException("ログシステムの初期化に失敗", e);
+        } catch (IOException _e) {
+            System.err.println("ログシステムの初期化に失敗: " + _e.getMessage());
+            _e.printStackTrace();
+            throw new IOException("ログシステムの初期化に失敗", _e);
         }
     }
 
@@ -148,9 +151,9 @@ public class LogHandler {
             try {
                 Files.createDirectories(logPath);
                 System.out.println("ログディレクトリを作成: " + logPath);
-            } catch (IOException e) {
-                System.err.println("ログディレクトリの作成に失敗: " + e.getMessage());
-                throw e;
+            } catch (IOException _e) {
+                System.err.println("ログディレクトリの作成に失敗: " + _e.getMessage());
+                throw _e;
             }
         } else {
             System.out.println("既存のログディレクトリを使用: " + logPath);

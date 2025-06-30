@@ -78,7 +78,7 @@ public class SkillValidator extends AbstractValidator {
             } else {
                 return String.valueOf(rounded);
             }
-        } catch (NumberFormatException e) {
+        } catch (NumberFormatException _e) {
             // 数値でない場合はそのまま返す
             return value;
         }
@@ -106,7 +106,7 @@ public class SkillValidator extends AbstractValidator {
         double doubleValue;
         try {
             doubleValue = Double.parseDouble(value);
-        } catch (NumberFormatException e) {
+        } catch (NumberFormatException _e) {
             logWarning("スキル評価検証失敗: 数値形式エラー - " + value);
             return false;
         }

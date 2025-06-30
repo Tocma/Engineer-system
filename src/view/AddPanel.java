@@ -83,8 +83,8 @@ public class AddPanel extends AbstractEngineerPanel {
             createButtonArea();
 
             LogHandler.getInstance().log(Level.INFO, LogType.UI, "アドパネルの初期化完了");
-        } catch (Exception e) {
-            LogHandler.getInstance().logError(LogType.UI, "アドパネルの初期化中にエラーが発生", e);
+        } catch (Exception _e) {
+            LogHandler.getInstance().logError(LogType.UI, "アドパネルの初期化中にエラーが発生", _e);
         }
     }
 
@@ -190,9 +190,9 @@ public class AddPanel extends AbstractEngineerPanel {
                 setProcessing(false);
             }
 
-        } catch (Exception e) {
-            LogHandler.getInstance().logError(LogType.UI, "エンジニア追加処理中にエラーが発生", e);
-            showErrorMessage("エンジニア情報の登録中にエラーが発生: " + e.getMessage());
+        } catch (Exception _e) {
+            LogHandler.getInstance().logError(LogType.UI, "エンジニア追加処理中にエラーが発生", _e);
+            showErrorMessage("エンジニア情報の登録中にエラーが発生: " + _e.getMessage());
             setProcessing(false);
         }
     }
@@ -237,9 +237,9 @@ public class AddPanel extends AbstractEngineerPanel {
                 }
                 return ids;
             }
-        } catch (Exception e) {
+        } catch (Exception _e) {
             LogHandler.getInstance().logError(LogType.SYSTEM,
-                    "既存IDの取得中にエラーが発生", e);
+                    "既存IDの取得中にエラーが発生", _e);
         }
         return new HashSet<>();
     }
@@ -386,13 +386,13 @@ public class AddPanel extends AbstractEngineerPanel {
             LogHandler.getInstance().log(Level.INFO, LogType.SYSTEM,
                     "AddPanel.handleSaveComplete完了: ID=" + engineer.getId());
 
-        } catch (Exception e) {
+        } catch (Exception _e) {
             LogHandler.getInstance().logError(LogType.SYSTEM,
-                    "handleSaveComplete処理中にエラーが発生: " + engineer.getId(), e);
+                    "handleSaveComplete処理中にエラーが発生: " + engineer.getId(), _e);
 
             try {
                 DialogManager.getInstance().showErrorDialog("エラー",
-                        "登録完了処理中にエラーが発生: " + e.getMessage());
+                        "登録完了処理中にエラーが発生: " + _e.getMessage());
             } catch (Exception dialogError) {
                 LogHandler.getInstance().logError(LogType.SYSTEM,
                         "エラーダイアログの表示にも失敗", dialogError);

@@ -211,8 +211,8 @@ public class DialogManager {
 
             return result == JOptionPane.YES_OPTION;
 
-        } catch (Exception e) {
-            LogHandler.getInstance().logError(LogType.SYSTEM, "スクロール可能リストダイアログの表示中にエラーが発生", e);
+        } catch (Exception _e) {
+            LogHandler.getInstance().logError(LogType.SYSTEM, "スクロール可能リストダイアログの表示中にエラーが発生", _e);
             return false;
         }
     }
@@ -264,8 +264,8 @@ public class DialogManager {
             // 結果が利用可能になるまで待機
             return future.get();
 
-        } catch (InterruptedException | ExecutionException e) {
-            LogHandler.getInstance().logError(LogType.SYSTEM, "確認ダイアログの表示中にエラーが発生", e);
+        } catch (InterruptedException | ExecutionException _e) {
+            LogHandler.getInstance().logError(LogType.SYSTEM, "確認ダイアログの表示中にエラーが発生", _e);
             Thread.currentThread().interrupt(); // 割り込みステータスを復元
             return false;
         }
@@ -326,9 +326,9 @@ public class DialogManager {
 
                     future.complete(userChoice);
 
-                } catch (Exception e) {
+                } catch (Exception _e) {
                     LogHandler.getInstance().logError(LogType.SYSTEM,
-                            "重複確認ダイアログ内でエラーが発生", e);
+                            "重複確認ダイアログ内でエラーが発生", _e);
                     future.complete(false); // エラー時はスキップを選択
                 }
             });
@@ -341,9 +341,9 @@ public class DialogManager {
 
             return result;
 
-        } catch (InterruptedException | ExecutionException e) {
+        } catch (InterruptedException | ExecutionException _e) {
             LogHandler.getInstance().logError(LogType.SYSTEM,
-                    "ID重複確認ダイアログの表示中にエラーが発生", e);
+                    "ID重複確認ダイアログの表示中にエラーが発生", _e);
             Thread.currentThread().interrupt(); // 割り込みステータスを復元
             return false;
         }
@@ -381,8 +381,8 @@ public class DialogManager {
             // 結果が利用可能になるまで待機
             return future.get();
 
-        } catch (InterruptedException | ExecutionException e) {
-            LogHandler.getInstance().logError(LogType.SYSTEM, "選択ダイアログの表示中にエラーが発生", e);
+        } catch (InterruptedException | ExecutionException _e) {
+            LogHandler.getInstance().logError(LogType.SYSTEM, "選択ダイアログの表示中にエラーが発生", _e);
             Thread.currentThread().interrupt(); // 割り込みステータスを復元
             return -1;
         }
@@ -413,8 +413,8 @@ public class DialogManager {
             // 結果が利用可能になるまで待機
             return future.get();
 
-        } catch (InterruptedException | ExecutionException e) {
-            LogHandler.getInstance().logError(LogType.SYSTEM, "入力ダイアログの表示中にエラーが発生", e);
+        } catch (InterruptedException | ExecutionException _e) {
+            LogHandler.getInstance().logError(LogType.SYSTEM, "入力ダイアログの表示中にエラーが発生", _e);
             Thread.currentThread().interrupt(); // 割り込みステータスを復元
             return null;
         }
@@ -520,10 +520,10 @@ public class DialogManager {
 
             return action;
 
-        } catch (Exception e) {
+        } catch (Exception _e) {
             // ダイアログ表示中のエラー
             LogHandler.getInstance().logError(LogType.SYSTEM,
-                    "直接ダイアログ表示中にエラーが発生しました: ID=" + engineer.getId(), e);
+                    "直接ダイアログ表示中にエラーが発生しました: ID=" + engineer.getId(), _e);
 
             // エラー時はデフォルトアクションを返す
             return "CONTINUE";
@@ -610,10 +610,10 @@ public class DialogManager {
                     // 結果をCompletableFutureに設定
                     future.complete(action);
 
-                } catch (Exception e) {
+                } catch (Exception _e) {
                     // ダイアログ表示中のエラー
                     LogHandler.getInstance().logError(LogType.SYSTEM,
-                            "ダイアログ表示中にエラーが発生しました: ID=" + engineer.getId(), e);
+                            "ダイアログ表示中にエラーが発生しました: ID=" + engineer.getId(), _e);
 
                     // エラー時はデフォルトアクションを返す
                     future.complete("CONTINUE");
@@ -631,23 +631,23 @@ public class DialogManager {
 
             return result;
 
-        } catch (InterruptedException e) {
+        } catch (InterruptedException _e) {
             // 割り込み発生時
             LogHandler.getInstance().logError(LogType.SYSTEM,
-                    "非同期ダイアログの待機中に割り込みが発生: ID=" + engineer.getId(), e);
+                    "非同期ダイアログの待機中に割り込みが発生: ID=" + engineer.getId(), _e);
             Thread.currentThread().interrupt(); // 割り込みステータスを復元
             return "CONTINUE"; // エラー時はデフォルト動作
 
-        } catch (ExecutionException e) {
+        } catch (ExecutionException _e) {
             // 実行時エラー
             LogHandler.getInstance().logError(LogType.SYSTEM,
-                    "非同期ダイアログの実行中にエラーが発生: ID=" + engineer.getId(), e);
+                    "非同期ダイアログの実行中にエラーが発生: ID=" + engineer.getId(), _e);
             return "CONTINUE"; // エラー時はデフォルト動作
 
-        } catch (Exception e) {
+        } catch (Exception _e) {
             // その他の予期しないエラー
             LogHandler.getInstance().logError(LogType.SYSTEM,
-                    "非同期ダイアログ処理中に予期しないエラーが発生: ID=" + engineer.getId(), e);
+                    "非同期ダイアログ処理中に予期しないエラーが発生: ID=" + engineer.getId(), _e);
             return "CONTINUE"; // エラー時はデフォルト動作
         }
     }
@@ -791,9 +791,9 @@ public class DialogManager {
 
             return result == JOptionPane.OK_OPTION;
 
-        } catch (Exception e) {
+        } catch (Exception _e) {
             LogHandler.getInstance().logError(LogType.SYSTEM,
-                    "エラー詳細ダイアログの表示中にエラーが発生しました", e);
+                    "エラー詳細ダイアログの表示中にエラーが発生しました", _e);
 
             // フォールバック：シンプルなリスト表示
             return showScrollableListDialog(

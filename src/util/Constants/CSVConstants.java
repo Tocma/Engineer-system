@@ -1,5 +1,7 @@
 package util.Constants;
 
+import util.PropertiesManager;
+
 /**
  * CSV処理関連の定数を定義するクラス
  * 
@@ -12,6 +14,9 @@ package util.Constants;
  */
 public final class CSVConstants {
 
+    /** プロパティマネージャのインスタンス */
+    private static final PropertiesManager props = PropertiesManager.getInstance();
+
     /**
      * プライベートコンストラクタ
      * インスタンス化を防止
@@ -20,28 +25,18 @@ public final class CSVConstants {
         throw new AssertionError("定数クラスはインスタンス化できません");
     }
 
-    // ========== CSVヘッダー定義 ==========
-    /** CSVヘッダー列名配列 */
-    public static final String[] CSV_HEADERS = {
-            "社員ID(必須)",
-            "氏名(必須)",
-            "フリガナ(必須)",
-            "生年月日(必須)",
-            "入社年月(必須)",
-            "エンジニア歴(必須)",
-            "扱える言語(必須)",
-            "経歴",
-            "研修の受講歴",
-            "技術力",
-            "受講態度",
-            "コミュニケーション能力",
-            "リーダーシップ",
-            "備考",
-            "登録日"
-    };
+    // CSVヘッダー定義（配列に変換）
+    public static final String[] CSV_HEADERS = props.getArray("csv.header");
 
-    /** デフォルトCSVヘッダー行 */
-    public static final String DEFAULT_CSV_HEADER = String.join(",", CSV_HEADERS);
+    // デフォルトCSVヘッダー行
+    public static final String DEFAULT_CSV_HEADER = props.getString("csv.header",
+            "社員ID(必須),氏名(必須),フリガナ(必須),生年月日(必須),入社年月(必須),エンジニア歴(必須),扱える言語(必須),経歴,研修の受講歴,技術力,受講態度,コミュニケーション能力,リーダーシップ,備考,登録日");
+
+    // CSVフォーマット設定
+    public static final String LANGUAGE_DELIMITER = props.getString("csv.delimiter.language", ";");
+    public static final String FIELD_DELIMITER = props.getString("csv.delimiter.field", ",");
+    public static final String DATE_FORMAT_PATTERN = props.getString("csv.date.format", "yyyy-MM-dd");
+    public static final int CSV_SPLIT_LIMIT = props.getInt("csv.split.limit", -1);
 
     // ========== CSV列インデックス ==========
     public static final int COLUMN_INDEX_ID = 0;
@@ -60,16 +55,4 @@ public final class CSVConstants {
     public static final int COLUMN_INDEX_NOTE = 13;
     public static final int COLUMN_INDEX_REGISTERED_DATE = 14;
 
-    // ========== CSVフォーマット設定 ==========
-    /** プログラミング言語区切り文字 */
-    public static final String LANGUAGE_DELIMITER = ";";
-
-    /** CSVフィールド区切り文字 */
-    public static final String FIELD_DELIMITER = ",";
-
-    /** 日付フォーマットパターン */
-    public static final String DATE_FORMAT_PATTERN = "yyyy-MM-dd";
-
-    /** CSV読み込み時のカラム分割制限値（-1は無制限） */
-    public static final int CSV_SPLIT_LIMIT = -1;
 }

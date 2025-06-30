@@ -7,7 +7,6 @@ import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.logging.Level;
 import util.LogHandler.LogType;
-import util.Constants.FileConstants;
 
 /**
  * アプリケーションリソースを総合的に管理するシングルトンクラス
@@ -19,6 +18,9 @@ public class ResourceManager {
 
     /** シングルトンインスタンス */
     private static final ResourceManager INSTANCE = new ResourceManager();
+
+    /** プロパティマネージャーのインスタンス */
+    private final PropertiesManager props = PropertiesManager.getInstance();
 
     /**
      * CSVヘッダー定義
@@ -70,8 +72,9 @@ public class ResourceManager {
         }
 
         try {
-            // プロジェクトのベースディレクトリを取得
-            String projectDir = System.getProperty("user.home") + File.separator + "EngineerSystem";
+            // プロパティからベースディレクトリを取得
+            String projectDir = props.getString("directory.base",
+                    System.getProperty("user.home") + File.separator + "EngineerSystem");
 
             // ディレクトリへの絶対パスを構築
             this.srcDirectoryPath = Paths.get(projectDir).toAbsolutePath();
@@ -91,14 +94,13 @@ public class ResourceManager {
             // 初期化完了
             initialized = true;
 
-            // ログに記録
+            LogHandler.getInstance().log(Level.INFO, LogType.SYSTEM,
+                    "リソースマネージャーを初期化完了");
 
-            LogHandler.getInstance().log(Level.INFO, LogType.SYSTEM, "リソースマネージャーを初期化完了");
-
-        } catch (IOException e) {
-            // ログに記録
-            LogHandler.getInstance().logError(LogType.SYSTEM, "リソースマネージャーの初期化に失敗", e);
-            throw new IOException("リソースマネージャーの初期化に失敗", e);
+        } catch (IOException _e) {
+            LogHandler.getInstance().logError(LogType.SYSTEM,
+                    "リソースマネージャーの初期化に失敗", _e);
+            throw new IOException("リソースマネージャーの初期化に失敗", _e);
         }
     }
 
@@ -106,8 +108,11 @@ public class ResourceManager {
      * ディレクトリパスを設定
      */
     private void setDirectoryPaths() {
-        dataDirectoryPath = srcDirectoryPath.resolve(FileConstants.DATA_DIR_NAME);
-        engineerCsvPath = dataDirectoryPath.resolve(FileConstants.DEFAULT_ENGINEER_CSV);
+        String dataDir = props.getString("directory.data", "data");
+        String csvFileName = props.getString("file.csv.default", "engineers.csv");
+
+        dataDirectoryPath = srcDirectoryPath.resolve(dataDir);
+        engineerCsvPath = dataDirectoryPath.resolve(csvFileName);
     }
 
     /**
@@ -119,11 +124,11 @@ public class ResourceManager {
         try {
             // dataディレクトリのみを作成（srcDirectoryPathは作成しない）
             createDirectoryIfNotExists(dataDirectoryPath);
-        } catch (IOException e) {
+        } catch (IOException _e) {
             // エラーログを出力
-            LogHandler.getInstance().logError(LogType.SYSTEM, "ディレクトリの作成に失敗", e);
+            LogHandler.getInstance().logError(LogType.SYSTEM, "ディレクトリの作成に失敗", _e);
 
-            throw new IOException("必要なディレクトリの作成に失敗", e);
+            throw new IOException("必要なディレクトリの作成に失敗", _e);
         }
     }
 
@@ -139,9 +144,9 @@ public class ResourceManager {
             try {
                 Files.createDirectories(dirPath);
                 System.out.println("ディレクトリを作成: " + dirPath.toString());
-            } catch (IOException e) {
-                System.err.println("ディレクトリの作成に失敗: " + dirPath + ", エラー: " + e.getMessage());
-                throw e;
+            } catch (IOException _e) {
+                System.err.println("ディレクトリの作成に失敗: " + dirPath + ", エラー: " + _e.getMessage());
+                throw _e;
             }
         } else {
             System.out.println("既存のディレクトリを使用: " + dirPath);
@@ -155,30 +160,17 @@ public class ResourceManager {
      * @throws IOException ファイルの作成に失敗した場合
      */
     private void checkAndCreateCsvFile() throws IOException {
-        try {
-            if (!Files.exists(engineerCsvPath)) {
-                // 親ディレクトリが存在することを確認
-                if (!Files.exists(dataDirectoryPath)) {
-                    Files.createDirectories(dataDirectoryPath);
-                }
-
-                // CSVファイルが存在しない場合、新規作成、try-with-resourcesを使用
-                System.out.println("CSVファイルを作成: " + engineerCsvPath);
-                try (BufferedWriter writer = Files.newBufferedWriter(engineerCsvPath, StandardCharsets.UTF_8)) {
-                    writer.write(DEFAULT_CSV_HEADER);
-                    writer.newLine();
-                }
-
-                LogHandler.getInstance().log(Level.INFO, LogType.SYSTEM,
-                        "新しいCSVファイルを作成: " + engineerCsvPath.toString());
-            } else {
-                System.out.println("既存のCSVファイルを使用: " + engineerCsvPath);
+        if (!Files.exists(engineerCsvPath)) {
+            try (BufferedWriter writer = Files.newBufferedWriter(engineerCsvPath,
+                    StandardCharsets.UTF_8)) {
+                // プロパティからCSVヘッダーを取得
+                String csvHeader = props.getString("csv.header", DEFAULT_CSV_HEADER);
+                writer.write(csvHeader);
+                writer.newLine();
             }
-        } catch (IOException e) {
-            System.err.println("新しいCSVファイルの作成に失敗: " + e.getMessage());
-            // エラーログを出力
-            LogHandler.getInstance().logError(LogType.SYSTEM, "新しいCSVファイルの作成に失敗", e);
-            throw new IOException("新しいCSVファイルの作成に失敗", e);
+            System.out.println("新しいCSVファイルを作成: " + engineerCsvPath);
+        } else {
+            System.out.println("既存のCSVファイルを使用: " + engineerCsvPath);
         }
     }
 
@@ -203,11 +195,11 @@ public class ResourceManager {
 
             }
             return newDir;
-        } catch (IOException e) {
+        } catch (IOException _e) {
             // エラーログを出力
-            LogHandler.getInstance().logError(LogType.SYSTEM, "新しいディレクトリの作成に失敗: " + dirName, e);
+            LogHandler.getInstance().logError(LogType.SYSTEM, "新しいディレクトリの作成に失敗: " + dirName, _e);
 
-            throw new IOException("新しいディレクトリの作成に失敗", e);
+            throw new IOException("新しいディレクトリの作成に失敗", _e);
         }
     }
 
@@ -251,9 +243,9 @@ public class ResourceManager {
                 LogHandler.getInstance().log(Level.INFO, LogType.SYSTEM, "リソースを解放: " + key);
 
                 return true;
-            } catch (IOException e) {
+            } catch (IOException _e) {
                 // エラーログを出力
-                LogHandler.getInstance().logError(LogType.SYSTEM, "リソースの解放に失敗: " + key, e);
+                LogHandler.getInstance().logError(LogType.SYSTEM, "リソースの解放に失敗: " + key, _e);
 
                 return false;
             }
@@ -277,11 +269,11 @@ public class ResourceManager {
                 // ログに解放情報を記録
                 LogHandler.getInstance().log(Level.INFO, LogType.SYSTEM, "リソースを解放: " + entry.getKey());
 
-            } catch (IOException e) {
+            } catch (IOException _e) {
                 allSuccess = false;
                 failedResources.add(entry.getKey());
                 // エラーログを出力
-                LogHandler.getInstance().logError(LogType.SYSTEM, "リソースの解放に失敗: " + entry.getKey(), e);
+                LogHandler.getInstance().logError(LogType.SYSTEM, "リソースの解放に失敗: " + entry.getKey(), _e);
             }
         }
 

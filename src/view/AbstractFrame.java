@@ -35,9 +35,9 @@ public abstract class AbstractFrame {
         try {
             initializeFrame();
             customizeFrame();
-        } catch (Exception e) {
-            LogHandler.getInstance().logError(LogType.SYSTEM, "フレームの初期化に失敗", e);
-            throw new RuntimeException("フレームの初期化に失敗", e);
+        } catch (Exception _e) {
+            LogHandler.getInstance().logError(LogType.SYSTEM, "フレームの初期化に失敗", _e);
+            throw new RuntimeException("フレームの初期化に失敗", _e);
         }
     }
 

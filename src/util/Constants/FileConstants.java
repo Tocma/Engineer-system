@@ -1,5 +1,7 @@
 package util.Constants;
 
+import util.PropertiesManager;
+
 /**
  * ファイル・ディレクトリ関連の定数を定義するクラス
  * 
@@ -12,6 +14,9 @@ package util.Constants;
  */
 public final class FileConstants {
 
+    /** プロパティマネージャのインスタンス */
+    private static final PropertiesManager props = PropertiesManager.getInstance();
+
     /**
      * プライベートコンストラクタ
      * インスタンス化を防止
@@ -22,20 +27,20 @@ public final class FileConstants {
 
     // ========== ディレクトリ名 ==========
     /** データディレクトリ名 */
-    public static final String DATA_DIR_NAME = "data";
+    public static final String DATA_DIR_NAME = props.getString("directory.data", "data");
 
-    /** ログディレクトリ名 */
-    public static final String LOG_DIR_NAME = "logs";
+    /** 設定ディレクトリ名 */
+    public static final String LOG_DIR_NAME = props.getString("directory.logs", "logs");
 
-    /** ソースディレクトリ名 */
-    public static final String SRC_DIR_NAME = "src";
+    /** 設定ディレクトリ名 */
+    public static final String SRC_DIR_NAME = props.getString("directory.src", "src");
 
     // ========== ファイル名 ==========
     /** デフォルトエンジニアCSVファイル名 */
-    public static final String DEFAULT_ENGINEER_CSV = "engineers.csv";
-
-    /** ログファイル名フォーマット */
-    public static final String LOG_FILE_FORMAT = "System-%s.log";
+    public static final String DEFAULT_ENGINEER_CSV = props.getString("file.csv.default", "engineers.csv");
+    
+    /** デフォルト設定ファイル名 */
+    public static final String LOG_FILE_FORMAT = props.getString("file.log.format", "System-%s.log");
 
     // ========== ファイル拡張子 ==========
     /** CSVファイル拡張子 */
@@ -44,14 +49,14 @@ public final class FileConstants {
     /** ログファイル拡張子 */
     public static final String LOG_EXTENSION = ".log";
 
-    // ========== ファイルサイズ制限 ==========
-    /** ログファイル最大サイズ（バイト） */
-    public static final int MAX_LOG_SIZE_BYTES = 10 * 1024 * 1024; // 10MB
-
     // ========== ファイル名検証 ==========
     /** ファイル名に使用できない文字の正規表現パターン */
     public static final String INVALID_FILENAME_PATTERN = ".*[\\\\/:*?\"<>|].*";
 
-    /** ファイル名に使用できない文字の説明 */
-    public static final String INVALID_FILENAME_CHARS = "\\ / : * ? \" < > |";
+    // ファイルサイズ制限
+    public static final int MAX_LOG_SIZE_BYTES = props.getInt("file.log.max.size", 10485760);
+
+    // ファイル名検証
+    public static final String INVALID_FILENAME_CHARS = props.getString("file.invalid.chars", "\\ / : * ? \" < > |");
+
 }

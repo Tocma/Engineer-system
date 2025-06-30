@@ -164,18 +164,18 @@ public class ScreenTransitionController {
                         LogHandler.getInstance().log(Level.WARNING, LogType.SYSTEM,
                                 "パネルの取得に失敗: " + panelType.getDisplayName());
                     }
-                } catch (Exception e) {
+                } catch (Exception _e) {
                     LogHandler.getInstance().logError(LogType.SYSTEM, "画面切り替えに失敗: " + panelType.getDisplayName(),
-                            e);
+                            _e);
                 } finally {
                     // 遷移中フラグを解除
                     isTransitioning.set(false);
                 }
             });
-        } catch (Exception e) {
+        } catch (Exception _e) {
             // EDT外での例外発生時の処理
             isTransitioning.set(false);
-            LogHandler.getInstance().logError(LogType.SYSTEM, "画面切り替え要求の処理に失敗", e);
+            LogHandler.getInstance().logError(LogType.SYSTEM, "画面切り替え要求の処理に失敗", _e);
         }
     }
 
@@ -236,18 +236,18 @@ public class ScreenTransitionController {
                         LogHandler.getInstance().log(Level.WARNING, LogType.SYSTEM,
                                 "パネルの取得に失敗: " + panelType.getDisplayName());
                     }
-                } catch (Exception e) {
+                } catch (Exception _e) {
                     LogHandler.getInstance().logError(LogType.SYSTEM, "画面切り替えに失敗: " + panelType.getDisplayName(),
-                            e);
+                            _e);
                 } finally {
                     // 遷移中フラグを解除
                     isTransitioning.set(false);
                 }
             });
-        } catch (Exception e) {
+        } catch (Exception _e) {
             // EDT外での例外発生時の処理
             isTransitioning.set(false);
-            LogHandler.getInstance().logError(LogType.SYSTEM, "画面切り替え要求の処理に失敗", e);
+            LogHandler.getInstance().logError(LogType.SYSTEM, "画面切り替え要求の処理に失敗", _e);
         }
     }
 
@@ -302,8 +302,8 @@ public class ScreenTransitionController {
         try {
             mainFrame.refreshView();
             LogHandler.getInstance().log(Level.INFO, LogType.SYSTEM, "ビューを更新");
-        } catch (Exception e) {
-            LogHandler.getInstance().logError(LogType.SYSTEM, "ビューの更新に失敗", e);
+        } catch (Exception _e) {
+            LogHandler.getInstance().logError(LogType.SYSTEM, "ビューの更新に失敗", _e);
         }
     }
 

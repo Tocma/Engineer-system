@@ -37,8 +37,8 @@ public abstract class AccessThread implements Runnable {
         try {
             // 処理の実行
             processOperation();
-        } catch (Exception e) {
-            LogHandler.getInstance().logError(LogType.SYSTEM, "スレッド処理中にエラーが発生", e);
+        } catch (Exception _e) {
+            LogHandler.getInstance().logError(LogType.SYSTEM, "スレッド処理中にエラーが発生", _e);
         } finally {
             running = false;
         }

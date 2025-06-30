@@ -1,5 +1,6 @@
 package util.Constants;
 
+import util.PropertiesManager;
 import java.awt.Color;
 import java.awt.Dimension;
 
@@ -15,6 +16,9 @@ import java.awt.Dimension;
  */
 public final class UIConstants {
 
+    /** プロパティマネージャのインスタンス */
+    private static final PropertiesManager props = PropertiesManager.getInstance();
+
     /**
      * プライベートコンストラクタ
      * インスタンス化を防止
@@ -23,25 +27,50 @@ public final class UIConstants {
         throw new AssertionError("定数クラスはインスタンス化できません");
     }
 
-    // ========== ウィンドウサイズ ==========
-    /** デフォルトウィンドウ幅 */
-    public static final int DEFAULT_WINDOW_WIDTH = 1000;
+    // ウィンドウサイズ
+    public static final int DEFAULT_WINDOW_WIDTH = props.getInt("ui.window.default.width", 1000);
+    public static final int DEFAULT_WINDOW_HEIGHT = props.getInt("ui.window.default.height", 800);
+    public static final Dimension MINIMUM_WINDOW_SIZE = new Dimension(
+            props.getInt("ui.window.min.width", 800),
+            props.getInt("ui.window.min.height", 600));
 
-    /** デフォルトウィンドウ高さ */
-    public static final int DEFAULT_WINDOW_HEIGHT = 800;
+    // 色定義（RGB値から Color オブジェクトを生成）
+    public static final Color ERROR_COLOR = parseColor("ui.color.error", "204,0,0");
+    public static final Color BACKGROUND_COLOR = parseColor("ui.color.background", "255,255,255");
+    public static final Color READONLY_BACKGROUND_COLOR = parseColor("ui.color.readonly.background", "240,240,240");
 
-    /** 最小ウィンドウサイズ */
-    public static final Dimension MINIMUM_WINDOW_SIZE = new Dimension(800, 600);
+    // その他のUI設定
+    public static final int TABLE_ROW_HEIGHT = props.getInt("ui.table.row.height", 25);
+    public static final int SCROLL_INCREMENT = props.getInt("ui.scroll.increment", 16);
+    public static final int PANEL_PADDING = props.getInt("ui.panel.padding", 20);
+    public static final int COMPONENT_SPACING = props.getInt("ui.component.spacing", 10);
+    public static final int SECTION_SPACING = props.getInt("ui.section.spacing", 20);
+
+    /**
+     * プロパティからRGB値を読み込んでColorオブジェクトを生成
+     */
+    private static Color parseColor(String key, String defaultValue) {
+        String rgb = props.getString(key, defaultValue);
+        String[] parts = rgb.split(",");
+        if (parts.length == 3) {
+            try {
+                int r = Integer.parseInt(parts[0].trim());
+                int g = Integer.parseInt(parts[1].trim());
+                int b = Integer.parseInt(parts[2].trim());
+                return new Color(r, g, b);
+            } catch (NumberFormatException _e) {
+                // デフォルト値を使用
+            }
+        }
+        // エラー時はデフォルト値をパース
+        String[] defaults = defaultValue.split(",");
+        return new Color(
+                Integer.parseInt(defaults[0]),
+                Integer.parseInt(defaults[1]),
+                Integer.parseInt(defaults[2]));
+    }
 
     // ========== 色定義 ==========
-    /** エラー表示色 */
-    public static final Color ERROR_COLOR = new Color(204, 0, 0);
-
-    /** 背景色（白） */
-    public static final Color BACKGROUND_COLOR = Color.WHITE;
-
-    /** 読み取り専用フィールド背景色 */
-    public static final Color READONLY_BACKGROUND_COLOR = new Color(240, 240, 240);
 
     /** エラーボーダー色 */
     public static final Color ERROR_BORDER_COLOR = ERROR_COLOR;
@@ -52,19 +81,6 @@ public final class UIConstants {
 
     /** エラーメッセージフォントサイズ */
     public static final float ERROR_MESSAGE_FONT_SIZE = 11f;
-
-    // ========== マージン・パディング ==========
-    /** 標準パネルパディング */
-    public static final int PANEL_PADDING = 20;
-
-    /** ラベルとフィールド間のマージン */
-    public static final int LABEL_FIELD_MARGIN = 5;
-
-    /** コンポーネント間の標準間隔 */
-    public static final int COMPONENT_SPACING = 10;
-
-    /** セクション間の間隔 */
-    public static final int SECTION_SPACING = 20;
 
     // ========== コンポーネントサイズ ==========
     /** テキストフィールド標準幅 */
@@ -82,12 +98,6 @@ public final class UIConstants {
     /** 言語選択コンボボックスのサイズ */
     public static final Dimension LANGUAGE_COMBO_SIZE = new Dimension(200, 25);
 
-    /** テーブル行高さ */
-    public static final int TABLE_ROW_HEIGHT = 25;
-
-    /** スクロール速度 */
-    public static final int SCROLL_INCREMENT = 16;
-
     // ========== 必須項目マーク ==========
     /** 必須項目を示すマーク */
     public static final String REQUIRED_MARK = " *";
@@ -95,4 +105,5 @@ public final class UIConstants {
     // ========== エラーボーダー幅 ==========
     /** エラーボーダーの線幅 */
     public static final int ERROR_BORDER_WIDTH = 2;
+    public static final int LABEL_FIELD_MARGIN = 0;
 }

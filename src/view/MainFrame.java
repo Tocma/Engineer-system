@@ -82,7 +82,7 @@ public class MainFrame extends AbstractFrame {
         frame.setDefaultCloseOperation(JFrame.DO_NOTHING_ON_CLOSE);
         frame.addWindowListener(new WindowAdapter() {
             @Override
-            public void windowClosing(WindowEvent e) {
+            public void windowClosing(WindowEvent _e) {
                 // 単純にMainControllerに終了処理を委譲するだけ
                 if (mainController != null) {
                     LogHandler.getInstance().log(Level.INFO, LogType.SYSTEM,
@@ -118,9 +118,9 @@ public class MainFrame extends AbstractFrame {
             LogHandler.getInstance().log(Level.INFO, LogType.SYSTEM,
                     "UI関連リソースの解放が完了");
 
-        } catch (Exception e) {
+        } catch (Exception _e) {
             LogHandler.getInstance().logError(LogType.SYSTEM,
-                    "UI関連リソース解放中にエラーが発生", e);
+                    "UI関連リソース解放中にエラーが発生", _e);
             // エラーがあってもMainControllerに制御を返す
         }
     }
@@ -150,9 +150,9 @@ public class MainFrame extends AbstractFrame {
                 LogHandler.getInstance().log(Level.INFO, LogType.SYSTEM,
                         "ExecutorServiceが正常に終了");
             }
-        } catch (InterruptedException e) {
+        } catch (InterruptedException _e) {
             LogHandler.getInstance().logError(LogType.SYSTEM,
-                    "ExecutorServiceの終了中に割り込みが発生", e);
+                    "ExecutorServiceの終了中に割り込みが発生", _e);
             executor.shutdownNow();
             Thread.currentThread().interrupt();
         }
@@ -193,9 +193,9 @@ public class MainFrame extends AbstractFrame {
             LogHandler.getInstance().log(Level.INFO, LogType.SYSTEM,
                     "管理対象スレッドの終了処理が完了");
 
-        } catch (InterruptedException e) {
+        } catch (InterruptedException _e) {
             LogHandler.getInstance().logError(LogType.SYSTEM,
-                    "スレッド終了待機中に割り込みが発生", e);
+                    "スレッド終了待機中に割り込みが発生", _e);
             Thread.currentThread().interrupt();
         }
     }

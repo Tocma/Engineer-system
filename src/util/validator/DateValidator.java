@@ -108,7 +108,7 @@ public abstract class DateValidator extends AbstractValidator {
         LocalDate date;
         try {
             date = parseDate(value);
-        } catch (DateTimeParseException e) {
+        } catch (DateTimeParseException _e) {
             logWarning("日付検証失敗: 無効な日付形式 - " + value);
             return false;
         }

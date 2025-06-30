@@ -266,10 +266,10 @@ public class ListenerManager {
 
             return listenerId;
 
-        } catch (Exception e) {
+        } catch (Exception _e) {
             LogHandler.getInstance().logError(LogType.SYSTEM,
-                    "リスナーの登録に失敗: " + description, e);
-            throw new RuntimeException("リスナー登録エラー", e);
+                    "リスナーの登録に失敗: " + description, _e);
+            throw new RuntimeException("リスナー登録エラー", _e);
         }
     }
 
@@ -313,9 +313,9 @@ public class ListenerManager {
 
             return true;
 
-        } catch (Exception e) {
+        } catch (Exception _e) {
             LogHandler.getInstance().logError(LogType.SYSTEM,
-                    "リスナーの削除に失敗: " + listenerId, e);
+                    "リスナーの削除に失敗: " + listenerId, _e);
             return false;
         }
     }

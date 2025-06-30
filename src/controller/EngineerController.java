@@ -69,8 +69,8 @@ public class EngineerController {
                 }
             }
             return false;
-        } catch (EngineerService.TooManyRecordsException e) {
-            throw new TooManyRecordsException(e.getMessage());
+        } catch (EngineerService.TooManyRecordsException _e) {
+            throw new TooManyRecordsException(_e.getMessage());
         }
     }
 
@@ -107,8 +107,8 @@ public class EngineerController {
                 throw new RuntimeException("削除処理に失敗しました");
             }
 
-        } catch (Exception e) {
-            DialogManager.getInstance().showSystemErrorDialog("削除中にエラーが発生。", e);
+        } catch (Exception _e) {
+            DialogManager.getInstance().showSystemErrorDialog("削除中にエラーが発生。", _e);
         } finally {
             SwingUtilities.invokeLater(onFinish);
         }

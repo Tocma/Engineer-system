@@ -55,9 +55,9 @@ public class EngineerSearchService {
 
             return new SearchResult(filteredEngineers, new ArrayList<>());
 
-        } catch (Exception e) {
-            LogHandler.getInstance().logError(LogType.SYSTEM, "検索処理中にエラーが発生", e);
-            return new SearchResult(new ArrayList<>(), List.of("検索処理中にエラーが発生: " + e.getMessage()));
+        } catch (Exception _e) {
+            LogHandler.getInstance().logError(LogType.SYSTEM, "検索処理中にエラーが発生", _e);
+            return new SearchResult(new ArrayList<>(), List.of("検索処理中にエラーが発生: " + _e.getMessage()));
         }
     }
 
@@ -107,7 +107,7 @@ public class EngineerSearchService {
                 if (careerValue < 0 || careerValue > 50) {
                     errors.add("エンジニア歴は0年から50年の範囲で入力してください");
                 }
-            } catch (NumberFormatException e) {
+            } catch (NumberFormatException _e) {
                 errors.add("エンジニア歴は数値で入力してください");
             }
         }
@@ -174,7 +174,7 @@ public class EngineerSearchService {
                 if (engineer.getCareer() != searchCareer) {
                     return false;
                 }
-            } catch (NumberFormatException e) {
+            } catch (NumberFormatException _e) {
                 return false;
             }
         }

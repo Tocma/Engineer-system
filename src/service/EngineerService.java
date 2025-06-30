@@ -42,8 +42,8 @@ public class EngineerService {
             LogHandler.getInstance().log(Level.INFO, LogType.SYSTEM,
                     "Loaded " + engineers.size() + " engineers");
             return engineers;
-        } catch (Exception e) {
-            LogHandler.getInstance().logError(LogType.SYSTEM, "エンジニアデータの読み込みに失敗", e);
+        } catch (Exception _e) {
+            LogHandler.getInstance().logError(LogType.SYSTEM, "エンジニアデータの読み込みに失敗", _e);
             return new ArrayList<>();
         }
     }
@@ -57,9 +57,9 @@ public class EngineerService {
     public EngineerDTO findById(String id) {
         try {
             return engineerDAO.findById(id);
-        } catch (Exception e) {
+        } catch (Exception _e) {
             LogHandler.getInstance().logError(LogType.SYSTEM,
-                    "IDによるエンジニア検索に失敗: " + id, e);
+                    "IDによるエンジニア検索に失敗: " + id, _e);
             return null;
         }
     }
@@ -89,10 +89,10 @@ public class EngineerService {
                             engineer.getId(), engineer.getName()));
             return true;
 
-        } catch (TooManyRecordsException e) {
-            throw e;
-        } catch (Exception e) {
-            LogHandler.getInstance().logError(LogType.SYSTEM, "エンジニア情報の作成に失敗", e);
+        } catch (TooManyRecordsException _e) {
+            throw _e;
+        } catch (Exception _e) {
+            LogHandler.getInstance().logError(LogType.SYSTEM, "エンジニア情報の作成に失敗", _e);
             return false;
         }
     }
@@ -110,8 +110,8 @@ public class EngineerService {
                     String.format("エンジニア情報を更新: ID=%s, 名前=%s",
                             engineer.getId(), engineer.getName()));
             return true;
-        } catch (Exception e) {
-            LogHandler.getInstance().logError(LogType.SYSTEM, "エンジニア情報の更新に失敗", e);
+        } catch (Exception _e) {
+            LogHandler.getInstance().logError(LogType.SYSTEM, "エンジニア情報の更新に失敗", _e);
             return false;
         }
     }
@@ -128,8 +128,8 @@ public class EngineerService {
             LogHandler.getInstance().log(Level.INFO, LogType.SYSTEM,
                     String.format("%d件のエンジニア情報を削除", ids.size()));
             return true;
-        } catch (Exception e) {
-            LogHandler.getInstance().logError(LogType.SYSTEM, "エンジニア情報の削除に失敗", e);
+        } catch (Exception _e) {
+            LogHandler.getInstance().logError(LogType.SYSTEM, "エンジニア情報の削除に失敗", _e);
             return false;
         }
     }

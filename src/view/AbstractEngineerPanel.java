@@ -9,6 +9,7 @@ import javax.swing.*;
 import javax.swing.border.Border;
 import javax.swing.text.JTextComponent;
 import java.awt.*;
+import java.awt.event.ActionListener;
 import java.time.LocalDate;
 import java.util.*;
 import java.util.List;
@@ -158,9 +159,9 @@ public abstract class AbstractEngineerPanel extends JPanel {
 
             LogHandler.getInstance().log(Level.INFO, LogType.SYSTEM,
                     "バリデータを初期化完了: " + validators.size() + "個");
-        } catch (Exception e) {
+        } catch (Exception _e) {
             LogHandler.getInstance().logError(LogType.SYSTEM,
-                    "バリデータの初期化中にエラーが発生", e);
+                    "バリデータの初期化中にエラーが発生", _e);
             // フォールバック用の空マップ
             this.validators = new HashMap<>();
         }
@@ -258,9 +259,9 @@ public abstract class AbstractEngineerPanel extends JPanel {
             LogHandler.getInstance().log(Level.INFO, LogType.UI,
                     this.getClass().getSimpleName() + "を初期化完了");
 
-        } catch (Exception e) {
+        } catch (Exception _e) {
             LogHandler.getInstance().logError(LogType.UI,
-                    "パネルの初期化中にエラーが発生: " + this.getClass().getSimpleName(), e);
+                    "パネルの初期化中にエラーが発生: " + this.getClass().getSimpleName(), _e);
         }
     }
 
@@ -348,6 +349,11 @@ public abstract class AbstractEngineerPanel extends JPanel {
 
         // 生年月日（必須）
         createBirthDateSection(container);
+        ActionListener birthDateUpdateListener = _e -> updateDayOptions(
+                birthYearComboBox, birthMonthComboBox, birthDayComboBox);
+
+        birthYearComboBox.addActionListener(birthDateUpdateListener);
+        birthMonthComboBox.addActionListener(birthDateUpdateListener);
 
         // 入社年月（必須）
         createJoinDateSection(container);
@@ -415,6 +421,52 @@ public abstract class AbstractEngineerPanel extends JPanel {
 
         createFieldErrorLabel("joinDate");
         container.add(createFormRow(joinDateLabel, joinDatePanel, "joinDate"));
+    }
+
+    /**
+     * 入社年月部分の作成後に以下のコードを追加：
+     * （入社年月は日を使用しないため、日コンボボックスへの影響はなし）
+     */
+
+    /**
+     * 年月選択に基づいて日の選択肢を動的に更新
+     * 
+     * @param yearCombo  年選択コンボボックス
+     * @param monthCombo 月選択コンボボックス
+     * @param dayCombo   日選択コンボボックス（nullの場合は更新しない）
+     */
+    private void updateDayOptions(JComboBox<String> yearCombo,
+            JComboBox<String> monthCombo,
+            JComboBox<String> dayCombo) {
+        if (dayCombo == null) {
+            return;
+        }
+
+        // 現在選択されている日を保持
+        String currentDay = (String) dayCombo.getSelectedItem();
+
+        // 年と月の選択値を取得
+        String selectedYear = (String) yearCombo.getSelectedItem();
+        String selectedMonth = (String) monthCombo.getSelectedItem();
+
+        // 新しい日の選択肢を生成
+        String[] newDayOptions = DateOptionUtil.getDayOptions(selectedYear, selectedMonth);
+
+        // コンボボックスモデルを更新
+        dayCombo.setModel(new DefaultComboBoxModel<>(newDayOptions));
+
+        // 以前の選択値が新しい選択肢に存在する場合は再選択
+        if (currentDay != null && currentDay.trim().length() > 0) {
+            for (String option : newDayOptions) {
+                if (currentDay.equals(option)) {
+                    dayCombo.setSelectedItem(currentDay);
+                    return;
+                }
+            }
+        }
+
+        // 選択値が存在しない場合は空文字を選択
+        dayCombo.setSelectedIndex(0);
     }
 
     /**
@@ -510,21 +562,25 @@ public abstract class AbstractEngineerPanel extends JPanel {
         createSkillField(container, "技術力",
                 technicalSkillComboBox = new JComboBox<>(DateOptionUtil.getSkillRatingOptions()),
                 "technicalSkillComboBox", skillComboBoxSize);
+        technicalSkillComboBox.setSelectedIndex(0);
 
         // 受講態度
         createSkillField(container, "受講態度",
                 learningAttitudeComboBox = new JComboBox<>(DateOptionUtil.getSkillRatingOptions()),
                 "learningAttitudeComboBox", skillComboBoxSize);
+        learningAttitudeComboBox.setSelectedIndex(0);
 
         // コミュニケーション能力
         createSkillField(container, "コミュニケーション能力",
                 communicationSkillComboBox = new JComboBox<>(DateOptionUtil.getSkillRatingOptions()),
                 "communicationSkillComboBox", skillComboBoxSize);
+        communicationSkillComboBox.setSelectedIndex(0);
 
         // リーダーシップ
         createSkillField(container, "リーダーシップ",
                 leadershipComboBox = new JComboBox<>(DateOptionUtil.getSkillRatingOptions()),
                 "leadershipComboBox", skillComboBoxSize);
+        leadershipComboBox.setSelectedIndex(0);
 
         container.add(createVerticalSpacer(20));
     }
@@ -596,10 +652,10 @@ public abstract class AbstractEngineerPanel extends JPanel {
                 return false;
             }
 
-        } catch (Exception e) {
+        } catch (Exception _e) {
             LogHandler.getInstance().logError(LogType.SYSTEM,
-                    "バリデーション実行中にエラーが発生", e);
-            showErrorMessage("入力検証中にエラーが発生: " + e.getMessage());
+                    "バリデーション実行中にエラーが発生", _e);
+            showErrorMessage("入力検証中にエラーが発生: " + _e.getMessage());
             return false;
         }
     }
@@ -800,7 +856,7 @@ public abstract class AbstractEngineerPanel extends JPanel {
 
             return LocalDate.of(year, month, 1);
 
-        } catch (NumberFormatException | java.time.DateTimeException e) {
+        } catch (NumberFormatException | java.time.DateTimeException _e) {
             return null;
         }
     }
@@ -1303,7 +1359,7 @@ public abstract class AbstractEngineerPanel extends JPanel {
             clearComponentError(groupName);
 
             return true;
-        } catch (Exception e) {
+        } catch (Exception _e) {
             showFieldError(groupName, errorMessage);
             markComponentError(yearFieldName, null);
             markComponentError(monthFieldName, null);
