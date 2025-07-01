@@ -50,8 +50,6 @@ public class TextValidator extends AbstractValidator {
         // 全角英数字を半角に変換
         String converted = StringUtil.convertFullWidthAlphanumericToHalfWidth(trimmed);
 
-        logDebug("テキスト前処理: " + value.length() + "文字 -> " + converted.length() + "文字");
-
         return converted;
     }
 
@@ -79,7 +77,6 @@ public class TextValidator extends AbstractValidator {
             return false;
         }
 
-        logDebug("テキスト検証成功: " + value.length() + "文字");
         return true;
     }
 

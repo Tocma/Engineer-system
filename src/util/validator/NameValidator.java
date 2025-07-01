@@ -51,8 +51,6 @@ public class NameValidator extends AbstractValidator {
         // 半角カタカナを全角に変換
         String converted = StringUtil.convertHalfWidthKatakanaToFullWidth(noSpaces);
 
-        logDebug("氏名前処理: " + value + " -> " + converted);
-
         return converted;
     }
 
@@ -88,7 +86,6 @@ public class NameValidator extends AbstractValidator {
             return false;
         }
 
-        logDebug("氏名検証成功: " + value);
         return true;
     }
 }

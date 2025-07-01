@@ -100,16 +100,6 @@ public abstract class AbstractValidator implements FieldValidator {
     }
 
     /**
-     * デバッグログを出力
-     * 
-     * @param message ログメッセージ
-     */
-    protected void logDebug(String message) {
-        LogHandler.getInstance().log(Level.FINE, LogType.SYSTEM,
-                String.format("[%s] %s", this.getClass().getSimpleName(), message));
-    }
-
-    /**
      * 警告ログを出力
      * 
      * @param message ログメッセージ

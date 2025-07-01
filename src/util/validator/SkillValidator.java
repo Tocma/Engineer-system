@@ -55,8 +55,6 @@ public class SkillValidator extends AbstractValidator {
         // 数値形式の正規化
         String normalized = normalizeRating(converted);
 
-        logDebug("スキル評価前処理: " + value + " -> " + normalized);
-
         return normalized;
     }
 
@@ -123,7 +121,6 @@ public class SkillValidator extends AbstractValidator {
             return false;
         }
 
-        logDebug("スキル評価検証成功: " + value);
         return true;
     }
 

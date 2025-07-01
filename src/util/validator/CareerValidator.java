@@ -56,8 +56,6 @@ public class CareerValidator extends AbstractValidator {
         // 数値以外の文字を除去
         String normalized = normalizeNumeric(converted);
 
-        logDebug("エンジニア歴前処理: " + value + " -> " + normalized);
-
         return normalized;
     }
 
@@ -107,7 +105,6 @@ public class CareerValidator extends AbstractValidator {
             return false;
         }
 
-        logDebug("エンジニア歴検証成功: " + value);
         return true;
     }
 

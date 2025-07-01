@@ -116,10 +116,6 @@ public class CSVAccess extends AccessThread {
             this.useResourceManager = true;
         }
 
-        LogHandler.getInstance().log(Level.INFO, LogType.SYSTEM,
-                "CSVAccessを初期化完了: " + csvFile.getPath() +
-                        " (操作: " + operation + ", 追記モード: " + appendMode +
-                        ", ResourceManager使用: " + useResourceManager + ")");
     }
 
     /**

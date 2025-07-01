@@ -54,8 +54,6 @@ public class ProgrammingLanguagesValidator extends AbstractValidator {
         List<String> languages = parseLanguages(trimmed);
         String normalized = String.join(LANGUAGE_DELIMITER, languages);
 
-        logDebug("言語リスト前処理: " + value + " -> " + normalized);
-
         return normalized;
     }
 
@@ -95,7 +93,6 @@ public class ProgrammingLanguagesValidator extends AbstractValidator {
             return false;
         }
 
-        logDebug("言語検証成功: " + value);
         return true;
     }
 

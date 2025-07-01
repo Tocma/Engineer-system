@@ -54,8 +54,6 @@ public class NameKanaValidator extends AbstractValidator {
         // 半角カタカナを全角に変換
         String fullWidth = StringUtil.convertHalfWidthKatakanaToFullWidth(katakana);
 
-        logDebug("フリガナ前処理: " + value + " -> " + fullWidth);
-
         return fullWidth;
     }
 
@@ -91,7 +89,6 @@ public class NameKanaValidator extends AbstractValidator {
             return false;
         }
 
-        logDebug("フリガナ検証成功: " + value);
         return true;
     }
 }

@@ -8,6 +8,7 @@ import service.EngineerService;
 import service.CSVExportService;
 import util.LogHandler;
 import util.LogHandler.LogType;
+import util.PerformanceMonitor;
 import util.ResourceManager;
 import util.Constants.PanelType;
 import util.Constants.EventType;
@@ -276,6 +277,9 @@ public class MainController {
      * @param data  イベントデータ（イベント種別に応じたデータ）
      */
     public void handleEvent(EventType eventType, Object data) {
+        PerformanceMonitor monitor = PerformanceMonitor.getInstance();
+    
+    monitor.startMeasurement("MainController.handleEvent_" + eventType);
         try {
             // シャットダウン中は新しいイベントを処理しない
             if (isShuttingDown.get()) {
@@ -310,6 +314,8 @@ public class MainController {
 
                 case LOAD_DATA:
                     handleLoadData();
+                    // データ読み込み処理完了後に統計出力
+                monitor.logPerformanceStatistics();
                     break;
 
                 case VIEW_DETAIL:
@@ -354,6 +360,9 @@ public class MainController {
             LogHandler.getInstance().logError(LogType.SYSTEM, "イベント処理に失敗: " + eventType.getEventName(), _e);
             handleError(_e);
         }
+        finally {
+        monitor.endMeasurement("MainController.handleEvent_" + eventType);
+    }
     }
 
     /**
