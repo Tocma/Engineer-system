@@ -1,13 +1,17 @@
-@echo off
+﻿@echo off
 :: Engineer Management System 起動スクリプト for Windows（重複起動対応改善版）
-:: 文字エンコーディングをUTF-8に設定
-chcp 65001 >nul 2>&1
-
-:: タイトル設定
-title エンジニア人材管理システム
 
 :: 実行ディレクトリをバッチファイルの場所に設定
 cd /d "%~dp0"
+
+:: 文字エンコーディングをUTF-8に設定
+chcp 65001 >nul 2>&1
+
+:: 環境変数の設定
+set JAVA_OPTS=-Dfile.encoding=UTF-8
+
+:: タイトル設定
+title エンジニア人材管理システム
 
 echo.
 echo ========================================

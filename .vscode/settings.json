@@ -4,5 +4,4 @@
     "java.project.referencedLibraries": [
         "lib/**/*.jar"
     ],
-    //"java.autobuild.enabled": false//04/21追加
 }

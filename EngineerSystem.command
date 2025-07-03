@@ -1,6 +1,10 @@
 #!/bin/bash
 # Engineer Management System 起動スクリプト for macOS（重複起動対応改善版）
 
+# UTF-8エンコーディングを明示的に設定
+export LANG=ja_JP.UTF-8
+export LC_ALL=ja_JP.UTF-8
+
 # スクリプトのディレクトリに移動
 cd "$(dirname "$0")"
 

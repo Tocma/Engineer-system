@@ -67,6 +67,7 @@
                     <encoding>${project.build.sourceEncoding}</encoding>
                     <compilerArgs>
                         <arg>-Xlint:all</arg>
+                        <arg>-Xlint:-module</arg>
                     </compilerArgs>
                 </configuration>
             </plugin>
@@ -106,7 +107,6 @@
                         </manifest>
                     </archive>
                     <finalName>EngineerSystem</finalName>
-                    <appendAssemblyId>false</appendAssemblyId>
                 </configuration>
                 <executions>
                     <execution>
@@ -136,22 +136,17 @@
         <!-- 開発プロファイル -->
         <profile>
             <id>dev</id>
-            <activation>
-                <activeByDefault>true</activeByDefault>
-            </activation>
-            <properties>
-                <maven.compiler.debug>true</maven.compiler.debug>
-                <maven.compiler.optimize>false</maven.compiler.optimize>
-            </properties>
+                <properties>
+                    <maven.compiler.debug>true</maven.compiler.debug>
+                </properties>
         </profile>
         
         <!-- 本番プロファイル -->
         <profile>
             <id>prod</id>
-            <properties>
-                <maven.compiler.debug>false</maven.compiler.debug>
-                <maven.compiler.optimize>true</maven.compiler.optimize>
-            </properties>
+                <properties>
+                    <maven.compiler.debug>false</maven.compiler.debug>
+                </properties>
         </profile>
         
         <!-- テスト実行プロファイル -->
