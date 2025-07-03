@@ -1,17 +1,19 @@
 package main;
 
+import java.io.IOException;
+import java.net.ServerSocket;
+import java.util.logging.Level;
+
+import javax.swing.SwingUtilities;
+
 import controller.MainController;
 import test.TestCoreSystem;
 import util.LogHandler;
 import util.LogHandler.LogType;
-import util.ResourceManager;
 import util.PropertiesManager;
+import util.ResourceManager;
 import util.Constants.SystemConstants;
 import view.MainFrame;
-import javax.swing.SwingUtilities;
-import java.io.IOException;
-import java.net.ServerSocket;
-import java.util.logging.Level;
 
 /**
  * エンジニア人材管理システムのエントリーポイント
@@ -53,7 +55,9 @@ public class Main {
 
             // 2. 重複起動時のポート番号の確認（PropertiesManager初期化後）
             if (!acquireLock(SystemConstants.LOCK_PORT)) {
-                System.exit(0);
+                System.err.println("アプリケーションを終了します...");
+                // バッチファイルで検出できるよう異常終了コードを返す
+                System.exit(1); // 0 → 1 に変更
             }
 
             // 3. ログシステムの初期化
@@ -91,19 +95,19 @@ public class Main {
         try {
             PropertiesManager propertiesManager = PropertiesManager.getInstance();
             propertiesManager.initialize();
-            
+
             // プロパティファイルの読み込み状況を確認
             String systemName = propertiesManager.getString("system.name");
             String version = propertiesManager.getString("system.version");
-            
+
             System.out.println("システム名: " + systemName);
             System.out.println("バージョン: " + version);
-            
+
         } catch (Exception _e) {
             // プロパティファイルが見つからない場合もデフォルト値で継続
             System.err.println("プロパティファイルの読み込み中にエラーが発生しました: " + _e.getMessage());
             System.out.println("デフォルト設定値を使用して継続します");
-            
+
             // PropertiesManagerは内部でデフォルト値を設定するため、
             // エラーが発生してもアプリケーションは継続可能
         }
@@ -235,7 +239,26 @@ public class Main {
             System.out.println("アプリケーションロックを取得（ポート: " + port + "）");
             return true;
         } catch (IOException _e) {
+            // コンソール出力
+            System.err.println("========================================");
+            System.err.println("         重複起動が検出されました");
+            System.err.println("========================================");
             System.err.println("アプリケーションは既に起動しています（ポート: " + port + "）");
+            System.err.println("既存のアプリケーションを確認してください。");
+            System.err.println("========================================");
+
+            // GUIダイアログも表示（可能であれば）
+            try {
+                javax.swing.JOptionPane.showMessageDialog(
+                        null,
+                        "アプリケーションは既に起動しています。\n" +
+                                "既存のアプリケーションを確認してください。",
+                        "重複起動エラー",
+                        javax.swing.JOptionPane.WARNING_MESSAGE);
+            } catch (Exception dialogError) {
+                // GUI環境でない場合はスキップ
+            }
+
             return false;
         }
     }
