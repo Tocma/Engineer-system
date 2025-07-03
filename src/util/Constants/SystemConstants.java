@@ -67,7 +67,7 @@ public final class SystemConstants {
     public static final String DEFAULT_ENCODING = props.getString("system.encoding", "UTF-8");
 
     /** システムバージョン */
-    public static final String SYSTEM_VERSION = props.getString("system.version", "4.16.2");
+    public static final String SYSTEM_VERSION = props.getString("system.version", "5.0.0");
 
     /** システム名 */
     public static final String SYSTEM_NAME = props.getString("system.name", "エンジニア人材管理システム");
