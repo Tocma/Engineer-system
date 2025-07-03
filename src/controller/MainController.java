@@ -4,7 +4,6 @@ import model.CSVAccessResult;
 import model.EngineerCSVDAO;
 import model.EngineerDTO;
 import service.EngineerSearchService;
-import service.EngineerService;
 import service.CSVExportService;
 import util.LogHandler;
 import util.LogHandler.LogType;
@@ -236,8 +235,6 @@ public class MainController {
             // エンジニアコントローラーの初期化
             engineerController = new EngineerController();
 
-            // サービスの初期化
-            EngineerService engineerService = new EngineerService();
             searchService = new EngineerSearchService(new EngineerCSVDAO());
             exportService = new CSVExportService(new EngineerCSVDAO());
 

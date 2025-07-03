@@ -1,8 +1,5 @@
 package util;
 
-import java.io.File;
-import java.io.FileWriter;
-import java.io.IOException;
 import java.lang.management.ManagementFactory;
 import java.lang.management.MemoryMXBean;
 import java.lang.management.MemoryUsage;
@@ -12,14 +9,11 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.logging.Level;
-import java.util.Map;
 import java.util.List;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Comparator;
-
 import util.LogHandler.LogType;
-import util.Constants.FileConstants;
 
 /**
  * システムパフォーマンス測定・監視クラス
@@ -49,9 +43,6 @@ public class PerformanceMonitor {
 
     /** LogHandlerインスタンス */
     private final LogHandler logHandler;
-
-    /** ResourceManagerインスタンス */
-    private final ResourceManager resourceManager;
 
     /** 測定開始時のメモリ状態を保存 */
     private final ConcurrentMap<String, MemorySnapshot> memorySnapshots = new ConcurrentHashMap<>();
@@ -117,32 +108,15 @@ public class PerformanceMonitor {
      */
     private static class MemorySnapshot {
         private final long heapUsed;
-        private final long heapMax;
-        private final long nonHeapUsed;
-        private final long timestamp;
-
         public MemorySnapshot(long heapUsed, long heapMax, long nonHeapUsed) {
             this.heapUsed = heapUsed;
-            this.heapMax = heapMax;
-            this.nonHeapUsed = nonHeapUsed;
-            this.timestamp = System.currentTimeMillis();
+            System.currentTimeMillis();
         }
 
         public long getHeapUsed() {
             return heapUsed;
         }
 
-        public long getHeapMax() {
-            return heapMax;
-        }
-
-        public long getNonHeapUsed() {
-            return nonHeapUsed;
-        }
-
-        public long getTimestamp() {
-            return timestamp;
-        }
     }
 
     /**
@@ -151,7 +125,7 @@ public class PerformanceMonitor {
     private PerformanceMonitor() {
         this.memoryBean = ManagementFactory.getMemoryMXBean();
         this.logHandler = LogHandler.getInstance();
-        this.resourceManager = ResourceManager.getInstance();
+        ResourceManager.getInstance();
 
         // 初期化ログ
         logHandler.log(LogType.SYSTEM, "PerformanceMonitor初期化完了");
