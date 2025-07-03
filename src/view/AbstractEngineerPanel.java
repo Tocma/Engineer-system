@@ -139,8 +139,8 @@ public abstract class AbstractEngineerPanel extends JPanel {
         this.dialogManager = DialogManager.getInstance();
         this.fieldDisplayNames = new HashMap<>();
         this.validationService = ValidationService.getInstance();
-        initializeFieldDisplayNames();
-        initializeValidators();
+        this.initializeFieldDisplayNames();
+        this.initializeValidators();
         LogHandler.getInstance().log(Level.INFO, LogType.SYSTEM,
                 "AbstractEngineerPanelを初期化完了");
     }

@@ -106,7 +106,7 @@ public final class FormComponentUtil {
             super(items);
 
             // 表示レンダラー（カンマ区切り表示）
-            setRenderer(new BasicComboBoxRenderer() {
+            this.setRenderer(new BasicComboBoxRenderer() {
                 @Override
                 public Component getListCellRendererComponent(JList list, Object value,
                         int index, boolean isSelected, boolean cellHasFocus) {

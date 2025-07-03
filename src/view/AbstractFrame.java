@@ -24,7 +24,7 @@ public abstract class AbstractFrame {
      */
     protected AbstractFrame() {
         this.frame = new JFrame();
-        initialize();
+        this.initialize();
     }
 
     /**

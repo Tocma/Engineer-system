@@ -182,7 +182,7 @@ public class ListPanel extends JPanel {
         this.nextButton = new JButton("次へ");
 
         // 初期化処理を実行
-        initialize();
+        this.initialize();
 
         LogHandler.getInstance().log(Level.INFO, LogType.SYSTEM,
                 "リストパネル初期化完了：登録リスナー数=" + registeredListenerIds.size());
