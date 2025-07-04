@@ -3,7 +3,9 @@ package main;
 import java.io.IOException;
 import java.net.ServerSocket;
 import java.util.logging.Level;
+
 import javax.swing.SwingUtilities;
+
 import controller.MainController;
 import test.TestCoreSystem;
 import util.LogHandler;
@@ -231,35 +233,29 @@ public class Main {
      * @param port ロック用ポート番号
      * @return ロックの取得に成功した場合はtrue、失敗した場合はfalse
      */
-    private static boolean acquireLock(int port) {
-        try {
-            lockSocket = new ServerSocket(port);
-            System.out.println("アプリケーションロックを取得（ポート: " + port + "）");
-            return true;
-        } catch (IOException _e) {
-            // コンソール出力
-            System.err.println("========================================");
-            System.err.println("         重複起動が検出されました");
-            System.err.println("========================================");
-            System.err.println("アプリケーションは既に起動しています（ポート: " + port + "）");
-            System.err.println("既存のアプリケーションを確認してください。");
-            System.err.println("========================================");
-
-            // GUIダイアログも表示（可能であれば）
-            try {
-                javax.swing.JOptionPane.showMessageDialog(
-                        null,
-                        "アプリケーションは既に起動しています。\n" +
-                                "既存のアプリケーションを確認してください。",
-                        "重複起動エラー",
-                        javax.swing.JOptionPane.WARNING_MESSAGE);
-            } catch (Exception dialogError) {
-                // GUI環境でない場合はスキップ
-            }
-
-            return false;
-        }
+    private static boolean acquireLock(int port) throws DuplicateInstanceException {
+    try {
+        lockSocket = new ServerSocket(port);
+        System.out.println("アプリケーションロックを取得（ポート: " + port + "）");
+        return true;
+    } catch (IOException _e) {
+        // コンソール出力のみ（GUIダイアログは削除）
+        System.err.println("重複起動が検出されました（ポート: " + port + "）");
+        System.err.println("既存のアプリケーションが実行中です。");
+        
+        // 重複起動例外をスローして起動スクリプト側で処理
+        throw new DuplicateInstanceException("ポート " + port + " は既に使用されています", _e);
     }
+}
+
+/**
+ * 重複起動検出用のカスタム例外
+ */
+public static class DuplicateInstanceException extends Exception {
+    public DuplicateInstanceException(String message, Throwable cause) {
+        super(message, cause);
+    }
+}
 
     /**
      * アプリケーションロックを解放
