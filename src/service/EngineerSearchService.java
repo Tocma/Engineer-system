@@ -8,7 +8,6 @@ import util.validator.SearchValidationService;
 import util.validator.SearchValidationService.SearchValidationResult;
 import controller.MainController.SearchCriteria;
 import controller.MainController.SearchResult;
-
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;

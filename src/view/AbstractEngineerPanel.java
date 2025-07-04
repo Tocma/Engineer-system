@@ -15,7 +15,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.logging.Level;
-
 import javax.swing.BorderFactory;
 import javax.swing.Box;
 import javax.swing.BoxLayout;
@@ -32,7 +31,6 @@ import javax.swing.SwingConstants;
 import javax.swing.SwingUtilities;
 import javax.swing.border.Border;
 import javax.swing.text.JTextComponent;
-
 import util.LogHandler;
 import util.LogHandler.LogType;
 import util.Constants.MessageEnum;
@@ -1075,7 +1073,6 @@ public abstract class AbstractEngineerPanel extends JPanel {
     protected void clearAllFieldErrors() {
 
         for (Map.Entry<String, JLabel> entry : fieldErrorLabels.entrySet()) {
-            String fieldName = entry.getKey();
             JLabel errorLabel = entry.getValue();
 
             if (errorLabel != null) {

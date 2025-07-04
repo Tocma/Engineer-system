@@ -3,9 +3,7 @@ package main;
 import java.io.IOException;
 import java.net.ServerSocket;
 import java.util.logging.Level;
-
 import javax.swing.SwingUtilities;
-
 import controller.MainController;
 import test.TestCoreSystem;
 import util.LogHandler;
