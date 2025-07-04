@@ -58,7 +58,7 @@ public final class ValidatorFactory {
                 validators.put("programmingLanguages", new ProgrammingLanguagesValidator("programmingLanguages",
                                 MessageEnum.VALIDATION_ERROR_PROGRAMMING_LANGUAGES.getMessage()));
 
-                // Unicode対応TextValidator（絵文字許可、環境依存文字不許可）
+                // 絵文字・サロゲートペア許可、環境依存文字不許可
                 validators.put("careerHistory", new TextValidator("careerHistory",
                                 MessageEnum.VALIDATION_ERROR_CAREER_HISTORY.getMessage(), 200, true, false));
 
@@ -77,7 +77,7 @@ public final class ValidatorFactory {
                 validators.put("leadership", new SkillValidator("leadership",
                                 "リーダーシップは1.0〜5.0の0.5刻みで選択してください"));
 
-                // Unicode対応TextValidator（絵文字許可、環境依存文字不許可）
+                // 絵文字・サロゲートペア許可、環境依存文字不許可
                 validators.put("note", new TextValidator("note",
                                 MessageEnum.VALIDATION_ERROR_NOTE.getMessage(), 500, true, false));
 
@@ -93,8 +93,6 @@ public final class ValidatorFactory {
         public static Map<String, FieldValidator> createCSVValidators() {
                 Map<String, FieldValidator> validators = new HashMap<>();
 
-                // CSV読み込み用のバリデータを生成
-                // 既存IDチェックは後処理で行うため、nullを渡す
                 validators.put("id", new IDValidator("id",
                                 MessageEnum.VALIDATION_ERROR_EMPLOYEE_ID.getMessage(), null));
 
@@ -116,12 +114,12 @@ public final class ValidatorFactory {
                 validators.put("programmingLanguages", new ProgrammingLanguagesValidator("programmingLanguages",
                                 MessageEnum.VALIDATION_ERROR_PROGRAMMING_LANGUAGES.getMessage()));
 
-                // CSV用TextValidator（絵文字不許可、環境依存文字不許可）
+                // CSV用も絵文字・サロゲートペア許可、環境依存文字不許可
                 validators.put("careerHistory", new TextValidator("careerHistory",
-                                MessageEnum.VALIDATION_ERROR_CAREER_HISTORY.getMessage(), 200, false, false));
+                                MessageEnum.VALIDATION_ERROR_CAREER_HISTORY.getMessage(), 200, true, false));
 
                 validators.put("trainingHistory", new TextValidator("trainingHistory",
-                                MessageEnum.VALIDATION_ERROR_TRAINING_HISTORY.getMessage(), 200, false, false));
+                                MessageEnum.VALIDATION_ERROR_TRAINING_HISTORY.getMessage(), 200, true, false));
 
                 validators.put("technicalSkill", new SkillValidator("technicalSkill",
                                 "技術力は1.0〜5.0の0.5刻みで選択してください"));
@@ -135,9 +133,9 @@ public final class ValidatorFactory {
                 validators.put("leadership", new SkillValidator("leadership",
                                 "リーダーシップは1.0〜5.0の0.5刻みで選択してください"));
 
-                // CSV用TextValidator（絵文字不許可、環境依存文字不許可）
+                // CSV用も絵文字・サロゲートペア許可、環境依存文字不許可
                 validators.put("note", new TextValidator("note",
-                                MessageEnum.VALIDATION_ERROR_NOTE.getMessage(), 500, false, false));
+                                MessageEnum.VALIDATION_ERROR_NOTE.getMessage(), 500, true, false));
 
                 validators.put("registeredDate", new RegisteredDateValidator("registeredDate",
                                 "登録日の形式が不正です"));

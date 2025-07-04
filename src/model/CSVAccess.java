@@ -1,17 +1,32 @@
 package model;
 
-import util.LogHandler;
-import util.LogHandler.LogType;
-import util.validator.*;
-import util.ResourceManager;
-import util.Constants.CSVConstants;
-import java.io.*;
+import java.io.BufferedReader;
+import java.io.BufferedWriter;
+import java.io.File;
+import java.io.FileInputStream;
+import java.io.FileOutputStream;
+import java.io.IOException;
+import java.io.InputStreamReader;
+import java.io.OutputStreamWriter;
 import java.nio.charset.StandardCharsets;
 import java.time.LocalDate;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 import java.util.concurrent.locks.ReadWriteLock;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
 import java.util.logging.Level;
+
+import util.LogHandler;
+import util.LogHandler.LogType;
+import util.ResourceManager;
+import util.Constants.CSVConstants;
+import util.validator.FieldValidator;
+import util.validator.ValidationResult;
+import util.validator.ValidationService;
+import util.validator.ValidatorFactory;
 
 /**
  * CSVファイルへのアクセスを実装するクラス
@@ -245,6 +260,9 @@ public class CSVAccess extends AccessThread {
         String registeredDate = validatedData.get("registeredDate");
         if (registeredDate != null && !registeredDate.isEmpty()) {
             builder.setRegisteredDate(LocalDate.parse(registeredDate));
+        } else {
+            // CSV取り込み時に登録日が空白の場合は現在日付を設定
+            builder.setRegisteredDate(LocalDate.now());
         }
 
         return builder.build();

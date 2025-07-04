@@ -1,20 +1,28 @@
 package view;
 
-import model.EngineerDTO;
-import model.EngineerBuilder;
-import controller.MainController;
-import util.LogHandler;
-import util.LogHandler.LogType;
-import util.validator.*;
-import javax.swing.*;
-import java.awt.*;
+import java.awt.Color;
+import java.awt.Component;
+import java.awt.GridLayout;
 import java.time.LocalDate;
+import java.util.Arrays;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-import java.util.Arrays;
-import java.util.HashSet;
 import java.util.logging.Level;
+
+import javax.swing.BoxLayout;
+import javax.swing.JButton;
+import javax.swing.JComponent;
+import javax.swing.JLabel;
+import javax.swing.JPanel;
+
+import controller.MainController;
+import model.EngineerBuilder;
+import model.EngineerDTO;
+import util.LogHandler;
+import util.LogHandler.LogType;
+import util.validator.ValidationResult;
 
 /**
  * エンジニア情報の新規登録画面を提供するパネルクラス
@@ -293,6 +301,9 @@ public class AddPanel extends AbstractEngineerPanel {
 
         // スキル評価
         setProcessedSkillRating(builder, processedValues);
+
+        // 新規登録時の登録日設定
+        builder.setRegisteredDate(LocalDate.now());
 
         return builder.build();
     }

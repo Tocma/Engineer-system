@@ -1,19 +1,31 @@
 package view;
 
-import model.EngineerDTO;
-import model.EngineerBuilder;
-import controller.MainController;
-import util.LogHandler;
-import util.LogHandler.LogType;
-import javax.swing.*;
-import javax.swing.event.DocumentEvent;
-import javax.swing.event.DocumentListener;
-import java.awt.*;
+import java.awt.Color;
+import java.awt.Component;
+import java.awt.FlowLayout;
+import java.awt.Font;
+import java.awt.GridLayout;
 import java.awt.event.ActionListener;
 import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
 import java.util.List;
 import java.util.logging.Level;
+
+import javax.swing.BoxLayout;
+import javax.swing.JButton;
+import javax.swing.JComboBox;
+import javax.swing.JComponent;
+import javax.swing.JLabel;
+import javax.swing.JPanel;
+import javax.swing.SwingUtilities;
+import javax.swing.event.DocumentEvent;
+import javax.swing.event.DocumentListener;
+
+import controller.MainController;
+import model.EngineerBuilder;
+import model.EngineerDTO;
+import util.LogHandler;
+import util.LogHandler.LogType;
 
 /**
  * エンジニア情報の詳細表示・編集画面を提供するパネルクラス
@@ -312,11 +324,21 @@ public class DetailPanel extends AbstractEngineerPanel {
             // 扱える言語の設定
             setProgrammingLanguages(currentEngineer.getProgrammingLanguages());
 
-            // 経歴の設定
-            careerHistoryArea.setText(currentEngineer.getCareerHistory());
+            // 経歴の設定（Unicode文字を確実に表示）
+            String careerHistory = currentEngineer.getCareerHistory();
+            if (careerHistory != null) {
+                careerHistoryArea.setText(careerHistory);
+                // テキストエリアの更新を確実に行う
+                careerHistoryArea.setCaretPosition(0);
+            }
 
-            // 研修の受講歴の設定
-            trainingHistoryArea.setText(currentEngineer.getTrainingHistory());
+            // 研修の受講歴の設定（Unicode文字を確実に表示）
+            String trainingHistory = currentEngineer.getTrainingHistory();
+            if (trainingHistory != null) {
+                trainingHistoryArea.setText(trainingHistory);
+                // テキストエリアの更新を確実に行う
+                trainingHistoryArea.setCaretPosition(0);
+            }
 
             // スキル評価の設定
             if (currentEngineer.getTechnicalSkill() != null) {
@@ -332,33 +354,30 @@ public class DetailPanel extends AbstractEngineerPanel {
                 setComboBoxValue(leadershipComboBox, String.valueOf(currentEngineer.getLeadership()));
             }
 
-            // 備考の設定
-            noteArea.setText(currentEngineer.getNote());
-
-            // 最新登録日の設定
-            if (currentEngineer.getRegisteredDate() != null) {
-                String formattedDate = currentEngineer.getRegisteredDate().format(
-                        DateTimeFormatter.ofPattern("yyyy年MM月dd日"));
-                registeredDateLabel.setText("最新登録日: " + formattedDate);
-            } else {
-                registeredDateLabel.setText("最新登録日: 不明");
+            // 備考の設定（Unicode文字を確実に表示）
+            String note = currentEngineer.getNote();
+            if (note != null) {
+                noteArea.setText(note);
+                // テキストエリアの更新を確実に行う
+                noteArea.setCaretPosition(0);
             }
 
-            // エラーメッセージをクリア
-            clearAllComponentErrors();
+            // 登録日の設定
+            if (currentEngineer.getRegisteredDate() != null) {
+                registeredDateLabel.setText("登録日: " +
+                        currentEngineer.getRegisteredDate().format(DateTimeFormatter.ofPattern("yyyy年MM月dd日")));
+            }
 
-        } catch (Exception _e) {
-            LogHandler.getInstance().logError(LogType.UI, "エンジニア情報の表示中にエラーが発生", _e);
-            showErrorMessage("エンジニア情報の表示中にエラーが発生: " + _e.getMessage());
-        }
+            // UIの更新を確実に行う
+            SwingUtilities.invokeLater(() -> {
+                careerHistoryArea.repaint();
+                trainingHistoryArea.repaint();
+                noteArea.repaint();
+            });
 
-        try {
-            // 変更状態をリセット
-            setFormModified(false);
-            clearAllComponentErrors();
-        } catch (Exception _e) {
-            LogHandler.getInstance().logError(LogType.UI, "エンジニア情報の表示中にエラーが発生", _e);
-            showErrorMessage("エンジニア情報の表示中にエラーが発生: " + _e.getMessage());
+        } catch (Exception e) {
+            LogHandler.getInstance().logError(LogType.UI, "エンジニア情報の画面反映中にエラーが発生", e);
+            showErrorMessage("エンジニア情報の表示中にエラーが発生しました");
         }
     }
 

@@ -1,19 +1,47 @@
 package view;
 
-import util.LogHandler;
-import util.Constants.MessageEnum;
-import util.LogHandler.LogType;
-import util.validator.*;
-import util.Constants.UIConstants;
-import javax.swing.*;
-import javax.swing.border.Border;
-import javax.swing.text.JTextComponent;
-import java.awt.*;
+import java.awt.BorderLayout;
+import java.awt.Color;
+import java.awt.Component;
+import java.awt.Dimension;
+import java.awt.FlowLayout;
+import java.awt.Font;
 import java.awt.event.ActionListener;
 import java.time.LocalDate;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
+import java.util.Set;
 import java.util.logging.Level;
+
+import javax.swing.BorderFactory;
+import javax.swing.Box;
+import javax.swing.BoxLayout;
+import javax.swing.DefaultComboBoxModel;
+import javax.swing.JButton;
+import javax.swing.JComboBox;
+import javax.swing.JComponent;
+import javax.swing.JLabel;
+import javax.swing.JPanel;
+import javax.swing.JScrollPane;
+import javax.swing.JTextArea;
+import javax.swing.JTextField;
+import javax.swing.SwingConstants;
+import javax.swing.SwingUtilities;
+import javax.swing.border.Border;
+import javax.swing.text.JTextComponent;
+
+import util.LogHandler;
+import util.LogHandler.LogType;
+import util.Constants.MessageEnum;
+import util.Constants.UIConstants;
+import util.validator.FieldValidator;
+import util.validator.IDValidator;
+import util.validator.ValidationResult;
+import util.validator.ValidationService;
+import util.validator.ValidatorFactory;
 
 /**
  * エンジニア情報関連パネル（詳細・追加画面）の基本機能を提供する抽象クラス
@@ -523,6 +551,8 @@ public abstract class AbstractEngineerPanel extends JPanel {
         careerHistoryArea = new JTextArea(5, 40);
         careerHistoryArea.setLineWrap(true);
         careerHistoryArea.setWrapStyleWord(true);
+        // Unicode文字（絵文字・サロゲートペア）を適切に表示するためのフォント設定
+        careerHistoryArea.setFont(new Font(Font.SANS_SERIF, Font.PLAIN, 12));
         JScrollPane careerScrollPane = new JScrollPane(careerHistoryArea);
         registerComponent("careerHistoryArea", careerHistoryArea);
 
@@ -544,6 +574,8 @@ public abstract class AbstractEngineerPanel extends JPanel {
         trainingHistoryArea = new JTextArea(2, 40);
         trainingHistoryArea.setLineWrap(true);
         trainingHistoryArea.setWrapStyleWord(true);
+        // Unicode文字（絵文字・サロゲートペア）を適切に表示するためのフォント設定
+        trainingHistoryArea.setFont(new Font(Font.SANS_SERIF, Font.PLAIN, 12));
         JScrollPane trainingScrollPane = new JScrollPane(trainingHistoryArea);
         registerComponent("trainingHistoryArea", trainingHistoryArea);
 
@@ -616,6 +648,8 @@ public abstract class AbstractEngineerPanel extends JPanel {
         noteArea = new JTextArea(5, 40);
         noteArea.setLineWrap(true);
         noteArea.setWrapStyleWord(true);
+        // Unicode文字（絵文字・サロゲートペア）を適切に表示するためのフォント設定
+        noteArea.setFont(new Font(Font.SANS_SERIF, Font.PLAIN, 12));
         JScrollPane noteScrollPane = new JScrollPane(noteArea);
         registerComponent("noteArea", noteArea);
 
