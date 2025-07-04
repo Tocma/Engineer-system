@@ -5,14 +5,15 @@ import java.lang.management.MemoryMXBean;
 import java.lang.management.MemoryUsage;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.Comparator;
+import java.util.List;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.logging.Level;
-import java.util.List;
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.Comparator;
+
 import util.LogHandler.LogType;
 
 /**
@@ -108,6 +109,7 @@ public class PerformanceMonitor {
      */
     private static class MemorySnapshot {
         private final long heapUsed;
+
         public MemorySnapshot(long heapUsed, long heapMax, long nonHeapUsed) {
             this.heapUsed = heapUsed;
             System.currentTimeMillis();
@@ -225,7 +227,7 @@ public class PerformanceMonitor {
      * @return 実行時間（ナノ秒）
      */
     public long measureExecution(String methodName, Runnable task) {
-        startMeasurement(methodName);
+        long executionTime = 0;
         try {
             task.run();
         } catch (Exception e) {
@@ -233,8 +235,9 @@ public class PerformanceMonitor {
                     "測定中にエラーが発生: " + methodName, e);
             throw e;
         } finally {
-            return endMeasurement(methodName);
+            executionTime = endMeasurement(methodName);
         }
+        return executionTime;
     }
 
     /**
