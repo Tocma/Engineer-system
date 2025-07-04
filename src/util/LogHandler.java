@@ -171,20 +171,37 @@ public class LogHandler {
      * @throws IOException ファイルハンドラーの作成に失敗した場合
      */
     private void createNewFileHandler() throws IOException {
+        LocalDate today = LocalDate.now();
         String logFileName = String.format(FileConstants.LOG_FILE_FORMAT,
-                LocalDate.now().format(DateTimeFormatter.ISO_LOCAL_DATE));
+                today.format(DateTimeFormatter.ISO_LOCAL_DATE));
         String logFilePath = logDirectory + File.separator + logFileName;
+        File logFile = new File(logFilePath);
 
+        // 既に同じ日付のファイルハンドラーが設定されている場合は何もしない
+        if (fileHandler != null && today.equals(currentLogDate)) {
+            return;
+        }
+
+        // 既存のファイルハンドラーをクリーンアップ
         if (fileHandler != null) {
             logger.removeHandler(fileHandler);
             fileHandler.close();
         }
 
+        // ログファイルの存在チェックと状態確認
+        boolean fileExists = logFile.exists();
+
+        // 新しいFileHandlerを作成（既存ファイルがある場合は追記モード）
         fileHandler = new FileHandler(logFilePath, true);
         fileHandler.setFormatter(new DetailedFormatter());
         logger.addHandler(fileHandler);
 
-        System.out.println("ログファイルを設定: " + logFilePath);
+        // ログファイルの状態をコンソールに出力
+        if (fileExists) {
+            System.out.println("既存のログファイルに追記: " + logFilePath);
+        } else {
+            System.out.println("新規ログファイルを作成: " + logFilePath);
+        }
     }
 
     /**
@@ -207,12 +224,19 @@ public class LogHandler {
      * @throws IOException 新しいファイルハンドラーの作成に失敗した場合
      */
     private void rotateLogFile(LocalDate newDate) throws IOException {
-        log(LogType.SYSTEM, "日付が変更されました。ログファイルをローテーションします: " +
-                currentLogDate + " → " + newDate);
+        // 現在の日付でログローテーション開始メッセージを記録
+        if (fileHandler != null) {
+            log(LogType.SYSTEM, "日付が変更されました。ログファイルをローテーションします: " +
+                    currentLogDate + " → " + newDate);
+        }
 
+        // 日付を更新
         currentLogDate = newDate;
+
+        // 新しい日付のファイルハンドラーを作成
         createNewFileHandler();
 
+        // 新しいファイルでローテーション完了メッセージを記録
         log(LogType.SYSTEM, "ログファイルローテーション完了: " + getCurrentLogFileName());
     }
 
@@ -402,7 +426,7 @@ public class LogHandler {
      */
     public String getCurrentLogFileName() {
         return String.format(FileConstants.LOG_FILE_FORMAT,
-                LocalDate.now().format(DateTimeFormatter.ISO_LOCAL_DATE));
+                currentLogDate.format(DateTimeFormatter.ISO_LOCAL_DATE));
     }
 
     /**
@@ -414,7 +438,9 @@ public class LogHandler {
         if (logDirectory == null) {
             return null;
         }
-        return new File(logDirectory, getCurrentLogFileName()).getAbsolutePath();
+        String logFileName = String.format(FileConstants.LOG_FILE_FORMAT,
+                currentLogDate.format(DateTimeFormatter.ISO_LOCAL_DATE));
+        return new File(logDirectory, logFileName).getAbsolutePath();
     }
 
     /**
