@@ -1,41 +1,43 @@
 package controller;
 
+import java.io.File;
+import java.io.FileOutputStream;
+import java.nio.file.Path;
+import java.time.LocalDate;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Map;
+import java.util.Objects;
+import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentMap;
+import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.logging.Level;
+import java.util.stream.Collectors;
+
+import javax.swing.JFileChooser;
+import javax.swing.JOptionPane;
+import javax.swing.JPanel;
+import javax.swing.SwingUtilities;
+import javax.swing.filechooser.FileNameExtensionFilter;
+
 import model.CSVAccessResult;
 import model.EngineerCSVDAO;
 import model.EngineerDTO;
-import service.EngineerSearchService;
 import service.CSVExportService;
+import service.EngineerSearchService;
 import util.LogHandler;
 import util.LogHandler.LogType;
 import util.PerformanceMonitor;
 import util.ResourceManager;
-import util.Constants.PanelType;
 import util.Constants.EventType;
+import util.Constants.PanelType;
 import util.Constants.SystemConstants;
 import view.AddPanel;
 import view.DetailPanel;
 import view.DialogManager;
 import view.ListPanel;
 import view.MainFrame;
-import java.io.File;
-import java.io.FileOutputStream;
-import java.nio.file.Path;
-import java.time.LocalDate;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
-import java.util.ArrayList;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.ConcurrentMap;
-import java.util.concurrent.atomic.AtomicBoolean;
-import java.util.logging.Level;
-import java.util.stream.Collectors;
-import java.util.Objects;
-import javax.swing.JFileChooser;
-import javax.swing.JOptionPane;
-import javax.swing.JPanel;
-import javax.swing.SwingUtilities;
-import javax.swing.filechooser.FileNameExtensionFilter;
 
 /**
  * アプリケーションのメインコントローラー
@@ -275,8 +277,8 @@ public class MainController {
      */
     public void handleEvent(EventType eventType, Object data) {
         PerformanceMonitor monitor = PerformanceMonitor.getInstance();
-    
-    monitor.startMeasurement("MainController.handleEvent_" + eventType);
+
+        monitor.startMeasurement("MainController.handleEvent_" + eventType);
         try {
             // シャットダウン中は新しいイベントを処理しない
             if (isShuttingDown.get()) {
@@ -312,7 +314,7 @@ public class MainController {
                 case LOAD_DATA:
                     handleLoadData();
                     // データ読み込み処理完了後に統計出力
-                monitor.logPerformanceStatistics();
+                    monitor.logPerformanceStatistics();
                     break;
 
                 case VIEW_DETAIL:
@@ -356,10 +358,9 @@ public class MainController {
         } catch (Exception _e) {
             LogHandler.getInstance().logError(LogType.SYSTEM, "イベント処理に失敗: " + eventType.getEventName(), _e);
             handleError(_e);
+        } finally {
+            monitor.endMeasurement("MainController.handleEvent_" + eventType);
         }
-        finally {
-        monitor.endMeasurement("MainController.handleEvent_" + eventType);
-    }
     }
 
     /**
@@ -1480,6 +1481,31 @@ public class MainController {
             return;
         }
 
+        // ファイル名確認ダイアログの表示
+        String fileName = selectedFile.getName();
+        LogHandler.getInstance().log(Level.INFO, LogType.SYSTEM,
+                "ファイル選択完了: " + fileName + " - 読み込み確認ダイアログを表示");
+
+        int confirmImport = JOptionPane.showConfirmDialog(
+                mainFrame.getJFrame(),
+                "選択したファイル「" + fileName + "」を読み込みますか？",
+                "ファイル読み込み確認",
+                JOptionPane.YES_NO_OPTION,
+                JOptionPane.QUESTION_MESSAGE);
+
+        if (confirmImport != JOptionPane.YES_OPTION) {
+            LogHandler.getInstance().log(Level.INFO, LogType.SYSTEM,
+                    "ユーザーがファイル読み込みをキャンセルしました: " + fileName);
+            // 処理中状態をリセット
+            if (currentPanel instanceof ListPanel) {
+                ((ListPanel) currentPanel).setImportProcessing(false);
+            }
+            return;
+        }
+
+        LogHandler.getInstance().log(Level.INFO, LogType.SYSTEM,
+                "ファイル読み込みが確認されました: " + fileName);
+
         // 非同期処理でCSVインポートを実行
         executeCSVImportWithResourceManager(selectedFile, currentPanel);
     }
@@ -1914,7 +1940,7 @@ public class MainController {
      * インポートエラーの処理（既存メソッドを保持）
      * エラー時の統一的な処理を提供
      * 
-     * @param _e            発生した例外
+     * @param _e           発生した例外
      * @param currentPanel ステータス表示用パネル
      */
     private void handleImportError(Exception _e, JPanel currentPanel) {
