@@ -15,6 +15,7 @@ import java.util.logging.Formatter;
 import java.util.logging.Level;
 import java.util.logging.LogRecord;
 import java.util.logging.Logger;
+
 import util.Constants.FileConstants;
 
 /**
@@ -23,6 +24,7 @@ import util.Constants.FileConstants;
 public class LogHandler {
 
     private static final LogHandler INSTANCE = new LogHandler();
+    private static final long MAX_LOG_SIZE = 10 * 1024 * 1024;
     private static final String LOG_FORMAT = "[%1$tY-%1$tm-%1$td %1$tH:%1$tM:%1$tS] [%4$s] [%7$s] [%8$s.%9$s:%10$s] %5$s%6$s%n";
 
     private Logger logger;
@@ -181,76 +183,128 @@ public class LogHandler {
      * 循環参照を防ぐ日付チェック処理
      */
     private synchronized void checkAndRotateLogFile() throws IOException {
-        // ローテーション中は再帰チェックを回避
         if (isRotating) {
             return;
         }
 
         LocalDate today = LocalDate.now();
-
-        if (!today.equals(currentLogDate)) {
-            rotateLogFile(today);
-        }
-    }
-
-    /**
-     * 循環参照を防ぐローテーション処理
-     */
-    private void rotateLogFile(LocalDate newDate) throws IOException {
-        // ローテーション開始フラグを設定
-        isRotating = true;
+        String currentLogFilePath = getCurrentLogFilePath();
 
         try {
-            // ローテーション開始をシステム出力に記録（循環参照を回避）
-            System.out.println("[" +
-                    java.time.LocalDateTime.now()
-                            .format(java.time.format.DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss"))
-                    +
-                    "] [SYSTEM] 日付が変更されました。ログファイルをローテーションします: " +
-                    currentLogDate + " → " + newDate);
+            // ファイルサイズチェック
+            if (currentLogFilePath != null && Files.exists(Paths.get(currentLogFilePath))) {
+                long fileSize = Files.size(Paths.get(currentLogFilePath));
 
-            currentLogDate = newDate;
-            createNewFileHandler();
+                if (fileSize >= MAX_LOG_SIZE) {
+                    isRotating = true;
+                    rotateLogBySizeLimit(currentLogFilePath);
+                    return;
+                }
+            }
 
-            // ローテーション完了をシステム出力に記録
-            System.out.println("[" +
-                    java.time.LocalDateTime.now()
-                            .format(java.time.format.DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss"))
-                    +
-                    "] [SYSTEM] ログファイルローテーション完了: " + getCurrentLogFileName());
-
+            // 日付ベースのローテーション
+            if (currentLogDate == null || !currentLogDate.equals(today)) {
+                isRotating = true;
+                currentLogDate = today;
+                createNewFileHandler();
+            }
         } finally {
-            // ローテーション終了フラグをリセット
             isRotating = false;
         }
-
-        // ローテーション完了後に通常のログとして記録
-        logDirectlyToFile(LogType.SYSTEM, "ログファイルローテーションが正常に完了しました");
     }
 
-    /**
-     * 循環参照を回避してファイルに直接ログを記録
-     */
+    private void rotateLogBySizeLimit(String currentLogFilePath) throws IOException {
+        log(LogType.SYSTEM, "ログファイルサイズが10MBを超過、ローテーションを実行します");
+
+        // 現在のハンドラーを安全にクローズ
+        cleanupExistingFileHandler();
+
+        // アーカイブファイル名を生成
+        String archiveFileName = generateArchiveFileName(currentLogFilePath);
+        Path archivePath = Paths.get(logDirectory, archiveFileName);
+
+        // 既存ファイルをアーカイブにリネーム
+        Files.move(Paths.get(currentLogFilePath), archivePath);
+
+        // 新しいログファイルハンドラーを作成
+        createNewFileHandler();
+
+        log(LogType.SYSTEM, "ログローテーション完了: " + archiveFileName);
+    }
+
+    private String generateArchiveFileName(String currentLogFilePath) {
+        String baseName = new File(currentLogFilePath).getName();
+        String nameWithoutExt = baseName.substring(0, baseName.lastIndexOf('.'));
+        String extension = baseName.substring(baseName.lastIndexOf('.'));
+
+        // 既存のアーカイブファイル数を確認
+        int archiveNumber = 1;
+        while (Files.exists(Paths.get(logDirectory, nameWithoutExt + "_" + archiveNumber + extension))) {
+            archiveNumber++;
+        }
+
+        return nameWithoutExt + "_" + archiveNumber + extension;
+    }
+
     private void logDirectlyToFile(LogType type, String message) {
-        if (!isInitialized || fileHandler == null) {
+        if (!isInitialized || logDirectory == null) {
+            System.out.println("[" + (type != null ? type.getCode() : "UNKNOWN") + "] " +
+                    (message != null ? message : "エラーが発生"));
             return;
         }
 
+        // サイズチェックを無効化して循環参照を防ぐ
+        try (java.io.FileWriter writer = new java.io.FileWriter(getCurrentLogFilePath(), true)) {
+            String timestamp = java.time.LocalDateTime.now().format(
+                    java.time.format.DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss"));
+            writer.write(String.format("[%s] [%s] %s%n",
+                    timestamp,
+                    type != null ? type.getCode() : "UNKNOWN",
+                    message != null ? message : ""));
+            writer.flush();
+        } catch (IOException e) {
+            System.err.println("直接ログ書き込みに失敗: " + e.getMessage());
+        }
+    }
+
+    public long getCurrentLogFileSize() {
+        String currentLogFilePath = getCurrentLogFilePath();
+        if (currentLogFilePath != null && Files.exists(Paths.get(currentLogFilePath))) {
+            try {
+                return Files.size(Paths.get(currentLogFilePath));
+            } catch (IOException e) {
+                logError(LogType.SYSTEM, "ログファイルサイズの取得に失敗", e);
+            }
+        }
+        return 0;
+    }
+
+    public void cleanupOldArchives(int maxArchives) {
+        if (logDirectory == null)
+            return;
+
         try {
-            String[] callerInfo = getCallerInfo();
-
-            LogRecord record = new LogRecord(Level.INFO, message);
-            record.setParameters(new Object[] {
-                    type.getCode(),
-                    callerInfo[0],
-                    callerInfo[1],
-                    callerInfo[2]
-            });
-
-            logger.log(record);
-
-        } catch (Exception e) {
-            System.err.println("直接ログ記録に失敗: " + e.getMessage());
+            Path logDir = Paths.get(logDirectory);
+            Files.list(logDir)
+                    .filter(path -> path.getFileName().toString().matches(".*_\\d+\\.log$"))
+                    .sorted((p1, p2) -> {
+                        try {
+                            return Files.getLastModifiedTime(p2).compareTo(Files.getLastModifiedTime(p1));
+                        } catch (IOException e) {
+                            return 0;
+                        }
+                    })
+                    .skip(maxArchives)
+                    .forEach(path -> {
+                        try {
+                            Files.deleteIfExists(path);
+                            log(LogType.SYSTEM, "古いアーカイブファイルを削除: " + path.getFileName());
+                        } catch (IOException e) {
+                            logError(LogType.SYSTEM, "アーカイブファイル削除に失敗: " + path.getFileName(), e);
+                        }
+                    });
+        } catch (IOException e) {
+            logError(LogType.SYSTEM, "アーカイブクリーンアップ処理でエラー", e);
         }
     }
 
