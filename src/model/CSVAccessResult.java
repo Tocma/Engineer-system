@@ -1,9 +1,11 @@
 package model;
 
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 import java.util.stream.Collectors;
+
 import util.Constants.SystemConstants;
 
 /**
@@ -249,6 +251,41 @@ public class CSVAccessResult {
      */
     public int getDuplicateIdCount() {
         return duplicateIds.size();
+    }
+
+    /**
+     * ファイル内重複IDチェック
+     * 取り込みファイル内で同一IDが複数存在するかをチェック
+     * 
+     * @return ファイル内重複IDのリスト（重複がない場合は空のリスト）
+     */
+    public List<String> checkInternalDuplicateIds() {
+        List<String> internalDuplicateIds = new ArrayList<>();
+        Set<String> seenIds = new HashSet<>();
+
+        for (EngineerDTO engineer : successData) {
+            String id = engineer.getId();
+            if (id != null && !id.isEmpty()) {
+                if (seenIds.contains(id)) {
+                    if (!internalDuplicateIds.contains(id)) {
+                        internalDuplicateIds.add(id);
+                    }
+                } else {
+                    seenIds.add(id);
+                }
+            }
+        }
+
+        return internalDuplicateIds;
+    }
+
+    /**
+     * ファイル内重複IDが存在するかを確認
+     * 
+     * @return ファイル内重複IDがある場合はtrue
+     */
+    public boolean hasInternalDuplicateIds() {
+        return !checkInternalDuplicateIds().isEmpty();
     }
 
     /**

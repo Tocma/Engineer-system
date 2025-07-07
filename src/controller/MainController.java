@@ -1598,6 +1598,32 @@ public class MainController {
             return;
         }
 
+        // ファイル内重複IDチェック（新規追加）
+        List<String> internalDuplicateIds = importResult.checkInternalDuplicateIds();
+        if (!internalDuplicateIds.isEmpty()) {
+            LogHandler.getInstance().log(Level.WARNING, LogType.SYSTEM,
+                    "ファイル内重複IDを検出: " + internalDuplicateIds.size() + "件");
+
+            SwingUtilities.invokeLater(() -> {
+                StringBuilder errorMessage = new StringBuilder();
+                errorMessage.append("取り込みファイル内に重複したIDが存在します。\n\n");
+                errorMessage.append("重複ID:\n");
+                for (String duplicateId : internalDuplicateIds) {
+                    errorMessage.append("  ").append(duplicateId).append("\n");
+                }
+                errorMessage.append("\nファイルを修正してから再度インポートしてください。");
+
+                DialogManager.getInstance().showErrorDialog(
+                        "ファイル内重複IDエラー",
+                        errorMessage.toString());
+
+                if (currentPanel instanceof ListPanel) {
+                    ((ListPanel) currentPanel).setImportProcessing(false);
+                }
+            });
+            return;
+        }
+
         // **修正箇所: 既存データとの重複チェックを明示的に実行**
         performDuplicateCheckWithExistingData(importResult, currentEngineers);
 
