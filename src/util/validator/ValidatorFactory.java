@@ -4,7 +4,9 @@ import java.time.LocalDate;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Set;
+
 import util.Constants.MessageEnum;
+import util.Constants.SystemConstants;
 
 /**
  * バリデータファクトリクラス（Unicode対応版）
@@ -78,7 +80,7 @@ public final class ValidatorFactory {
 
                 // 絵文字・サロゲートペア許可、環境依存文字不許可
                 validators.put("note", new TextValidator("note",
-                                MessageEnum.VALIDATION_ERROR_NOTE.getMessage(), 500, true, false));
+                                MessageEnum.VALIDATION_ERROR_NOTE.getMessage(), SystemConstants.MAX_NOTE_LENGTH, true, false));
 
                 return validators;
         }

@@ -1,10 +1,12 @@
 package util.validator;
 
-import java.util.Set;
-import java.util.Map;
-import java.util.HashMap;
 import java.time.LocalDate;
+import java.util.HashMap;
+import java.util.Map;
+import java.util.Set;
+
 import util.Constants.MessageEnum;
+import util.Constants.SystemConstants;
 
 /**
  * バリデーション戦略を定義する列挙型クラス（新バリデーションシステム統合版）
@@ -152,7 +154,7 @@ public enum ValidatorEnum {
          * 500文字以内
          */
         NOTE("note", () -> new TextValidator("note",
-                        MessageEnum.VALIDATION_ERROR_NOTE.getMessage(), 500));
+                        MessageEnum.VALIDATION_ERROR_NOTE.getMessage(), SystemConstants.MAX_NOTE_LENGTH));
 
         /** フィールド名 */
         private final String fieldName;
