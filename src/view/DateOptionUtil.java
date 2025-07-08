@@ -48,12 +48,12 @@ public final class DateOptionUtil {
     }
 
     /**
-     * 入社年用の年選択肢を生成（1990年〜現在年）
+     * 入社年用の年選択肢を生成（1950年〜現在年）
      * 
      * @return 年の選択肢配列
      */
     public static String[] getJoinYearOptions() {
-        return getYearOptions(1990, LocalDate.now().getYear());
+        return getYearOptions(1950, LocalDate.now().getYear());
     }
 
     /**
