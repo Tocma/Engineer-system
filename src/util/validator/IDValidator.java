@@ -1,9 +1,10 @@
 package util.validator;
 
-import util.StringUtil;
-import java.util.Set;
 import java.util.HashSet;
+import java.util.Set;
 import java.util.regex.Pattern;
+
+import util.StringUtil;
 
 /**
  * 社員ID検証用バリデータ
@@ -36,7 +37,7 @@ public class IDValidator extends AbstractValidator {
 
     /**
      * IDの前処理を実行
-     * 全角数字を半角に変換し、標準形式（ID00000）に変換
+     * 全角数字を半角に変換し、空白除去、標準形式（ID00000）に変換
      * 
      * @param value 入力値
      * @return 前処理済みのID
@@ -53,8 +54,11 @@ public class IDValidator extends AbstractValidator {
             return "";
         }
 
+        // 全ての空白文字を除去
+        String noWhitespace = removeAllWhitespace(trimmed);
+
         // 全角数字を半角に変換
-        String converted = convertFullWidthToHalfWidth(trimmed);
+        String converted = convertFullWidthToHalfWidth(noWhitespace);
 
         // ID標準形式への変換
         String standardized = standardizeId(converted);
@@ -159,6 +163,21 @@ public class IDValidator extends AbstractValidator {
     }
 
     /**
+     * 文字列から全ての空白文字を除去（静的メソッド）
+     * 全角スペース、半角スペース、タブ、改行等を除去
+     * 
+     * @param value 対象の文字列
+     * @return 空白文字を除去した文字列
+     */
+    public static String removeAllWhitespace(String value) {
+        if (value == null) {
+            return null;
+        }
+        // 全ての空白文字（全角スペース、半角スペース、タブ、改行等）を除去
+        return value.replaceAll("\\s+", "");
+    }
+
+    /**
      * 社員IDを標準形式（ID00000）に変換（静的メソッド）
      * 
      * @param idValue 元の社員ID
@@ -170,8 +189,11 @@ public class IDValidator extends AbstractValidator {
         }
 
         try {
+            // 全角・半角スペース除去
+            String noSpaces = idValue.replaceAll("[\\s　]+", "");
+
             // IDプレフィックス有無の確認と数値部分の抽出
-            String numericPart = extractNumericPart(idValue);
+            String numericPart = extractNumericPart(noSpaces);
 
             // 数値部分のみかチェック
             if (!ID_PATTERN.matcher(numericPart).matches()) {

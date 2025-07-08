@@ -2,6 +2,7 @@ package model;
 
 import java.time.LocalDate;
 import java.util.List;
+
 import util.validator.IDValidator;
 
 /**
@@ -67,13 +68,15 @@ public class EngineerBuilder {
 
     /**
      * 社員IDを設定
-     * 入力されたIDを標準形式に変換して設定
+     * 入力されたIDの空白除去、全角→半角変換、標準形式変換を実行
      * 
      * @param id 社員ID
      */
     public EngineerBuilder setId(String id) {
-        // IDを標準形式に変換
-        String standardizedId = IDValidator.standardizeId(IDValidator.convertFullWidthToHalfWidth(id));
+        // 空白除去 → 全角半角変換 → 標準形式変換
+        String cleanedId = IDValidator.removeAllWhitespace(id);
+        String convertedId = IDValidator.convertFullWidthToHalfWidth(cleanedId);
+        String standardizedId = IDValidator.standardizeId(convertedId);
         engineer.setId(standardizedId);
         return this;
     }
