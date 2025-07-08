@@ -275,11 +275,16 @@ public abstract class AbstractEngineerPanel extends JPanel {
         }
 
         try {
+
             // メインパネルの初期化
             initializePanel();
 
             // エラーメッセージラベルの設定
             setupErrorMessageLabel();
+
+            // 最新のエンジニアIDセットでバリデータを初期化
+            Set<String> currentIds = getExistingEngineerIds();
+            updateExistingIds(currentIds);
 
             // 初期化済みフラグをセット
             initialized = true;

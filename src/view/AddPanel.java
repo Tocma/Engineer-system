@@ -10,11 +10,14 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.logging.Level;
+import java.util.stream.Collectors;
+
 import javax.swing.BoxLayout;
 import javax.swing.JButton;
 import javax.swing.JComponent;
 import javax.swing.JLabel;
 import javax.swing.JPanel;
+
 import controller.MainController;
 import model.EngineerBuilder;
 import model.EngineerDTO;
@@ -82,6 +85,10 @@ public class AddPanel extends AbstractEngineerPanel {
         super.initialize();
 
         try {
+            // 最新のエンジニアIDセットでバリデータを初期化
+            Set<String> currentIds = getExistingEngineerIds();
+            updateExistingIds(currentIds);
+
             // フォームコンポーネントの作成
             createFormComponents();
 
@@ -175,6 +182,10 @@ public class AddPanel extends AbstractEngineerPanel {
             // エラーメッセージのクリア
             clearAllComponentErrors();
 
+            // 最新のエンジニアIDセットでバリデータを更新
+            Set<String> latestIds = getExistingEngineerIds();
+            updateExistingIds(latestIds);
+
             // 入力検証
             if (!validateInput()) {
                 return;
@@ -234,18 +245,12 @@ public class AddPanel extends AbstractEngineerPanel {
      */
     @Override
     protected Set<String> getExistingEngineerIds() {
-        try {
-            if (mainController != null) {
-                List<EngineerDTO> engineers = mainController.getEngineerController().loadEngineers();
-                Set<String> ids = new HashSet<>();
-                for (EngineerDTO engineer : engineers) {
-                    ids.add(engineer.getId());
-                }
-                return ids;
-            }
-        } catch (Exception _e) {
-            LogHandler.getInstance().logError(LogType.SYSTEM,
-                    "既存IDの取得中にエラーが発生", _e);
+        // 現在のシステムに登録されている最新のエンジニアIDリストを取得
+        if (mainController != null) {
+            List<EngineerDTO> currentEngineers = mainController.getEngineerController().loadEngineers();
+            return currentEngineers.stream()
+                    .map(EngineerDTO::getId)
+                    .collect(Collectors.toSet());
         }
         return new HashSet<>();
     }
