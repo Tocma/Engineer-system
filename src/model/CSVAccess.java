@@ -190,7 +190,7 @@ public class CSVAccess extends AccessThread {
     private Map<String, String> createFormDataFromCSVRow(String[] row) {
         Map<String, String> formData = new HashMap<>();
 
-        // CSVヘッダーの順序に従ってマッピング
+        // CSVヘッダーの順序に従ってマッピング（必須項目）
         formData.put("id", row[CSVConstants.COLUMN_INDEX_ID]);
         formData.put("name", row[CSVConstants.COLUMN_INDEX_NAME]);
         formData.put("nameKana", row[CSVConstants.COLUMN_INDEX_NAME_KANA]);
@@ -198,20 +198,29 @@ public class CSVAccess extends AccessThread {
         formData.put("joinDate", row[CSVConstants.COLUMN_INDEX_JOIN_DATE]);
         formData.put("career", row[CSVConstants.COLUMN_INDEX_CAREER]);
         formData.put("programmingLanguages", row[CSVConstants.COLUMN_INDEX_LANGUAGES]);
-        formData.put("careerHistory", row[CSVConstants.COLUMN_INDEX_CAREER_HISTORY]);
-        formData.put("trainingHistory", row[CSVConstants.COLUMN_INDEX_TRAINING_HISTORY]);
-        formData.put("technicalSkill", row[CSVConstants.COLUMN_INDEX_TECHNICAL_SKILL]);
-        formData.put("learningAttitude", row[CSVConstants.COLUMN_INDEX_LEARNING_ATTITUDE]);
-        formData.put("communicationSkill", row[CSVConstants.COLUMN_INDEX_COMMUNICATION_SKILL]);
-        formData.put("leadership", row[CSVConstants.COLUMN_INDEX_LEADERSHIP]);
-        formData.put("note", row[CSVConstants.COLUMN_INDEX_NOTE]);
+
+        // 任意項目は空文字列をnullに変換
+        formData.put("careerHistory", emptyToNull(row[CSVConstants.COLUMN_INDEX_CAREER_HISTORY]));
+        formData.put("trainingHistory", emptyToNull(row[CSVConstants.COLUMN_INDEX_TRAINING_HISTORY]));
+        formData.put("technicalSkill", emptyToNull(row[CSVConstants.COLUMN_INDEX_TECHNICAL_SKILL]));
+        formData.put("learningAttitude", emptyToNull(row[CSVConstants.COLUMN_INDEX_LEARNING_ATTITUDE]));
+        formData.put("communicationSkill", emptyToNull(row[CSVConstants.COLUMN_INDEX_COMMUNICATION_SKILL]));
+        formData.put("leadership", emptyToNull(row[CSVConstants.COLUMN_INDEX_LEADERSHIP]));
+        formData.put("note", emptyToNull(row[CSVConstants.COLUMN_INDEX_NOTE]));
 
         // 登録日（オプション）
         if (row.length > CSVConstants.COLUMN_INDEX_REGISTERED_DATE) {
-            formData.put("registeredDate", row[CSVConstants.COLUMN_INDEX_REGISTERED_DATE]);
+            formData.put("registeredDate", emptyToNull(row[CSVConstants.COLUMN_INDEX_REGISTERED_DATE]));
         }
 
         return formData;
+    }
+
+    /**
+     * 空文字列をnullに変換するヘルパーメソッド
+     */
+    private String emptyToNull(String value) {
+        return (value == null || value.trim().isEmpty()) ? null : value;
     }
 
     /**
@@ -273,23 +282,31 @@ public class CSVAccess extends AccessThread {
      */
     private void setValidatedSkillRatings(EngineerBuilder builder, Map<String, String> validatedData) {
         String technicalSkill = validatedData.get("technicalSkill");
-        if (technicalSkill != null && !technicalSkill.isEmpty()) {
+        if (technicalSkill != null && !technicalSkill.trim().isEmpty()) {
             builder.setTechnicalSkill(Double.parseDouble(technicalSkill));
+        } else {
+            builder.setTechnicalSkill(null); // 明示的にnullを設定
         }
 
         String learningAttitude = validatedData.get("learningAttitude");
-        if (learningAttitude != null && !learningAttitude.isEmpty()) {
+        if (learningAttitude != null && !learningAttitude.trim().isEmpty()) {
             builder.setLearningAttitude(Double.parseDouble(learningAttitude));
+        } else {
+            builder.setLearningAttitude(null); // 明示的にnullを設定
         }
 
         String communicationSkill = validatedData.get("communicationSkill");
-        if (communicationSkill != null && !communicationSkill.isEmpty()) {
+        if (communicationSkill != null && !communicationSkill.trim().isEmpty()) {
             builder.setCommunicationSkill(Double.parseDouble(communicationSkill));
+        } else {
+            builder.setCommunicationSkill(null); // 明示的にnullを設定
         }
 
         String leadership = validatedData.get("leadership");
-        if (leadership != null && !leadership.isEmpty()) {
+        if (leadership != null && !leadership.trim().isEmpty()) {
             builder.setLeadership(Double.parseDouble(leadership));
+        } else {
+            builder.setLeadership(null); // 明示的にnullを設定
         }
     }
 

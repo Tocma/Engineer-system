@@ -10,6 +10,7 @@ import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
 import java.util.List;
 import java.util.logging.Level;
+
 import javax.swing.BoxLayout;
 import javax.swing.JButton;
 import javax.swing.JComboBox;
@@ -19,6 +20,7 @@ import javax.swing.JPanel;
 import javax.swing.SwingUtilities;
 import javax.swing.event.DocumentEvent;
 import javax.swing.event.DocumentListener;
+
 import controller.MainController;
 import model.EngineerBuilder;
 import model.EngineerDTO;
@@ -341,15 +343,23 @@ public class DetailPanel extends AbstractEngineerPanel {
             // スキル評価の設定
             if (currentEngineer.getTechnicalSkill() != null) {
                 setComboBoxValue(technicalSkillComboBox, String.valueOf(currentEngineer.getTechnicalSkill()));
+            } else {
+                technicalSkillComboBox.setSelectedIndex(0); // 空文字列を明示的に選択
             }
             if (currentEngineer.getLearningAttitude() != null) {
                 setComboBoxValue(learningAttitudeComboBox, String.valueOf(currentEngineer.getLearningAttitude()));
+            } else {
+                learningAttitudeComboBox.setSelectedIndex(0); // 空文字列を明示的に選択
             }
             if (currentEngineer.getCommunicationSkill() != null) {
                 setComboBoxValue(communicationSkillComboBox, String.valueOf(currentEngineer.getCommunicationSkill()));
+            } else {
+                communicationSkillComboBox.setSelectedIndex(0); // 空文字列を明示的に選択
             }
             if (currentEngineer.getLeadership() != null) {
                 setComboBoxValue(leadershipComboBox, String.valueOf(currentEngineer.getLeadership()));
+            } else {
+                leadershipComboBox.setSelectedIndex(0); // 空文字列を明示的に選択
             }
 
             // 備考の設定（Unicode文字を確実に表示）
