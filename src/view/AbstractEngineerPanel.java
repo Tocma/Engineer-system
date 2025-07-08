@@ -15,6 +15,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.logging.Level;
+
 import javax.swing.BorderFactory;
 import javax.swing.Box;
 import javax.swing.BoxLayout;
@@ -31,6 +32,7 @@ import javax.swing.SwingConstants;
 import javax.swing.SwingUtilities;
 import javax.swing.border.Border;
 import javax.swing.text.JTextComponent;
+
 import util.LogHandler;
 import util.LogHandler.LogType;
 import util.Constants.MessageEnum;
@@ -509,7 +511,9 @@ public abstract class AbstractEngineerPanel extends JPanel {
         careerPanel.add(careerComboBox);
         careerPanel.add(new JLabel("年"));
 
-        container.add(createFormRow(careerLabel, careerPanel, "careerComboBox"));
+        createFieldErrorLabel("career");
+
+        container.add(createFormRow(careerLabel, careerPanel, "career"));
     }
 
     /**
@@ -801,6 +805,9 @@ public abstract class AbstractEngineerPanel extends JPanel {
                 showFieldError(fieldName, errorMessage);
                 markComponentError("joinYearComboBox", null);
                 markComponentError("joinMonthComboBox", null);
+            } else if ("career".equals(fieldName)) {
+                showFieldError(fieldName, errorMessage);
+                markComponentError("careerComboBox", null);
             } else if ("programmingLanguages".equals(fieldName)) {
                 showFieldError("languages", errorMessage);
                 markComponentError("languageComboBox", null);
