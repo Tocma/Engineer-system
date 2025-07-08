@@ -407,21 +407,21 @@ public abstract class AbstractEngineerPanel extends JPanel {
 
         // 年コンボボックス
         birthYearComboBox = new JComboBox<>(DateOptionUtil.getBirthYearOptions());
-        birthYearComboBox.setPreferredSize(new Dimension(80, 25));
+        birthYearComboBox.setPreferredSize(new Dimension(100, 25));
         registerComponent("birthYearComboBox", birthYearComboBox);
         birthDatePanel.add(birthYearComboBox);
         birthDatePanel.add(new JLabel("年"));
 
         // 月コンボボックス
         birthMonthComboBox = new JComboBox<>(DateOptionUtil.getMonthOptions());
-        birthMonthComboBox.setPreferredSize(new Dimension(60, 25));
+        birthMonthComboBox.setPreferredSize(new Dimension(80, 25));
         registerComponent("birthMonthComboBox", birthMonthComboBox);
         birthDatePanel.add(birthMonthComboBox);
         birthDatePanel.add(new JLabel("月"));
 
         // 日コンボボックス
         birthDayComboBox = new JComboBox<>(DateOptionUtil.getDayOptions());
-        birthDayComboBox.setPreferredSize(new Dimension(60, 25));
+        birthDayComboBox.setPreferredSize(new Dimension(80, 25));
         registerComponent("birthDayComboBox", birthDayComboBox);
         birthDatePanel.add(birthDayComboBox);
         birthDatePanel.add(new JLabel("日"));
@@ -440,14 +440,14 @@ public abstract class AbstractEngineerPanel extends JPanel {
 
         // 年コンボボックス
         joinYearComboBox = new JComboBox<>(DateOptionUtil.getJoinYearOptions());
-        joinYearComboBox.setPreferredSize(new Dimension(80, 25));
+        joinYearComboBox.setPreferredSize(new Dimension(100, 25));
         registerComponent("joinYearComboBox", joinYearComboBox);
         joinDatePanel.add(joinYearComboBox);
         joinDatePanel.add(new JLabel("年"));
 
         // 月コンボボックス
         joinMonthComboBox = new JComboBox<>(DateOptionUtil.getMonthOptions());
-        joinMonthComboBox.setPreferredSize(new Dimension(60, 25));
+        joinMonthComboBox.setPreferredSize(new Dimension(80, 25));
         registerComponent("joinMonthComboBox", joinMonthComboBox);
         joinDatePanel.add(joinMonthComboBox);
         joinDatePanel.add(new JLabel("月"));
@@ -549,21 +549,19 @@ public abstract class AbstractEngineerPanel extends JPanel {
      * @param container 配置先のコンテナ
      */
     protected void createCareerHistorySection(JPanel container) {
-        JLabel careerHistoryTitle = createSectionTitle("経歴");
-        JPanel titlePanel = new JPanel(new FlowLayout(FlowLayout.LEFT, 0, 0));
-        titlePanel.setBackground(Color.WHITE);
-        titlePanel.add(careerHistoryTitle);
-        container.add(titlePanel);
+        // 経歴フィールドのラベル作成（他のフィールドと統一）
+        JLabel careerHistoryLabel = createFieldLabel("経歴", false);
 
         careerHistoryArea = new JTextArea(5, 40);
         careerHistoryArea.setLineWrap(true);
         careerHistoryArea.setWrapStyleWord(true);
-        // Unicode文字（絵文字・サロゲートペア）を適切に表示するためのフォント設定
         careerHistoryArea.setFont(new Font(Font.SANS_SERIF, Font.PLAIN, 12));
         JScrollPane careerScrollPane = new JScrollPane(careerHistoryArea);
         registerComponent("careerHistoryArea", careerHistoryArea);
 
-        container.add(createFormRow(new JLabel(""), careerScrollPane, "careerHistoryArea"));
+        // createFormRowでラベルとエラー表示を統一
+        container.add(createFormRow(careerHistoryLabel, careerScrollPane, "careerHistory"));
+        container.add(createVerticalSpacer(20));
     }
 
     /**
@@ -572,21 +570,19 @@ public abstract class AbstractEngineerPanel extends JPanel {
      * @param container 配置先のコンテナ
      */
     protected void createTrainingSection(JPanel container) {
-        JLabel trainingTitle = createSectionTitle("研修の受講歴");
-        JPanel titlePanel = new JPanel(new FlowLayout(FlowLayout.LEFT, 0, 0));
-        titlePanel.setBackground(Color.WHITE);
-        titlePanel.add(trainingTitle);
-        container.add(titlePanel);
+        // 研修受講歴フィールドのラベル作成（他のフィールドと統一）
+        JLabel trainingHistoryLabel = createFieldLabel("研修の受講歴", false);
 
         trainingHistoryArea = new JTextArea(2, 40);
         trainingHistoryArea.setLineWrap(true);
         trainingHistoryArea.setWrapStyleWord(true);
-        // Unicode文字（絵文字・サロゲートペア）を適切に表示するためのフォント設定
         trainingHistoryArea.setFont(new Font(Font.SANS_SERIF, Font.PLAIN, 12));
         JScrollPane trainingScrollPane = new JScrollPane(trainingHistoryArea);
         registerComponent("trainingHistoryArea", trainingHistoryArea);
 
-        container.add(createFormRow(new JLabel(""), trainingScrollPane, "trainingHistoryArea"));
+        // createFormRowでラベルとエラー表示を統一
+        container.add(createFormRow(trainingHistoryLabel, trainingScrollPane, "trainingHistory"));
+        container.add(createVerticalSpacer(20));
     }
 
     /**
@@ -646,11 +642,8 @@ public abstract class AbstractEngineerPanel extends JPanel {
      * @param container 配置先のコンテナ
      */
     protected void createNoteSection(JPanel container) {
-        JLabel noteTitle = createSectionTitle("備考");
-        JPanel titlePanel = new JPanel(new FlowLayout(FlowLayout.LEFT, 0, 0));
-        titlePanel.setBackground(Color.WHITE);
-        titlePanel.add(noteTitle);
-        container.add(titlePanel);
+        // 備考フィールドのラベル作成（他のフィールドと統一）
+        JLabel noteLabel = createFieldLabel("備考", false);
 
         noteArea = new JTextArea(5, 40);
         noteArea.setLineWrap(true);
@@ -660,7 +653,9 @@ public abstract class AbstractEngineerPanel extends JPanel {
         JScrollPane noteScrollPane = new JScrollPane(noteArea);
         registerComponent("noteArea", noteArea);
 
-        container.add(createFormRow(new JLabel(""), noteScrollPane, "noteArea"));
+        // createFormRowでラベルとエラー表示を統一
+        container.add(createFormRow(noteLabel, noteScrollPane, "note"));
+        container.add(createVerticalSpacer(20));
     }
 
     // === 共通バリデーション機能（重複削減） ===
@@ -816,6 +811,18 @@ public abstract class AbstractEngineerPanel extends JPanel {
             } else if ("programmingLanguages".equals(fieldName)) {
                 showFieldError("languages", errorMessage);
                 markComponentError("languageComboBox", null);
+            } else if ("careerHistory".equals(fieldName)) {
+                // 経歴フィールドの統一されたエラー表示処理
+                showFieldError(fieldName, errorMessage);
+                markComponentError("careerHistoryArea", null);
+            } else if ("trainingHistory".equals(fieldName)) {
+                // 研修受講歴フィールドの統一されたエラー表示処理
+                showFieldError(fieldName, errorMessage);
+                markComponentError("trainingHistoryArea", null);
+            } else if ("note".equals(fieldName)) {
+                // 備考フィールドの統一されたエラー表示処理
+                showFieldError(fieldName, errorMessage);
+                markComponentError("noteArea", null);
             } else {
                 // 通常のフィールド（氏名、氏名カナ、社員IDなど）
                 // フィールド名をそのまま使用してエラーラベルに表示
