@@ -8,7 +8,7 @@ cd "$(dirname "$0")"
 echo -ne "\033]0;エンジニア人材管理システム\007"
 
 # 設定変数
-JAR_FILE="target/EngineerSystem.jar"
+JAR_FILE="target/engineer-system-5.0.0.jar"
 LOCK_PORT=54321
 APP_NAME="Engineer Management System"
 MIN_JAVA_VERSION=17

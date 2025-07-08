@@ -20,7 +20,7 @@ echo ========================================
 echo.
 
 :: JARファイルの存在確認
-set JAR_FILE=target\EngineerSystem.jar
+set JAR_FILE=target\engineer-system-5.0.0.jar
 if not exist "%JAR_FILE%" (
     echo エラー: 実行ファイルが見つかりません
     echo.

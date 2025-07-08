@@ -12,7 +12,7 @@
     <version>5.0.0</version>
     <packaging>jar</packaging>
     
-    <name>Engineer Management System</name>
+    <name>Engineer System</name>
     <description>エンジニア人材情報を効率的に管理するためのデスクトップアプリケーション</description>
     
     <!-- プロパティ設定 -->
