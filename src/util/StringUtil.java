@@ -292,6 +292,12 @@ public final class StringUtil {
         String halfKana = "ｱｲｳｴｵｶｷｸｹｺｻｼｽｾｿﾀﾁﾂﾃﾄﾅﾆﾇﾈﾉﾊﾋﾌﾍﾎﾏﾐﾑﾒﾓﾔﾕﾖﾗﾘﾙﾚﾛﾜｦﾝｧｨｩｪｫｬｭｮｯｰ｡｢｣､･";
         String fullKana = "アイウエオカキクケコサシスセソタチツテトナニヌネノハヒフヘホマミムメモヤユヨラリルレロワヲンァィゥェォャュョッー。「」、・";
 
+        // 濁点・半濁点対応文字の定義
+        String dakutenBase = "ｶｷｸｹｺｻｼｽｾｿﾀﾁﾂﾃﾄﾊﾋﾌﾍﾎ";
+        String dakutenFull = "ガギグゲゴザジズゼゾダヂヅデドバビブベボ";
+        String handakutenBase = "ﾊﾋﾌﾍﾎ";
+        String handakutenFull = "パピプペポ";
+
         StringBuilder sb = new StringBuilder();
         int length = input.length();
 
@@ -306,6 +312,43 @@ public final class StringUtil {
             }
 
             char c = (char) codePoint;
+
+            // 濁点・半濁点の組み合わせ処理
+            if (i + 1 < length) {
+                char nextChar = input.charAt(i + 1);
+
+                // 濁点の処理（基本文字 + ﾞ）
+                if (nextChar == 'ﾞ') {
+                    int dakutenIndex = dakutenBase.indexOf(c);
+                    if (dakutenIndex >= 0) {
+                        sb.append(dakutenFull.charAt(dakutenIndex));
+                        i++; // 濁点文字をスキップ
+                        continue;
+                    }
+                }
+
+                // 半濁点の処理（基本文字 + ﾟ）
+                if (nextChar == 'ﾟ') {
+                    int handakutenIndex = handakutenBase.indexOf(c);
+                    if (handakutenIndex >= 0) {
+                        sb.append(handakutenFull.charAt(handakutenIndex));
+                        i++; // 半濁点文字をスキップ
+                        continue;
+                    }
+                }
+            }
+
+            // 単独の濁点・半濁点の処理
+            if (c == 'ﾞ') {
+                sb.append('゙'); // 全角濁点
+                continue;
+            }
+            if (c == 'ﾟ') {
+                sb.append('゚'); // 全角半濁点
+                continue;
+            }
+
+            // 通常の半角カタカナ変換
             int index = halfKana.indexOf(c);
             if (index >= 0) {
                 sb.append(fullKana.charAt(index));
