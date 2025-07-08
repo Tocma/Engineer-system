@@ -427,7 +427,7 @@ public class AddPanel extends AbstractEngineerPanel {
      * 入力フィールドをクリア
      * すべての入力フィールドを初期状態にリセットし、エラー表示もクリア
      */
-    private void clearFields() {
+    public void clearFields() {
         // テキストフィールドのクリア
         nameField.setText("");
         idField.setText("");

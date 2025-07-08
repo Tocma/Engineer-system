@@ -1,18 +1,20 @@
 package controller;
 
-import util.LogHandler;
-import util.LogHandler.LogType;
-import util.Constants.PanelType;
-import view.ListPanel;
-import view.AddPanel;
-import view.DetailPanel;
-import view.MainFrame;
-import javax.swing.JPanel;
-import javax.swing.SwingUtilities;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.logging.Level;
+
+import javax.swing.JPanel;
+import javax.swing.SwingUtilities;
+
+import util.LogHandler;
+import util.LogHandler.LogType;
+import util.Constants.PanelType;
+import view.AddPanel;
+import view.DetailPanel;
+import view.ListPanel;
+import view.MainFrame;
 
 /**
  * 画面遷移を制御するコントローラークラス
@@ -119,63 +121,38 @@ public class ScreenTransitionController {
         }
 
         // 既に遷移中の場合は処理をキューイング（本実装では簡易化のため処理をスキップ）
-        if (isTransitioning.getAndSet(true)) {
+        if (isTransitioning.get()) {
             LogHandler.getInstance().log(Level.WARNING, LogType.SYSTEM,
                     "遷移中のため遷移要求をスキップ: " + panelType.getDisplayName());
             return;
         }
 
+        isTransitioning.set(true);
         try {
-            // SwingのEDTで実行
             SwingUtilities.invokeLater(() -> {
                 try {
-                    // パネルの取得（キャッシュになければ新規作成）
                     JPanel panel = getOrCreatePanel(panelTypeId);
-
-                    // 遷移前の削除状態を取得
-                    boolean wasDeleting = false;
-                    JPanel previousPanel = mainFrame.getCurrentPanel();
-                    if (panelType == PanelType.ADD && previousPanel instanceof ListPanel listPanel) {
-                        wasDeleting = listPanel.isDeleting();
-                    }
-
                     if (panel != null) {
+                        // AddPanelが表示される際にフィールドをクリア
+                        if ("ADD".equals(panelType.getId()) && panel instanceof AddPanel) {
+                            ((AddPanel) panel).clearFields();
+                        }
 
-                        // アニメーションなしで直接表示
                         mainFrame.showPanel(panel);
-
-                        // ListPanel遷移後に再描画処理
-                        if (panelType == PanelType.LIST && panel instanceof ListPanel listPanel) {
-                            listPanel.onScreenShown();
-                        }
-
-                        // 現在のパネルタイプを更新
-                        currentPanelType = panelTypeId;
-
-                        // AddPanelに切り替えた後に、削除中だったら登録ボタンを無効化
-                        if (panelType == PanelType.ADD && panel instanceof AddPanel addPanel) {
-                            addPanel.setRegisterButtonEnabled(!wasDeleting);
-                        }
-                        // ログ記録
-                        LogHandler.getInstance().log(
-                                Level.INFO, LogType.SYSTEM,
-                                String.format("画面を切り替えました: %s (%s)", panelType.getDisplayName(), panelTypeId));
+                        currentPanelType = panelType.getId();
+                        LogHandler.getInstance().log(Level.INFO, LogType.SYSTEM,
+                                "パネル表示完了: " + panelType);
                     } else {
                         LogHandler.getInstance().log(Level.WARNING, LogType.SYSTEM,
-                                "パネルの取得に失敗: " + panelType.getDisplayName());
+                                "パネルの作成に失敗: " + panelType);
                     }
-                } catch (Exception _e) {
-                    LogHandler.getInstance().logError(LogType.SYSTEM, "画面切り替えに失敗: " + panelType.getDisplayName(),
-                            _e);
                 } finally {
-                    // 遷移中フラグを解除
                     isTransitioning.set(false);
                 }
             });
-        } catch (Exception _e) {
-            // EDT外での例外発生時の処理
+        } catch (Exception e) {
             isTransitioning.set(false);
-            LogHandler.getInstance().logError(LogType.SYSTEM, "画面切り替え要求の処理に失敗", _e);
+            LogHandler.getInstance().logError(LogType.SYSTEM, "パネル表示中にエラー", e);
         }
     }
 
