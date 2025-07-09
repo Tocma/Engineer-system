@@ -1,20 +1,27 @@
 package model;
 
-import view.DialogManager;
-import util.LogHandler;
-import util.LogHandler.LogType;
-import util.validator.IDValidator;
-import util.ResourceManager;
-import util.Constants.CSVConstants;
-import util.Constants.SystemConstants;
-import java.io.*;
+import java.io.BufferedWriter;
+import java.io.File;
+import java.io.FileOutputStream;
+import java.io.IOException;
+import java.io.OutputStreamWriter;
 import java.nio.charset.StandardCharsets;
 import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
 import java.time.format.DateTimeParseException;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
 import java.util.logging.Level;
 import java.util.stream.Collectors;
+
+import util.LogHandler;
+import util.LogHandler.LogType;
+import util.ResourceManager;
+import util.Constants.CSVConstants;
+import util.Constants.SystemConstants;
+import util.validator.IDValidator;
+import view.DialogManager;
 
 /**
  * CSVファイルを使用したエンジニア情報のデータアクセスを実装するクラス
@@ -597,10 +604,10 @@ public class EngineerCSVDAO implements EngineerDAO {
         csvLineBuilder.append(",");
 
         // careerHistory
-        csvLineBuilder.append(nullToEmpty(engineer.getCareerHistory())).append(",");
+        csvLineBuilder.append(escapeComma(engineer.getCareerHistory())).append(",");
 
         // trainingHistory
-        csvLineBuilder.append(nullToEmpty(engineer.getTrainingHistory())).append(",");
+        csvLineBuilder.append(escapeComma(engineer.getTrainingHistory())).append(",");
 
         // technicalSkill
         if (engineer.getTechnicalSkill() != null) {
@@ -627,7 +634,7 @@ public class EngineerCSVDAO implements EngineerDAO {
         csvLineBuilder.append(",");
 
         // note
-        csvLineBuilder.append(nullToEmpty(engineer.getNote())).append(",");
+        csvLineBuilder.append(escapeComma(engineer.getNote())).append(",");
 
         // registeredDate
         if (engineer.getRegisteredDate() != null) {
@@ -841,12 +848,41 @@ public class EngineerCSVDAO implements EngineerDAO {
             return "";
         }
 
+        // 改行文字をエスケープ
+        String escapedValue = escapeNewlines(value);
+
         // カンマが含まれている場合は二重引用符で囲む
-        if (value.contains(",") || value.contains("\"") || value.contains("\n")) {
-            return "\"" + value.replace("\"", "\"\"") + "\"";
+        if (escapedValue.contains(",") || escapedValue.contains("\"")) {
+            return "\"" + escapedValue.replace("\"", "\"\"") + "\"";
         }
 
-        return value;
+        return escapedValue;
+    }
+
+    /**
+     * CSV保存時の改行文字エスケープ処理
+     * 経歴・研修の受講歴・備考フィールドで改行文字を適切に処理
+     */
+    private String escapeNewlines(String value) {
+        if (value == null || value.isEmpty()) {
+            return "";
+        }
+
+        // 改行文字をエスケープしてCSV保存時に一行として扱う
+        return value.replace("\n", "\\n").replace("\r", "\\r");
+    }
+
+    /**
+     * CSV読み込み時の改行文字復元処理
+     * エスケープされた改行文字を元に戻す
+     */
+    private String unescapeNewlines(String value) {
+        if (value == null || value.isEmpty()) {
+            return value;
+        }
+
+        // エスケープされた改行文字を実際の改行文字に復元
+        return value.replace("\\n", "\n").replace("\\r", "\r");
     }
 
     /**

@@ -327,7 +327,7 @@ public class DetailPanel extends AbstractEngineerPanel {
             // 経歴の設定（Unicode文字を確実に表示）
             String careerHistory = currentEngineer.getCareerHistory();
             if (careerHistory != null) {
-                careerHistoryArea.setText(careerHistory);
+                careerHistoryArea.setText(restoreNewlines(careerHistory));
                 // テキストエリアの更新を確実に行う
                 careerHistoryArea.setCaretPosition(0);
             }
@@ -335,7 +335,7 @@ public class DetailPanel extends AbstractEngineerPanel {
             // 研修の受講歴の設定（Unicode文字を確実に表示）
             String trainingHistory = currentEngineer.getTrainingHistory();
             if (trainingHistory != null) {
-                trainingHistoryArea.setText(trainingHistory);
+                trainingHistoryArea.setText(restoreNewlines(trainingHistory));
                 // テキストエリアの更新を確実に行う
                 trainingHistoryArea.setCaretPosition(0);
             }
@@ -365,7 +365,7 @@ public class DetailPanel extends AbstractEngineerPanel {
             // 備考の設定（Unicode文字を確実に表示）
             String note = currentEngineer.getNote();
             if (note != null) {
-                noteArea.setText(note);
+                noteArea.setText(restoreNewlines(note));
                 // テキストエリアの更新を確実に行う
                 noteArea.setCaretPosition(0);
             }
@@ -387,6 +387,22 @@ public class DetailPanel extends AbstractEngineerPanel {
             LogHandler.getInstance().logError(LogType.UI, "エンジニア情報の画面反映中にエラーが発生", e);
             showErrorMessage("エンジニア情報の表示中にエラーが発生しました");
         }
+    }
+
+    /**
+     * エスケープされた改行文字を実際の改行文字に復元
+     * CSV保存時にエスケープされた改行文字を画面表示用に変換
+     * 
+     * @param value エスケープされた文字列
+     * @return 改行文字が復元された文字列
+     */
+    private String restoreNewlines(String value) {
+        if (value == null || value.isEmpty()) {
+            return value;
+        }
+
+        // エスケープされた改行文字を実際の改行文字に復元
+        return value.replace("\\n", "\n").replace("\\r", "\r");
     }
 
     /**
