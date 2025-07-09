@@ -208,10 +208,28 @@ public class CSVAccess extends AccessThread {
         formData.put("leadership", emptyToNull(row[CSVConstants.COLUMN_INDEX_LEADERSHIP]));
         formData.put("note", emptyToNull(row[CSVConstants.COLUMN_INDEX_NOTE]));
 
-        // 登録日（オプション）
+        // 登録日（オプション）- 空欄やnullの場合は現在日付を設定
+        String registeredDate = "";
         if (row.length > CSVConstants.COLUMN_INDEX_REGISTERED_DATE) {
-            formData.put("registeredDate", emptyToNull(row[CSVConstants.COLUMN_INDEX_REGISTERED_DATE]));
+            String csvRegisteredDate = row[CSVConstants.COLUMN_INDEX_REGISTERED_DATE];
+            if (csvRegisteredDate != null && !csvRegisteredDate.trim().isEmpty()) {
+                registeredDate = csvRegisteredDate.trim();
+            } else {
+                // 登録日が空欄やnullの場合は現在日付を設定
+                registeredDate = LocalDate.now().format(
+                        java.time.format.DateTimeFormatter.ofPattern(CSVConstants.DATE_FORMAT_PATTERN));
+                LogHandler.getInstance().log(Level.INFO, LogType.SYSTEM,
+                        "登録日が空欄のため現在日付を設定: " + registeredDate);
+            }
+        } else {
+            // 登録日列が存在しない場合も現在日付を設定
+            registeredDate = LocalDate.now().format(
+                    java.time.format.DateTimeFormatter.ofPattern(CSVConstants.DATE_FORMAT_PATTERN));
+            LogHandler.getInstance().log(Level.INFO, LogType.SYSTEM,
+                    "登録日列が存在しないため現在日付を設定: " + registeredDate);
         }
+
+        formData.put("registeredDate", registeredDate);
 
         return formData;
     }
