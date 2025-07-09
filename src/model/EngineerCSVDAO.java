@@ -729,12 +729,12 @@ public class EngineerCSVDAO implements EngineerDAO {
 
             // 経歴
             if (!line[7].isEmpty()) {
-                builder.setCareerHistory(line[7]);
+                builder.setCareerHistory(unescapeNewlines(line[7]));
             }
 
             // 研修の受講歴
             if (!line[8].isEmpty()) {
-                builder.setTrainingHistory(line[8]);
+                builder.setTrainingHistory(unescapeNewlines(line[8]));
             }
 
             // 技術力
@@ -803,7 +803,7 @@ public class EngineerCSVDAO implements EngineerDAO {
 
             // 備考
             if (!line[13].isEmpty()) {
-                builder.setNote(line[13]);
+                builder.setNote(unescapeNewlines(line[13]));
             }
 
             // 登録日時
