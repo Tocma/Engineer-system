@@ -1,5 +1,5 @@
 #!/bin/bash
-# Engineer Management System 起動スクリプト for macOS（権限問題対応版）
+# Engineer System 起動スクリプト for macOS（権限問題対応版）
 
 # スクリプトのディレクトリに移動
 cd "$(dirname "$0")"
@@ -8,9 +8,9 @@ cd "$(dirname "$0")"
 echo -ne "\033]0;エンジニア人材管理システム\007"
 
 # 設定変数
-JAR_FILE="target/engineer-system-5.0.0.jar"
+JAR_FILE="target/EngineerSystem-jar-with-dependencies.jar"
 LOCK_PORT=54321
-APP_NAME="Engineer Management System"
+APP_NAME="Engineer System"
 MIN_JAVA_VERSION=17
 NOTIFICATION_ENABLED=true
 SCRIPT_NAME="$(basename "$0")"
@@ -213,7 +213,7 @@ get_system_info() {
 
 # プロセス詳細情報を取得
 get_process_details() {
-    local java_processes=$(pgrep -f "java.*EngineerSystem.jar" 2>/dev/null)
+    local java_processes=$(pgrep -f "java.*EngineerSystem-jar-with-dependencies.jar" 2>/dev/null)
     
     if [ ! -z "$java_processes" ]; then
         echo -e "${CYAN}=== 実行中のプロセス詳細 ===${NC}"
@@ -289,7 +289,7 @@ if lsof -i :$LOCK_PORT >/dev/null 2>&1; then
 fi
 
 # 2. プロセスチェック
-JAVA_PROCESSES=$(pgrep -f "java.*EngineerSystem.jar" 2>/dev/null)
+JAVA_PROCESSES=$(pgrep -f "java.*EngineerSystem-jar-with-dependencies.jar" 2>/dev/null)
 PROCESS_FOUND=false
 if [ ! -z "$JAVA_PROCESSES" ]; then
     PROCESS_FOUND=true
@@ -299,61 +299,11 @@ fi
 # 3. 重複起動が予想される場合の事前対応
 if [ "$PORT_USED" = true ] || [ "$PROCESS_FOUND" = true ]; then
     echo
-    echo -e "${YELLOW}=== 重複起動の可能性があります ===${NC}"
+    echo -e "${YELLOW}=== 既にアプリケーションが起動しています。 ===${NC}"
     
     get_process_details
-    
-    # ユーザーに選択肢を提示
-    echo -e "${CYAN}対応方法を選択してください:${NC}"
-    echo "1) 既存のアプリケーションを前面に表示"
-    echo "2) 既存のアプリケーションを終了して新規起動"
-    echo "3) そのまま起動を試行"
-    echo "4) 起動をキャンセル"
-    echo
-    echo -n "選択 (1-4): "
-    read -n 1 choice
-    echo
-    
-    case $choice in
-        1)
-            echo -e "${CYAN}既存のアプリケーションを探しています...${NC}"
-            if find_app_in_dock "Engineer"; then
-                echo -e "${GREEN}✓ アプリケーションを前面に表示しました${NC}"
-                send_notification "$APP_NAME" "既存のアプリケーションを前面に表示しました"
-            else
-                echo -e "${YELLOW}Dockでアプリケーションが見つかりませんでした${NC}"
-                echo "手動でアプリケーションを探してください"
-            fi
-            exit 0
-            ;;
-        2)
-            echo -e "${CYAN}既存のプロセスを終了しています...${NC}"
-            if [ ! -z "$JAVA_PROCESSES" ]; then
-                echo "$JAVA_PROCESSES" | xargs kill -TERM 2>/dev/null
-                sleep 2
-                # 強制終了が必要な場合
-                REMAINING=$(pgrep -f "java.*EngineerSystem.jar" 2>/dev/null)
-                if [ ! -z "$REMAINING" ]; then
-                    echo "$REMAINING" | xargs kill -KILL 2>/dev/null
-                fi
-                echo -e "${GREEN}✓ 既存のプロセスを終了しました${NC}"
-            fi
-            ;;
-        3)
-            echo -e "${YELLOW}そのまま起動を試行します...${NC}"
-            ;;
-        4)
-            echo -e "${CYAN}起動をキャンセルしました${NC}"
-            send_notification "$APP_NAME" "起動をキャンセルしました"
-            exit 0
-            ;;
-        *)
-            echo -e "${YELLOW}無効な選択です。そのまま起動を試行します...${NC}"
-            ;;
-    esac
-    echo
 fi
-
+    
 # アプリケーション起動
 echo -e "${BLUE}========================================${NC}"
 echo -e "${GREEN}アプリケーションを起動しています...${NC}"
