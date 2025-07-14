@@ -20,12 +20,12 @@ import view.MainFrame;
  * 画面遷移を制御するコントローラークラス
  * MainFrameを介して各画面の表示を管理し、パネル間の遷移を制御
  *
- * このコントローラーは、LazyLoading方式でパネルを初期化
- * 各パネルは初回表示時に初期化され、それ以降はキャッシュされたインスタンスが再利用されます
- * これにより、メモリ使用量の最適化と起動時間の短縮
+ * このコントローラーは、アプリ起動時に全パネルを初期化します
+ * 全てのパネルは起動時に作成・初期化され、メモリ上にキャッシュされます
+ * これにより、画面遷移時の初期化処理が不要となり、高速な画面切り替えが可能になります
  *
  * 画面遷移コントローラーは、MainControllerから遷移指示を受け取り、
- * 適切なパネルを選択・初期化し、MainFrameを通じて表示します。
+ * 適切なパネルを選択し、MainFrameを通じて表示します。
  * 遷移操作はSwingのイベントディスパッチスレッド（EDT）上で実行され、
  * 遷移中のフラグ管理により連続遷移による問題を防止
  *
@@ -43,10 +43,10 @@ public class ScreenTransitionController {
     private final ListPanel listPanel;
 
     /** 詳細パネル */
-    // private DetailPanel detailPanel;
+    private final DetailPanel detailPanel;
 
     /** 新規追加パネル */
-    private AddPanel addPanel;
+    private final AddPanel addPanel;
 
     /** パネルキャッシュ */
     private final Map<String, JPanel> panelCache;
@@ -59,21 +59,39 @@ public class ScreenTransitionController {
 
     /**
      * コンストラクタ
-     * 初期パネルを作成し、パネルキャッシュを初期化
+     * 全パネルを初期化し、パネルキャッシュに登録
      *
      * @param mainFrame メインフレーム
      */
     public ScreenTransitionController(MainFrame mainFrame) {
         this.mainFrame = mainFrame;
-        this.listPanel = new ListPanel();
         this.panelCache = new HashMap<>();
         this.isTransitioning = new AtomicBoolean(false);
         this.currentPanelType = null;
 
-        // 一覧パネルをキャッシュに追加
-        panelCache.put("LIST", listPanel);
+        LogHandler.getInstance().log(Level.INFO, LogType.SYSTEM, "画面遷移コントローラーの初期化を開始");
 
-        LogHandler.getInstance().log(Level.INFO, LogType.SYSTEM, "画面遷移コントローラーを初期化完了");
+        // 全パネルを起動時に初期化
+        // 一覧パネルの初期化
+        this.listPanel = new ListPanel();
+        listPanel.initialize();
+        panelCache.put("LIST", listPanel);
+        LogHandler.getInstance().log(Level.INFO, LogType.SYSTEM, "リストパネルを初期化完了");
+
+        // 詳細パネルの初期化
+        this.detailPanel = new DetailPanel();
+        detailPanel.initialize();
+        panelCache.put("DETAIL", detailPanel);
+        LogHandler.getInstance().log(Level.INFO, LogType.SYSTEM, "ディテールパネルを初期化完了");
+
+        // 新規追加パネルの初期化
+        this.addPanel = new AddPanel();
+        addPanel.initialize();
+        panelCache.put("ADD", addPanel);
+        LogHandler.getInstance().log(Level.INFO, LogType.SYSTEM, "追加パネルを初期化完了");
+
+        LogHandler.getInstance().log(Level.INFO, LogType.SYSTEM,
+                "画面遷移コントローラーを初期化完了 - 全パネル数: " + panelCache.size());
     }
 
     /**
@@ -85,14 +103,18 @@ public class ScreenTransitionController {
     public void setMainController(MainController mainController) {
         this.mainController = mainController;
 
-        // すでに作成済みのパネルにコントローラーを設定
-        if (addPanel != null) {
-            addPanel.setMainController(mainController);
-        }
+        // 全パネルにコントローラーを設定
         if (listPanel != null) {
             listPanel.setMainController(mainController);
         }
-        LogHandler.getInstance().log(Level.INFO, LogType.SYSTEM, "メインコントローラーを設定");
+        if (detailPanel != null) {
+            detailPanel.setMainController(mainController);
+        }
+        if (addPanel != null) {
+            addPanel.setMainController(mainController);
+        }
+
+        LogHandler.getInstance().log(Level.INFO, LogType.SYSTEM, "全パネルにメインコントローラーを設定");
     }
 
     /**
@@ -131,7 +153,7 @@ public class ScreenTransitionController {
         try {
             SwingUtilities.invokeLater(() -> {
                 try {
-                    JPanel panel = getOrCreatePanel(panelTypeId);
+                    JPanel panel = getPanel(panelTypeId);
                     if (panel != null) {
                         // AddPanelが表示される際にフィールドをクリア
                         if ("ADD".equals(panelType.getId()) && panel instanceof AddPanel) {
@@ -170,7 +192,6 @@ public class ScreenTransitionController {
         }
     }
 
-    // ScreenTransitionControllerにメソッドを追加
     public void showPanelWithCallback(PanelType panelType, Runnable callback) {
         // パネルタイプがnullの場合は処理しない
         if (panelType == null) {
@@ -189,9 +210,9 @@ public class ScreenTransitionController {
             // SwingのEDTで実行
             SwingUtilities.invokeLater(() -> {
                 try {
-                    // パネルの取得（キャッシュになければ新規作成）
+                    // パネルの取得（キャッシュから）
                     String panelTypeId = panelType.getId();
-                    JPanel panel = getOrCreatePanel(panelTypeId);
+                    JPanel panel = getPanel(panelTypeId);
 
                     if (panel != null) {
                         // アニメーションなしで直接表示
@@ -233,41 +254,14 @@ public class ScreenTransitionController {
      * 
      * @param panelTypeId パネルタイプID文字列
      * @param callback    コールバック
-     * 
      */
-
-    public void showPanelWithCallback(String panelTypeId,
-            Runnable callback) {
+    public void showPanelWithCallback(String panelTypeId, Runnable callback) {
         PanelType panelType = PanelType.fromId(panelTypeId);
         if (panelType != null) {
             showPanelWithCallback(panelType, callback);
         } else {
             LogHandler.getInstance().log(Level.WARNING,
                     LogType.SYSTEM, "未定義のパネルタイプID: " + panelTypeId);
-        }
-    }
-
-    /**
-     * 指定されたパネルタイプに対応するパネルをキャッシュから取得
-     *
-     * @param panelType パネルの識別子（例: "LIST", "ADD" など）
-     * @return 指定されたパネルに対応する JPanel、存在しない場合は null
-     */
-    public JPanel getPanelByType(String panelType) {
-        return panelCache.get(panelType);
-    }
-
-    /**
-     * 現在表示中のパネルが AddPanel である場合に、登録ボタンの有効／無効を切り替えます。
-     *
-     * @param enabled true で有効化、false で無効化
-     */
-    public void setRegisterButtonEnabled(boolean enabled) {
-        JPanel panel = getCurrentPanel();
-        if (panel instanceof AddPanel addPanel) {
-            addPanel.setRegisterButtonEnabled(enabled);
-        } else if (panel instanceof DetailPanel detailPanel) {
-            detailPanel.setUpdateButtonEnabled(enabled);
         }
     }
 
@@ -285,61 +279,19 @@ public class ScreenTransitionController {
     }
 
     /**
-     * パネルをキャッシュから取得、または新規作成
-     * 遅延初期化（Lazy Initialization）パターンでパネルを管理
+     * パネルをキャッシュから取得
+     * 事前初期化されたパネルを返す
      *
      * @param panelType パネルタイプ("LIST", "DETAIL", "ADD")
      * @return 対応するJPanelインスタンス、未対応の場合はnull
      */
-    private JPanel getOrCreatePanel(String panelType) {
-        // キャッシュにあれば取得
-        if (panelCache.containsKey(panelType)) {
-            return panelCache.get(panelType);
-        }
+    private JPanel getPanel(String panelType) {
+        // キャッシュから取得
+        JPanel panel = panelCache.get(panelType);
 
-        // キャッシュになければ新規作成
-        JPanel panel = null;
-        switch (panelType) {
-            case "LIST":
-                // 一覧パネル（すでにキャッシュにあるはずだが、念のため）
-                panel = listPanel;
-                break;
-
-            case "DETAIL":
-                /// 詳細パネル
-                DetailPanel detailPanel = new DetailPanel();
-                // コントローラーの設定
-                if (mainController != null) {
-                    detailPanel.setMainController(mainController);
-                }
-                // パネルの初期化
-                detailPanel.initialize();
-                panel = detailPanel;
-                LogHandler.getInstance().log(Level.INFO, LogType.SYSTEM, "ディテールパネルを作成");
-                break;
-
-            case "ADD":
-                // 新規追加パネル
-                if (addPanel == null) {
-                    addPanel = new AddPanel();
-                    // コントローラーの設定
-                    if (mainController != null) {
-                        addPanel.setMainController(mainController);
-                    }
-                    // パネルの初期化
-                    addPanel.initialize();
-                }
-                panel = addPanel;
-                break;
-
-            default:
-                LogHandler.getInstance().log(Level.WARNING, LogType.SYSTEM, "未定義のパネルタイプ: " + panelType);
-                return null;
-        }
-
-        // 作成したパネルをキャッシュに追加
-        if (panel != null) {
-            panelCache.put(panelType, panel);
+        if (panel == null) {
+            LogHandler.getInstance().log(Level.WARNING, LogType.SYSTEM,
+                    "パネルがキャッシュに存在しません: " + panelType);
         }
 
         return panel;
@@ -413,7 +365,6 @@ public class ScreenTransitionController {
         LogHandler.getInstance().log(Level.INFO, LogType.SYSTEM, "パネルキャッシュをクリア");
     }
 
-    // 追加するメソッド
     /**
      * キャッシュから特定タイプのパネルを取得
      * 
@@ -426,4 +377,74 @@ public class ScreenTransitionController {
         }
         return null;
     }
+
+    /**
+     * 指定されたパネルタイプに対応するパネルをキャッシュから取得
+     *
+     * @param panelType パネルの識別子（例: "LIST", "ADD" など）
+     * @return 指定されたパネルに対応する JPanel、存在しない場合は null
+     */
+    public JPanel getPanelByType(String panelType) {
+        return panelCache.get(panelType);
+    }
+
+    /**
+     * 現在表示中のパネルが AddPanel である場合に、登録ボタンの有効／無効を切り替えます。
+     *
+     * @param enabled true で有効化、false で無効化
+     */
+    public void setRegisterButtonEnabled(boolean enabled) {
+        // 現在表示中のパネルを処理
+        JPanel currentPanel = getCurrentPanel();
+        if (currentPanel instanceof AddPanel addPanel) {
+            addPanel.setRegisterButtonEnabled(enabled);
+            LogHandler.getInstance().log(Level.INFO, LogType.SYSTEM,
+                    "現在表示中のAddPanelのボタンを" + (enabled ? "有効化" : "無効化"));
+        } else if (currentPanel instanceof DetailPanel detailPanel) {
+            detailPanel.setUpdateButtonEnabled(enabled);
+            LogHandler.getInstance().log(Level.INFO, LogType.SYSTEM,
+                    "現在表示中のDetailPanelのボタンを" + (enabled ? "有効化" : "無効化"));
+        }
+
+        // キャッシュ内の全パネルも処理（事前初期化版の場合）
+        // AddPanelの処理
+        if (addPanel != null && addPanel != currentPanel) {
+            addPanel.setRegisterButtonEnabled(enabled);
+            LogHandler.getInstance().log(Level.INFO, LogType.SYSTEM,
+                    "キャッシュ内のAddPanelのボタンを" + (enabled ? "有効化" : "無効化"));
+        }
+
+        // DetailPanelの処理
+        if (detailPanel != null && detailPanel != currentPanel) {
+            detailPanel.setUpdateButtonEnabled(enabled);
+            LogHandler.getInstance().log(Level.INFO, LogType.SYSTEM,
+                    "キャッシュ内のDetailPanelのボタンを" + (enabled ? "有効化" : "無効化"));
+        }
+
+        // 遅延初期化版の場合のキャッシュチェック
+        JPanel cachedAddPanel = panelCache.get("ADD");
+        if (cachedAddPanel instanceof AddPanel && cachedAddPanel != currentPanel) {
+            ((AddPanel) cachedAddPanel).setRegisterButtonEnabled(enabled);
+            LogHandler.getInstance().log(Level.INFO, LogType.SYSTEM,
+                    "パネルキャッシュ内のAddPanelのボタンを" + (enabled ? "有効化" : "無効化"));
+        }
+
+        JPanel cachedDetailPanel = panelCache.get("DETAIL");
+        if (cachedDetailPanel instanceof DetailPanel && cachedDetailPanel != currentPanel) {
+            ((DetailPanel) cachedDetailPanel).setUpdateButtonEnabled(enabled);
+            LogHandler.getInstance().log(Level.INFO, LogType.SYSTEM,
+                    "パネルキャッシュ内のDetailPanelのボタンを" + (enabled ? "有効化" : "無効化"));
+        }
+    }
+
+    public void ensureAllPanelsInitialized() {
+    String[] panelTypes = {"LIST", "DETAIL", "ADD"};
+    for (String type : panelTypes) {
+        if (!panelCache.containsKey(type)) {
+            getPanel(type); // パネルを強制作成
+        }
+    }
+    LogHandler.getInstance().log(Level.INFO, LogType.SYSTEM, 
+        "全パネルの初期化を確認完了");
+}
 }

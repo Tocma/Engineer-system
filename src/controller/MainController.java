@@ -1506,6 +1506,12 @@ public class MainController {
         LogHandler.getInstance().log(Level.INFO, LogType.SYSTEM,
                 "ファイル読み込みが確認されました: " + fileName);
 
+        // 全パネルの初期化を確認
+        screenController.ensureAllPanelsInitialized();
+
+        // 取込処理開始時にAddPanelとDetailPanelのボタンを無効化
+        screenController.setRegisterButtonEnabled(false);
+
         // 非同期処理でCSVインポートを実行
         executeCSVImportWithResourceManager(selectedFile, currentPanel);
     }
@@ -1548,7 +1554,13 @@ public class MainController {
 
                     if (currentPanel instanceof ListPanel) {
                         ((ListPanel) currentPanel).clearStatus();
+                        ((ListPanel) currentPanel).setImportProcessing(false);
                     }
+
+                    // エラー時もボタンを有効化
+                    screenController.setRegisterButtonEnabled(true);
+                    LogHandler.getInstance().log(Level.INFO, LogType.SYSTEM,
+                            "取込エラー：AddPanel/DetailPanelのボタンを有効化");
                 });
             } finally {
                 // ResourceManagerを通じたリソースクリーンアップ
@@ -1594,6 +1606,8 @@ public class MainController {
                 if (currentPanel instanceof ListPanel) {
                     ((ListPanel) currentPanel).setImportProcessing(false);
                 }
+                // 致命的エラー時もボタンを有効化
+                screenController.setRegisterButtonEnabled(true);
             });
             return;
         }
@@ -1927,6 +1941,12 @@ public class MainController {
             // インポート処理完了状態をリセット
             listPanel.setImportProcessing(false);
         }
+
+        // 全パネルの初期化を確認
+        screenController.ensureAllPanelsInitialized();
+
+        // 取込処理完了時にAddPanelとDetailPanelのボタンを有効化
+        screenController.setRegisterButtonEnabled(true);
 
         // 詳細な完了メッセージを表示
         showDetailedImportResultWithAnalysis(importResult);

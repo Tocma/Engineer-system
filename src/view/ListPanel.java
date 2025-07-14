@@ -1,15 +1,16 @@
 package view;
 
-import model.EngineerDTO;
-import util.LogHandler;
-import util.LogHandler.LogType;
-import util.ListenerManager;
-import util.Constants.SystemConstants;
-import javax.swing.*;
-import javax.swing.table.DefaultTableModel;
-import javax.swing.table.TableRowSorter;
-import controller.MainController;
-import java.awt.*;
+import java.awt.BorderLayout;
+import java.awt.Color;
+import java.awt.FlowLayout;
+import java.awt.Font;
+import java.awt.FontMetrics;
+import java.awt.Graphics;
+import java.awt.Graphics2D;
+import java.awt.GridLayout;
+import java.awt.event.InputEvent;
+import java.awt.event.MouseAdapter;
+import java.awt.event.MouseEvent;
 import java.text.Collator;
 import java.text.DecimalFormat;
 import java.time.LocalDate;
@@ -22,9 +23,29 @@ import java.util.Locale;
 import java.util.Set;
 import java.util.logging.Level;
 import java.util.stream.Collectors;
-import java.awt.event.MouseEvent;
-import java.awt.event.MouseAdapter;
-import java.awt.event.InputEvent;
+
+import javax.swing.JButton;
+import javax.swing.JComboBox;
+import javax.swing.JLabel;
+import javax.swing.JPanel;
+import javax.swing.JScrollPane;
+import javax.swing.JTable;
+import javax.swing.JTextField;
+import javax.swing.ListSelectionModel;
+import javax.swing.RowSorter;
+import javax.swing.SortOrder;
+import javax.swing.SwingConstants;
+import javax.swing.SwingUtilities;
+import javax.swing.SwingWorker;
+import javax.swing.table.DefaultTableModel;
+import javax.swing.table.TableRowSorter;
+
+import controller.MainController;
+import model.EngineerDTO;
+import util.ListenerManager;
+import util.LogHandler;
+import util.LogHandler.LogType;
+import util.Constants.SystemConstants;
 
 /**
  * エンジニア一覧を表示するパネルクラス（ListenerManager統合版）
@@ -193,7 +214,7 @@ public class ListPanel extends JPanel {
      * UIコンポーネントの配置と初期設定
      * 
      */
-    private void initialize() {
+    public void initialize() {
         try {
             // 上部パネル（タイトルと操作ボタン）
             add(createTopPanel(), BorderLayout.NORTH);
