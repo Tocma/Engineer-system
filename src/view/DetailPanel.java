@@ -407,7 +407,7 @@ public class DetailPanel extends AbstractEngineerPanel {
 
             // 登録日の設定
             if (currentEngineer.getRegisteredDate() != null) {
-                registeredDateLabel.setText("登録日: " +
+                registeredDateLabel.setText("最新登録日: " +
                         currentEngineer.getRegisteredDate().format(DateTimeFormatter.ofPattern("yyyy年MM月dd日")));
             }
 
