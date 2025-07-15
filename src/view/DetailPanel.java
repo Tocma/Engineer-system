@@ -368,17 +368,21 @@ public class DetailPanel extends AbstractEngineerPanel {
             String careerHistory = currentEngineer.getCareerHistory();
             if (careerHistory != null) {
                 careerHistoryArea.setText(restoreNewlines(careerHistory));
-                // テキストエリアの更新を確実に行う
-                careerHistoryArea.setCaretPosition(0);
+            } else {
+                careerHistoryArea.setText(""); // 空文字列を明示的に設定
             }
+            // テキストエリアの更新を確実に行う
+            careerHistoryArea.setCaretPosition(0);
 
             // 研修の受講歴の設定（Unicode文字を確実に表示）
             String trainingHistory = currentEngineer.getTrainingHistory();
             if (trainingHistory != null) {
                 trainingHistoryArea.setText(restoreNewlines(trainingHistory));
-                // テキストエリアの更新を確実に行う
-                trainingHistoryArea.setCaretPosition(0);
+            } else {
+                trainingHistoryArea.setText(""); // 空文字列を明示的に設定
             }
+            // テキストエリアの更新を確実に行う
+            trainingHistoryArea.setCaretPosition(0);
 
             // スキル評価の設定
             if (currentEngineer.getTechnicalSkill() != null) {
@@ -406,9 +410,11 @@ public class DetailPanel extends AbstractEngineerPanel {
             String note = currentEngineer.getNote();
             if (note != null) {
                 noteArea.setText(restoreNewlines(note));
-                // テキストエリアの更新を確実に行う
-                noteArea.setCaretPosition(0);
+            } else {
+                noteArea.setText(""); // 空文字列を明示的に設定
             }
+            // テキストエリアの更新を確実に行う
+            noteArea.setCaretPosition(0);
 
             // 登録日の設定
             if (currentEngineer.getRegisteredDate() != null) {
