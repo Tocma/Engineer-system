@@ -123,6 +123,8 @@ public class LogHandler {
                 throw new IOException("ログハンドラーは既に別のプロセスで使用中です");
             }
 
+            // JVMの終了時にファイルを削除するように登録
+            lockFilePath.toFile().deleteOnExit();
             System.out.println("ログファイルロックを取得: " + lockFilePath);
 
         } catch (IOException e) {
@@ -392,8 +394,34 @@ public class LogHandler {
         cleanupExistingFileHandler();
         releaseLogFileLock();
 
+        deleteLockFiles();
+
         isInitialized = false;
         System.out.println("ログシステムのクリーンアップ完了");
+    }
+
+    /**
+     * アプリケーション終了時にロックファイルを削除します。
+     */
+    private void deleteLockFiles() {
+        if (logDirectory == null) {
+            return;
+        }
+
+        // System-YYYY-MM-DD.log.lck の削除
+        try {
+            String logFileName = getCurrentLogFileName();
+            if (logFileName != null && !logFileName.isEmpty()) {
+                Path lckFilePath = Paths.get(logDirectory, logFileName + ".lck");
+                if (Files.exists(lckFilePath)) {
+                    Files.delete(lckFilePath);
+                    System.out.println(lckFilePath.getFileName() + " を削除しました。");
+                }
+            }
+        } catch (Exception e) {
+            // ファイル名取得でエラーになる可能性も考慮
+            System.err.println("ログの.lckファイルの削除に失敗しました: " + e.getMessage());
+        }
     }
 
     private void releaseLogFileLock() {

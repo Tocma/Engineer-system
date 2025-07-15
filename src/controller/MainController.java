@@ -2219,7 +2219,12 @@ public class MainController {
                 "ステップ4: 最終終了処理を開始");
 
         try {
-            // ウィンドウを閉じる（MainFrameが存在する場合）
+            // 先にログシステムのクリーンアップを実行する
+            LogHandler.getInstance().log(Level.INFO, LogType.SYSTEM,
+                    "統合シャットダウン処理が正常に完了");
+            LogHandler.getInstance().cleanup();
+
+            // ウィンドウを閉じる
             if (mainFrame != null) {
                 mainFrame.getJFrame().dispose();
                 LogHandler.getInstance().log(Level.INFO, LogType.SYSTEM,
@@ -2228,11 +2233,6 @@ public class MainController {
 
             // 終了処理完了フラグを設定
             isShutdownCompleted.set(true);
-
-            // ログシステムの最終クリーンアップ（一度だけ実行）
-            LogHandler.getInstance().log(Level.INFO, LogType.SYSTEM,
-                    "統合シャットダウン処理が正常に完了");
-            LogHandler.getInstance().cleanup();
 
             // JVMの正常終了
             System.exit(0);
