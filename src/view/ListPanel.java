@@ -625,11 +625,13 @@ public class ListPanel extends JPanel {
         // 社員ID
         searchPanel.add(new JLabel("社員ID:"));
         idField = new PlaceholderTextField("5桁の数値");
+        idField.setColumns(7);
         searchPanel.add(idField);
 
         // 氏名
         searchPanel.add(new JLabel("氏名:"));
         nameField = new PlaceholderTextField("20文字以内");
+        nameField.setColumns(8);
         searchPanel.add(nameField);
 
         // 生年月日
