@@ -63,6 +63,9 @@ public class DetailPanel extends AbstractEngineerPanel {
     /** フォーム変更フラグ */
     private boolean formModified = false;
 
+    /** リスナー初期化完了フラグ */
+    private boolean listenersInitialized = false;
+
     /**
      * コンストラクタ
      * パネルの初期設定とコンポーネントの初期化
@@ -194,7 +197,8 @@ public class DetailPanel extends AbstractEngineerPanel {
 
         // 更新ボタン
         updateButton = new JButton("保存");
-        updateButton.setEnabled(false); // 初期状態では無効化
+        // 初期状態では必ず非活性
+        resetButtonState();
         updateButton.addActionListener(_e -> {
             if (!processing) {
                 updateEngineer();
@@ -208,6 +212,10 @@ public class DetailPanel extends AbstractEngineerPanel {
      * フィールドの変更を検知して更新ボタンの状態を制御
      */
     private void setupChangeListeners() {
+        // 既にリスナーが設定済みの場合は重複登録を防ぐ
+        if (listenersInitialized) {
+            return;
+        }
         // テキストフィールドの変更リスナー
         DocumentListener documentListener = new DocumentListener() {
             @Override
@@ -234,7 +242,7 @@ public class DetailPanel extends AbstractEngineerPanel {
         noteArea.getDocument().addDocumentListener(documentListener);
 
         // コンボボックスにリスナー追加
-        ActionListener comboListener = _e -> setFormModified(true);
+        ActionListener comboListener = _e -> onFormChanged();
 
         birthYearComboBox.addActionListener(comboListener);
         birthMonthComboBox.addActionListener(comboListener);
@@ -248,10 +256,41 @@ public class DetailPanel extends AbstractEngineerPanel {
         leadershipComboBox.addActionListener(comboListener);
 
         // 言語選択コンボボックスのリスナー設定
-        languageComboBox.addActionListener(_e -> setFormModified(true));
+        languageComboBox.addActionListener(_e -> onFormChanged());
+
+        // リスナー初期化完了フラグを設定
+        listenersInitialized = true;
 
         LogHandler.getInstance().log(Level.INFO, LogType.UI,
                 "フォーム変更リスナーを設定しました。保存ボタン状態: " + (updateButton.isEnabled() ? "有効" : "無効"));
+    }
+
+    /**
+     * フォーム変更時の処理
+     * 入力があった場合に保存ボタンを活性化
+     */
+    private void onFormChanged() {
+        if (!formModified) {
+            formModified = true;
+            SwingUtilities.invokeLater(() -> {
+                updateButton.setEnabled(true);
+                LogHandler.getInstance().log(Level.INFO, LogType.UI,
+                        "フォーム変更を検知: 保存ボタンを有効化");
+            });
+        }
+    }
+
+    /**
+     * ボタン状態をリセット
+     * 初期化時およびデータ設定時に保存ボタンを非活性化
+     */
+    private void resetButtonState() {
+        formModified = false;
+        SwingUtilities.invokeLater(() -> {
+            updateButton.setEnabled(false);
+            LogHandler.getInstance().log(Level.INFO, LogType.UI,
+                    "保存ボタン状態をリセット: 非活性");
+        });
     }
 
     /**
@@ -281,12 +320,8 @@ public class DetailPanel extends AbstractEngineerPanel {
         this.currentEngineer = engineer;
         updateFieldsWithEngineerData();
 
-        // リスナーを設定する前に明示的にボタンを無効化
-        formModified = false;
-        updateButton.setEnabled(false);
-
-        // データロード後にリスナーを設定
-        setupChangeListeners();
+        // データ設定後に明示的にボタン状態をリセット
+        resetButtonState();
 
         LogHandler.getInstance().log(Level.INFO, LogType.UI,
                 String.format("エンジニア情報を表示: ID=%s, 名前=%s", engineer.getId(), engineer.getName()));
