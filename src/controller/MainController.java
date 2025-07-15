@@ -26,6 +26,7 @@ import model.EngineerCSVDAO;
 import model.EngineerDTO;
 import service.CSVExportService;
 import service.EngineerSearchService;
+import util.FileUtils;
 import util.LogHandler;
 import util.LogHandler.LogType;
 import util.PerformanceMonitor;
@@ -1044,7 +1045,7 @@ public class MainController {
 
             // ResourceManagerを活用したファイル選択処理
             // デフォルトのデータディレクトリを初期表示ディレクトリとして使用
-            File selectedFile = selectTemplateFileWithResourceManager("エンジニア情報テンプレート.csv");
+            File selectedFile = exportTemplateFileWithResourceManager("エンジニア情報テンプレート.csv");
             if (selectedFile == null) {
                 return;
             }
@@ -1077,77 +1078,47 @@ public class MainController {
 
     /**
      * ResourceManagerを活用したテンプレート出力用ファイル選択処理
-     * ユーザビリティの向上と一貫したファイル操作を実現
+     * 重複ファイル名の自動回避機能を追加
      * 
      * @param defaultFileName デフォルトファイル名
      * @return 選択されたファイル、キャンセル時はnull
      */
-    private File selectTemplateFileWithResourceManager(String defaultFileName) {
-        File selectedFile = null;
+    private File exportTemplateFileWithResourceManager(String defaultFileName) {
+        JFileChooser fileChooser = new JFileChooser(System.getProperty("user.dir"));
+        fileChooser.setDialogTitle("テンプレートCSV出力先");
+        fileChooser.setSelectedFile(new File(defaultFileName));
 
-        while (true) {
-            JFileChooser fileChooser = new JFileChooser(System.getProperty("user.dir"));
-            fileChooser.setDialogTitle("テンプレートCSV出力先");
+        LogHandler.getInstance().log(Level.INFO, LogType.SYSTEM, "出力先選択画面を表示");
+        int userSelection = fileChooser.showSaveDialog(listPanel);
 
-            fileChooser.setSelectedFile(new File(defaultFileName));
-
-            LogHandler.getInstance().log(Level.INFO, LogType.SYSTEM, "出力先選択画面を表示");
-            int userSelection = fileChooser.showSaveDialog(listPanel);
-
-            if (userSelection != JFileChooser.APPROVE_OPTION) {
-                LogHandler.getInstance().log(Level.INFO, LogType.SYSTEM, "テンプレート出力がキャンセルされました");
-                return null;
-            }
-
-            selectedFile = fileChooser.getSelectedFile();
-
-            // 拡張子の自動付加
-            if (!selectedFile.getName().toLowerCase().endsWith(".csv")) {
-                selectedFile = new File(selectedFile.getAbsolutePath() + ".csv");
-            }
-
-            // ResourceManagerを活用したファイル検証
-            // 統一されたバリデーションロジックを使用
-            FileValidationResult validation = validateFileSelectionWithResourceManager(selectedFile);
-            if (!validation.isValid()) {
-                DialogManager.getInstance().showErrorDialog("エラー", validation.getErrorMessage());
-                continue;
-            }
-
-            // 上書き確認処理
-            if (selectedFile.exists()) {
-                if (!confirmTemplateOverwrite(selectedFile)) {
-                    continue;
-                }
-            }
-
-            break;
+        if (userSelection != JFileChooser.APPROVE_OPTION) {
+            LogHandler.getInstance().log(Level.INFO, LogType.SYSTEM, "テンプレート出力がキャンセルされました");
+            return null;
         }
 
-        return selectedFile;
-    }
+        File selectedFile = fileChooser.getSelectedFile();
 
-    /**
-     * テンプレートファイル上書き確認処理
-     * 
-     * @param file 上書き対象ファイル
-     * @return 上書き許可の場合true
-     */
-    private boolean confirmTemplateOverwrite(File file) {
-        LogHandler.getInstance().log(Level.INFO, LogType.SYSTEM,
-                "保存場所に同一名ファイルが存在したため、上書き確認ダイアログを表示");
+        // 拡張子の自動付加
+        if (!selectedFile.getName().toLowerCase().endsWith(".csv")) {
+            selectedFile = new File(selectedFile.getAbsolutePath() + ".csv");
+        }
 
-        int overwriteConfirm = JOptionPane.showConfirmDialog(
-                null,
-                "ファイル" + file.getName() + "は既に存在します。上書きしますか？",
-                "上書き確認",
-                JOptionPane.YES_NO_OPTION);
+        // ResourceManagerを活用したファイル検証
+        FileValidationResult validation = validateFileSelectionWithResourceManager(selectedFile);
+        if (!validation.isValid()) {
+            DialogManager.getInstance().showErrorDialog("エラー", validation.getErrorMessage());
+            return null;
+        }
 
-        boolean confirmed = (overwriteConfirm == JOptionPane.YES_OPTION);
-        LogHandler.getInstance().log(Level.INFO, LogType.SYSTEM,
-                confirmed ? "ファイルの上書きが許可されました" : "上書き保存が許可されませんでした");
+        // 重複ファイル名の自動回避処理
+        File finalFile = FileUtils.generateUniqueFileName(selectedFile);
 
-        return confirmed;
+        if (!finalFile.equals(selectedFile)) {
+            LogHandler.getInstance().log(Level.INFO, LogType.SYSTEM,
+                    "重複ファイルを検出し、自動的に名前を変更: " + selectedFile.getName() + " → " + finalFile.getName());
+        }
+
+        return finalFile;
     }
 
     /**
@@ -1200,7 +1171,7 @@ public class MainController {
 
         startAsyncTask("export_engineers", () -> {
             // ResourceManagerを活用したファイル選択とバリデーション
-            File selectedFile = selectExportFileWithResourceManager("エンジニア情報-" + LocalDate.now() + ".csv");
+            File selectedFile = exportFileWithResourceManager("エンジニア情報-" + LocalDate.now() + ".csv");
             if (selectedFile == null) {
                 return; // ユーザーがキャンセルした場合
             }
@@ -1212,51 +1183,45 @@ public class MainController {
 
     /**
      * ResourceManagerを活用したCSV出力用ファイル選択処理
-     * 一貫したユーザーエクスペリエンスとエラーハンドリング
+     * 重複ファイル名の自動回避機能を追加
      * 
      * @param defaultFileName デフォルトファイル名
      * @return 選択されたファイル、キャンセル時はnull
      */
-    private File selectExportFileWithResourceManager(String defaultFileName) {
-        File selectedFile = null;
+    private File exportFileWithResourceManager(String defaultFileName) {
+        JFileChooser fileChooser = new JFileChooser(System.getProperty("user.dir"));
+        fileChooser.setDialogTitle("CSVファイルの保存先");
+        fileChooser.setSelectedFile(new File(defaultFileName));
 
-        while (true) {
-            JFileChooser fileChooser = new JFileChooser(System.getProperty("user.dir"));
-            fileChooser.setDialogTitle("CSVファイルの保存先");
-
-            fileChooser.setSelectedFile(new File(defaultFileName));
-
-            int result = fileChooser.showSaveDialog(listPanel);
-            if (result != JFileChooser.APPROVE_OPTION) {
-                LogHandler.getInstance().log(Level.INFO, LogType.SYSTEM, "CSV出力がキャンセルされました");
-                return null;
-            }
-
-            selectedFile = fileChooser.getSelectedFile();
-
-            // 拡張子の自動付加
-            if (!selectedFile.getName().toLowerCase().endsWith(".csv")) {
-                selectedFile = new File(selectedFile.getAbsolutePath() + ".csv");
-            }
-
-            // ResourceManagerを活用したファイル名妥当性検証
-            FileValidationResult validation = validateFileSelectionWithResourceManager(selectedFile);
-            if (!validation.isValid()) {
-                DialogManager.getInstance().showErrorDialog("エラー", validation.getErrorMessage());
-                continue;
-            }
-
-            // 上書き確認処理
-            if (selectedFile.exists()) {
-                if (!confirmFileOverwrite(selectedFile)) {
-                    continue; // 上書き拒否の場合は再選択
-                }
-            }
-
-            break; // 全ての検証をクリアした場合
+        int result = fileChooser.showSaveDialog(listPanel);
+        if (result != JFileChooser.APPROVE_OPTION) {
+            LogHandler.getInstance().log(Level.INFO, LogType.SYSTEM, "CSV出力がキャンセルされました");
+            return null;
         }
 
-        return selectedFile;
+        File selectedFile = fileChooser.getSelectedFile();
+
+        // 拡張子の自動付加
+        if (!selectedFile.getName().toLowerCase().endsWith(".csv")) {
+            selectedFile = new File(selectedFile.getAbsolutePath() + ".csv");
+        }
+
+        // ResourceManagerを活用したファイル名妥当性検証
+        FileValidationResult validation = validateFileSelectionWithResourceManager(selectedFile);
+        if (!validation.isValid()) {
+            DialogManager.getInstance().showErrorDialog("エラー", validation.getErrorMessage());
+            return null;
+        }
+
+        // 重複ファイル名の自動回避処理
+        File finalFile = FileUtils.generateUniqueFileName(selectedFile);
+
+        if (!finalFile.equals(selectedFile)) {
+            LogHandler.getInstance().log(Level.INFO, LogType.SYSTEM,
+                    "重複ファイルを検出し、自動的に名前を変更: " + selectedFile.getName() + " → " + finalFile.getName());
+        }
+
+        return finalFile;
     }
 
     /**
@@ -1299,29 +1264,6 @@ public class MainController {
             return new FileValidationResult(false,
                     "ファイル検証中にエラーが発生: " + _e.getMessage());
         }
-    }
-
-    /**
-     * ファイル上書き確認処理
-     * 
-     * @param file 上書き対象ファイル
-     * @return 上書き許可の場合true
-     */
-    private boolean confirmFileOverwrite(File file) {
-        LogHandler.getInstance().log(Level.INFO, LogType.SYSTEM,
-                "保存場所に同一名ファイルが存在したため、上書き確認ダイアログを表示");
-
-        int overwrite = JOptionPane.showConfirmDialog(
-                listPanel,
-                "ファイル " + file.getName() + " は既に存在します。上書きしますか？",
-                "上書き確認",
-                JOptionPane.YES_NO_OPTION);
-
-        boolean confirmed = (overwrite == JOptionPane.YES_OPTION);
-        LogHandler.getInstance().log(Level.INFO, LogType.SYSTEM,
-                confirmed ? "CSV出力ファイルの上書きが許可されました" : "上書き保存が許可されませんでした");
-
-        return confirmed;
     }
 
     /**
