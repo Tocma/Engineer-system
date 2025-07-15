@@ -517,7 +517,7 @@ public class ListPanel extends JPanel {
         String[] years = new String[87];
         years[0] = "";
         DecimalFormat df = new DecimalFormat("0");
-        int startYear = 1940;
+        int startYear = 1950;
         for (int yearIndex = 1; yearIndex < years.length; yearIndex++) {
             years[yearIndex] = df.format(startYear + (yearIndex - 1));
         }
