@@ -317,6 +317,11 @@ public class DetailPanel extends AbstractEngineerPanel {
             return;
         }
 
+        // エラー状態を完全にクリア
+        clearAllComponentErrors();
+        clearAllFieldErrors();
+        clearErrorMessage();
+
         this.currentEngineer = engineer;
         updateFieldsWithEngineerData();
 
