@@ -693,25 +693,41 @@ public class ListPanel extends JPanel {
         statusLabel.setText("検索中・・・");
         setUIComponentsEnabled(false);
 
-        MainController.SearchResult result = mainController.searchEngineers(criteria);
+        // SwingWorkerを使用してバックグラウンドで検索を実行
+        SwingWorker<MainController.SearchResult, Void> worker = new SwingWorker<>() {
+            @Override
+            protected MainController.SearchResult doInBackground() throws Exception {
+                // バックグラウンドスレッドで重い処理を実行
+                return mainController.searchEngineers(criteria);
+            }
 
-        if (result.hasErrors()) {
-            DialogManager.getInstance().showValidationErrorDialog(result.getErrors());
-            setUIComponentsEnabled(true);
-            statusLabel.setText("");
-            return;
-        }
+            @Override
+            protected void done() {
+                try {
+                    // UIの更新はEDTで行う
+                    MainController.SearchResult result = get();
+                    if (result.hasErrors()) {
+                        DialogManager.getInstance().showValidationErrorDialog(result.getErrors());
+                    } else {
+                        List<EngineerDTO> searchResults = result.getResults();
+                        if (searchResults.isEmpty()) {
+                            DialogManager.getInstance().showInfoDialog("検索結果", "該当するエンジニアは見つかりませんでした。");
+                        }
+                        updateSearchResults(searchResults);
+                    }
+                } catch (Exception e) {
+                    LogHandler.getInstance().logError(LogType.UI, "検索処理中にエラーが発生", e);
+                    DialogManager.getInstance().showErrorDialog("検索エラー", "検索処理中にエラーが発生しました。");
+                } finally {
+                    // 処理が完了したらUIの状態を元に戻す
+                    setUIComponentsEnabled(true);
+                    statusLabel.setText("");
+                    endSearchButton.setVisible(true);
+                }
+            }
+        };
 
-        List<EngineerDTO> searchResults = result.getResults();
-
-        if (searchResults.isEmpty()) {
-            DialogManager.getInstance().showInfoDialog("検索結果", "該当するエンジニアは見つかりませんでした。");
-        }
-
-        updateSearchResults(searchResults);
-        setUIComponentsEnabled(true);
-        statusLabel.setText("");
-        endSearchButton.setVisible(true);
+        worker.execute(); // SwingWorkerを開始
     }
 
     /**

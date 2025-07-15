@@ -33,7 +33,7 @@ public class EngineerSearchService {
     }
 
     /**
-     * エンジニア検索処理（強化版）
+     * エンジニア検索処理
      * 共通の前処理・バリデーション機能を使用
      * 
      * @param searchCriteria 検索条件
@@ -42,7 +42,7 @@ public class EngineerSearchService {
     public SearchResult searchEngineers(SearchCriteria searchCriteria) {
         try {
             LogHandler.getInstance().log(Level.INFO, LogType.SYSTEM,
-                    "エンジニア検索処理を開始します（強化版）");
+                    "エンジニア検索処理を開始します");
 
             // 共通の前処理・バリデーション実行
             SearchValidationResult validationResult = searchValidationService
