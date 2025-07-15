@@ -36,6 +36,7 @@ public final class CSVConstants {
     public static final String LANGUAGE_DELIMITER = props.getString("csv.delimiter.language", ";");
     public static final String FIELD_DELIMITER = props.getString("csv.delimiter.field", ",");
     public static final String DATE_FORMAT_PATTERN = props.getString("csv.date.format", "yyyy-MM-dd");
+    public static final String JOIN_DATE_FORMAT_PATTERN = props.getString("csv.joindate.format", "yyyy-MM");
     public static final int CSV_SPLIT_LIMIT = props.getInt("csv.split.limit", -1);
 
     // ========== CSV列インデックス ==========
