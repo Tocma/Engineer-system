@@ -645,8 +645,8 @@ public class TestCoreSystem {
                     // 読み込み完了を遅延して通知（非同期処理のため）
                     new Thread(() -> {
                         try {
-                            // 読み込み完了までの待機時間
-                            Thread.sleep(3000);
+                            // 読み込み完了までの待機時間を遅延させる
+                            Thread.sleep(1000);
                             dataLoadLatch.countDown();
                         } catch (InterruptedException _e) {
                             Thread.currentThread().interrupt();
@@ -663,7 +663,7 @@ public class TestCoreSystem {
             boolean dataLoadComplete = dataLoadLatch.await(30, TimeUnit.SECONDS);
 
             if (!dataLoadComplete) {
-                testReport.append("❌ データ読み込みプロセスがタイムアウトしました (30秒)\n");
+                testReport.append("データ読み込みプロセスがタイムアウトしました (30秒)\n");
                 failTest("データ読み込みタイムアウト");
                 return false;
             }

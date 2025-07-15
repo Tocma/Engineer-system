@@ -51,10 +51,10 @@ public final class SystemConstants {
 
     // ========== スレッド・タイムアウト設定 ==========
     /** スレッド終了待機時間（ミリ秒） */
-    public static final long THREAD_TERMINATION_TIMEOUT = props.getLong("thread.termination.timeout", 5000L);
+    public static final long THREAD_TERMINATION_TIMEOUT = props.getLong("thread.termination.timeout", 50000L);
 
     /** 非同期処理デフォルトタイムアウト（ミリ秒） */
-    public static final long ASYNC_OPERATION_TIMEOUT = props.getLong("thread.async.operation.timeout", 30000L);
+    public static final long ASYNC_OPERATION_TIMEOUT = props.getLong("thread.async.operation.timeout", 50000L);
 
     /** ワーカースレッドプールサイズ */
     public static final int WORKER_THREAD_POOL_SIZE = props.getInt("thread.worker.pool.size", 5);
