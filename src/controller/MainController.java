@@ -983,7 +983,7 @@ public class MainController {
                     "削除中のため詳細画面に遷移しません: ID=" + engineerId);
             return;
         }
-        // ★ListPanelから削除中フラグを取得（この行だけ追加）
+        // ListPanelから削除中フラグを取得（この行だけ追加）
         final boolean isCurrentlyDeleting;
         JPanel listPanelRaw = screenController.getPanelByType("LIST");
         if (listPanelRaw instanceof ListPanel listPanel) {
@@ -1003,7 +1003,7 @@ public class MainController {
                         // エンジニア情報を設定
                         detailPanel.setEngineerData(engineer);
 
-                        // ★更新ボタンを削除中なら無効化（この行だけ追加）
+                        // 更新ボタンを削除中なら無効化（この行だけ追加）
                         detailPanel.setUpdateButtonEnabled(!isCurrentlyDeleting);
 
                         LogHandler.getInstance().log(Level.INFO, LogType.SYSTEM,

@@ -1,15 +1,17 @@
 // src/controller/EngineerController.java（修正版）
 package controller;
 
+import java.util.List;
+import java.util.logging.Level;
+import java.util.stream.Collectors;
+
+import javax.swing.SwingUtilities;
+
 import model.EngineerDTO;
 import service.EngineerService;
 import util.LogHandler;
 import util.LogHandler.LogType;
 import view.DialogManager;
-import java.util.List;
-import java.util.logging.Level;
-import java.util.stream.Collectors;
-import javax.swing.SwingUtilities;
 
 /**
  * エンジニア情報に関する操作を制御するコントローラークラス
@@ -95,7 +97,6 @@ public class EngineerController {
      */
     public void deleteEngineers(List<EngineerDTO> targetList, Runnable onFinish) {
         try {
-            Thread.sleep(3000);
 
             List<String> ids = targetList.stream()
                     .map(EngineerDTO::getId)
@@ -103,8 +104,23 @@ public class EngineerController {
 
             boolean success = engineerService.delete(ids);
 
+            // 削除に成功した場合はログ出力
+            if (success) {
+                LogHandler.getInstance().log(Level.INFO, LogType.SYSTEM,
+                        "エンジニア情報を削除しました: ID=" + ids + "氏名=" +
+                                targetList.stream()
+                                        .map(EngineerDTO::getName)
+                                        .collect(Collectors.joining(", ")));
+            }
+
             if (!success) {
+                LogHandler.getInstance().log(Level.WARNING, LogType.SYSTEM,
+                        "エンジニア情報を削除しました: ID=" + ids + "氏名=" +
+                                targetList.stream()
+                                        .map(EngineerDTO::getName)
+                                        .collect(Collectors.joining(", ")));
                 throw new RuntimeException("削除処理に失敗しました");
+
             }
 
         } catch (Exception _e) {
