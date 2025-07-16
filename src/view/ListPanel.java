@@ -1302,18 +1302,12 @@ public class ListPanel extends JPanel {
             setButtonsEnabled(false);
             setStatus("CSVファイル読み込み中...");
 
-            // 検索機能も無効化
-            setUIComponentsEnabled(false);
-
             LogHandler.getInstance().log(Level.INFO, LogType.UI,
                     "インポート処理開始：UIコンポーネントを無効化");
         } else {
             // インポート処理完了後はボタンを有効化
             setButtonsEnabled(true);
             clearStatus();
-
-            // 検索機能も有効化
-            setUIComponentsEnabled(true);
 
             // ボタン状態を再評価（選択状態に応じて）
             updateButtonState();
