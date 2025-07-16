@@ -1173,8 +1173,6 @@ public class ListPanel extends JPanel {
             LogHandler.getInstance().log(Level.INFO, LogType.UI,
                     String.format("選択件数が変更されました: %d → %d件", previousSelectionCount, currentSelectionCount));
         }
-
-        checkSelectionLimit(currentSelectionCount);
     }
 
     /**
@@ -1238,19 +1236,6 @@ public class ListPanel extends JPanel {
      */
     private void clearSelection() {
         selectedEngineerIds.clear();
-    }
-
-    /**
-     * 選択件数が上限を超えた場合の警告
-     */
-    private void checkSelectionLimit(int currentSelectionCount) {
-        if (currentSelectionCount > 100) {
-            DialogManager.getInstance().showWarningDialog(
-                    "選択数が上限を超えています",
-                    String.format("%d件選択しています。一度に選択できるのは100件以下です。", currentSelectionCount));
-            LogHandler.getInstance().log(Level.WARNING, LogType.UI,
-                    String.format("選択件数が上限を超えています: %d件", currentSelectionCount));
-        }
     }
 
     /**
