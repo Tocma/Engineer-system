@@ -338,7 +338,7 @@ case $EXIT_CODE in
         echo
         get_process_details
         
-        show_dialog "重複起動エラー" "既にアプリケーションが起動しています。\n\nDockまたはアクティビティモニタで既存のアプリケーションを確認してください。" "了解"
+        show_dialog "エンジニア人材管理システム" "既にアプリケーションが起動しています。\n対処方法：\n1. タスクバーで既存アプリを確認\n2. タスクマネージャーでプロセス終了\nポート番号: %LOCK_PORT%" "OK"
         
         send_notification "$APP_NAME" "重複起動エラー: 既にアプリケーションが起動しています" "Basso"
         ;;
