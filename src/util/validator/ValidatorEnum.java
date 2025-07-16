@@ -85,7 +85,7 @@ public enum ValidatorEnum {
          * 0年目から50年目までの整数値
          */
         CAREER("career", () -> new CareerValidator("career",
-                        MessageEnum.VALIDATION_ERROR_CAREER.getMessage(), 0, 50)),
+                        MessageEnum.VALIDATION_ERROR_CAREER.getMessage(), 1, 50)),
 
         /**
          * プログラミング言語選択の検証

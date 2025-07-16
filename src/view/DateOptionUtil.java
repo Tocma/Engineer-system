@@ -199,14 +199,14 @@ public final class DateOptionUtil {
     /**
      * エンジニア歴の選択肢を生成
      * 
-     * @return エンジニア歴の選択肢配列（空文字 + 0-50年）
+     * @return エンジニア歴の選択肢配列（空文字 + 1-50年）
      */
     public static String[] getCareerOptions() {
-        String[] careers = new String[52]; // 空 + 0-50年
+        String[] careers = new String[52]; // 空 + 1-50年
         careers[0] = "";
 
-        for (int i = 0; i <= 50; i++) {
-            careers[i + 1] = String.valueOf(i);
+        for (int i = 1; i <= 50; i++) {
+            careers[i] = String.valueOf(i);
         }
 
         return careers;

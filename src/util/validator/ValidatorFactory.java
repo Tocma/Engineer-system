@@ -54,7 +54,7 @@ public final class ValidatorFactory {
                                 MessageEnum.VALIDATION_ERROR_JOIN_DATE.getMessage(), MIN_DATE, MAX_DATE));
 
                 validators.put("career", new CareerValidator("career",
-                                MessageEnum.VALIDATION_ERROR_CAREER.getMessage(), 0, 50));
+                                MessageEnum.VALIDATION_ERROR_CAREER.getMessage(), 1, 50));
 
                 validators.put("programmingLanguages", new ProgrammingLanguagesValidator("programmingLanguages",
                                 MessageEnum.VALIDATION_ERROR_PROGRAMMING_LANGUAGES.getMessage()));
@@ -110,7 +110,7 @@ public final class ValidatorFactory {
                                 MessageEnum.VALIDATION_ERROR_JOIN_DATE.getMessage(), MIN_DATE, MAX_DATE));
 
                 validators.put("career", new CareerValidator("career",
-                                MessageEnum.VALIDATION_ERROR_CAREER.getMessage(), 0, 50));
+                                MessageEnum.VALIDATION_ERROR_CAREER.getMessage(), 1, 50));
 
                 validators.put("programmingLanguages", new ProgrammingLanguagesValidator("programmingLanguages",
                                 MessageEnum.VALIDATION_ERROR_PROGRAMMING_LANGUAGES.getMessage()));
@@ -170,7 +170,7 @@ public final class ValidatorFactory {
                                 MessageEnum.VALIDATION_ERROR_JOIN_DATE.getMessage(), MIN_DATE, MAX_DATE));
 
                 validators.put("career", new CareerValidator("career",
-                                MessageEnum.VALIDATION_ERROR_CAREER.getMessage(), 0, 50));
+                                MessageEnum.VALIDATION_ERROR_CAREER.getMessage(), 1, 50));
 
                 validators.put("programmingLanguages", new ProgrammingLanguagesValidator("programmingLanguages",
                                 MessageEnum.VALIDATION_ERROR_PROGRAMMING_LANGUAGES.getMessage()));
