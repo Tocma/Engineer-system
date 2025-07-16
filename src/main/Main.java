@@ -5,6 +5,8 @@ import java.net.ServerSocket;
 import java.util.logging.Level;
 
 import javax.swing.SwingUtilities;
+import javax.swing.UIManager;
+import javax.swing.UnsupportedLookAndFeelException;
 
 import controller.MainController;
 import test.TestCoreSystem;
@@ -52,6 +54,29 @@ public class Main {
             System.out.println("設定プロパティの初期化を開始...");
             initializeProperties();
             System.out.println("設定プロパティの初期化完了");
+
+            // Look and Feelの設定
+            System.out.println("Look and Feelの設定を開始...");
+            try {
+                // Nimbus Look and Feelを設定（OS間でUIを統一）
+                for (UIManager.LookAndFeelInfo info : UIManager.getInstalledLookAndFeels()) {
+                    if ("Nimbus".equals(info.getName())) {
+                        UIManager.setLookAndFeel(info.getClassName());
+                        break;
+                    }
+                }
+            } catch (ClassNotFoundException | InstantiationException | IllegalAccessException
+                    | UnsupportedLookAndFeelException e) {
+                // Nimbusが利用できない場合は、システムデフォルトを使用
+                try {
+                    UIManager.setLookAndFeel(UIManager.getSystemLookAndFeelClassName());
+                } catch (Exception ex) {
+                    // エラーログを記録
+                    System.err.println("Look and Feelの設定に失敗: " + ex.getMessage());
+                }
+            }
+            System.out.println("Look and Feelの設定完了");
+
 
             // 2. 重複起動時のポート番号の確認（PropertiesManager初期化後）
             if (!acquireLock(SystemConstants.LOCK_PORT)) {
@@ -234,28 +259,28 @@ public class Main {
      * @return ロックの取得に成功した場合はtrue、失敗した場合はfalse
      */
     private static boolean acquireLock(int port) throws DuplicateInstanceException {
-    try {
-        lockSocket = new ServerSocket(port);
-        System.out.println("アプリケーションロックを取得（ポート: " + port + "）");
-        return true;
-    } catch (IOException _e) {
-        // コンソール出力のみ（GUIダイアログは削除）
-        System.err.println("重複起動が検出されました（ポート: " + port + "）");
-        System.err.println("既存のアプリケーションが実行中です。");
-        
-        // 重複起動例外をスローして起動スクリプト側で処理
-        throw new DuplicateInstanceException("ポート " + port + " は既に使用されています", _e);
-    }
-}
+        try {
+            lockSocket = new ServerSocket(port);
+            System.out.println("アプリケーションロックを取得（ポート: " + port + "）");
+            return true;
+        } catch (IOException _e) {
+            // コンソール出力のみ（GUIダイアログは削除）
+            System.err.println("重複起動が検出されました（ポート: " + port + "）");
+            System.err.println("既存のアプリケーションが実行中です。");
 
-/**
- * 重複起動検出用のカスタム例外
- */
-public static class DuplicateInstanceException extends Exception {
-    public DuplicateInstanceException(String message, Throwable cause) {
-        super(message, cause);
+            // 重複起動例外をスローして起動スクリプト側で処理
+            throw new DuplicateInstanceException("ポート " + port + " は既に使用されています", _e);
+        }
     }
-}
+
+    /**
+     * 重複起動検出用のカスタム例外
+     */
+    public static class DuplicateInstanceException extends Exception {
+        public DuplicateInstanceException(String message, Throwable cause) {
+            super(message, cause);
+        }
+    }
 
     /**
      * アプリケーションロックを解放
