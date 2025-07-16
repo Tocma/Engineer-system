@@ -91,6 +91,10 @@ if %EXIT_CODE% equ 0 (
     echo 既存のアプリケーションを終了してから
     echo 再度起動してください。
     echo.
+    
+    REM 終了コードを確認し、1だった場合にエラーダイアログを表示
+    mshta "javascript:alert('エンジニア人材管理システム\n既にアプリケーションが起動しています。\n対処方法：\n1. タスクバーで既存アプリを確認\n2. タスクマネージャーでプロセス終了\nポート番号: %LOCK_PORT%');close();"
+    
     pause
 ) else (
     echo.
@@ -100,6 +104,10 @@ if %EXIT_CODE% equ 0 (
     echo 詳細なエラー情報については、ログファイルを
     echo 確認してください。
     echo.
+    
+    REM 異常終了時のエラーダイアログ
+    mshta "javascript:alert('エンジニア人材管理システム\nアプリケーションが異常終了しました。\n終了コード: %EXIT_CODE%\nログファイルを確認してください。');close();"
+    
     pause
 )
 
