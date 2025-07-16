@@ -1,16 +1,17 @@
 package util.validator;
 
-import util.LogHandler;
-import util.LogHandler.LogType;
-import controller.MainController.SearchCriteria;
-import java.util.Map;
+import java.time.LocalDate;
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
-import java.util.ArrayList;
+import java.util.Map;
 import java.util.logging.Level;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
-import java.time.LocalDate;
+
+import controller.MainController.SearchCriteria;
+import util.LogHandler;
+import util.LogHandler.LogType;
 
 /**
  * 検索条件の前処理・バリデーション専用サービスクラス
@@ -207,33 +208,68 @@ public class SearchValidationService {
     private List<String> performLogicalValidation(Map<String, String> processedValues) {
         List<String> errors = new ArrayList<>();
 
-        // 生年月日の妥当性チェック
+        // 生年月日の妥当性チェック（AND検索対応）
         String year = processedValues.get("year");
         String month = processedValues.get("month");
         String day = processedValues.get("day");
 
-        if (isAnyNotEmpty(year, month, day)) {
-            if (!isAllNotEmpty(year, month, day)) {
-                errors.add("生年月日を指定する場合は、年・月・日をすべて入力してください");
-            } else {
+        // 年・月・日がすべて入力されている場合のみ日付妥当性をチェック
+        if (isAllNotEmpty(year, month, day)) {
+            try {
+                LocalDate birthDate = LocalDate.of(
+                        Integer.parseInt(year),
+                        Integer.parseInt(month),
+                        Integer.parseInt(day));
+
+                // 未来日チェック
+                if (birthDate.isAfter(LocalDate.now())) {
+                    errors.add("生年月日に未来の日付は指定できません");
+                }
+
+                // 年齢チェック（100歳以上は警告）
+                if (birthDate.isBefore(LocalDate.now().minusYears(100))) {
+                    errors.add("生年月日が100年以上前に設定されています。正しい日付か確認してください");
+                }
+
+            } catch (Exception e) {
+                errors.add("無効な生年月日が指定されています");
+            }
+        }
+        // AND検索では個別項目の妥当性のみチェック（組み合わせは要求しない）
+        else {
+            // 年のみの妥当性チェック
+            if (!year.isEmpty()) {
                 try {
-                    LocalDate birthDate = LocalDate.of(
-                            Integer.parseInt(year),
-                            Integer.parseInt(month),
-                            Integer.parseInt(day));
-
-                    // 未来日チェック
-                    if (birthDate.isAfter(LocalDate.now())) {
-                        errors.add("生年月日に未来の日付は指定できません");
+                    int yearValue = Integer.parseInt(year);
+                    if (yearValue < 1950 || yearValue > LocalDate.now().getYear()) {
+                        errors.add("年は1950年から現在年まで入力してください");
                     }
+                } catch (NumberFormatException e) {
+                    errors.add("年は数値で入力してください");
+                }
+            }
 
-                    // 年齢チェック（100歳以上は警告）
-                    if (birthDate.isBefore(LocalDate.now().minusYears(100))) {
-                        errors.add("生年月日が100年以上前に設定されています。正しい日付か確認してください");
+            // 月のみの妥当性チェック
+            if (!month.isEmpty()) {
+                try {
+                    int monthValue = Integer.parseInt(month);
+                    if (monthValue < 1 || monthValue > 12) {
+                        errors.add("月は1から12の範囲で入力してください");
                     }
+                } catch (NumberFormatException e) {
+                    errors.add("月は数値で入力してください");
+                }
+            }
 
-                } catch (Exception e) {
-                    errors.add("無効な生年月日が指定されています");
+            // 日のみの妥当性チェック
+            if (!day.isEmpty()) {
+                try {
+                    int dayValue = Integer.parseInt(day);
+                    if (dayValue < 1 || dayValue > 31) {
+                        errors.add("日は1から31の範囲で入力してください");
+                    }
+                } catch (NumberFormatException e) {
+                    errors.add("日は数値で入力してください");
                 }
             }
         }
@@ -373,18 +409,6 @@ public class SearchValidationService {
             default:
                 return fieldName;
         }
-    }
-
-    /**
-     * いずれかが空でないかチェック
-     */
-    private boolean isAnyNotEmpty(String... values) {
-        for (String value : values) {
-            if (value != null && !value.isEmpty()) {
-                return true;
-            }
-        }
-        return false;
     }
 
     /**

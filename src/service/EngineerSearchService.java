@@ -1,22 +1,23 @@
 package service;
 
-import model.EngineerDTO;
-import model.EngineerDAO;
-import util.LogHandler;
-import util.LogHandler.LogType;
-import util.validator.SearchValidationService;
-import util.validator.SearchValidationService.SearchValidationResult;
-import controller.MainController.SearchCriteria;
-import controller.MainController.SearchResult;
+import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.logging.Level;
 import java.util.stream.Collectors;
-import java.time.LocalDate;
+
+import controller.MainController.SearchCriteria;
+import controller.MainController.SearchResult;
+import model.EngineerDAO;
+import model.EngineerDTO;
+import util.LogHandler;
+import util.LogHandler.LogType;
+import util.validator.SearchValidationService;
+import util.validator.SearchValidationService.SearchValidationResult;
 
 /**
- * エンジニア検索サービス（強化版）
+ * エンジニア検索サービス
  * 検索に関するビジネスロジックを担当
  * 共通の前処理・バリデーション機能を統合
  * 
@@ -140,39 +141,69 @@ public class EngineerSearchService {
     }
 
     /**
-     * 生年月日の検索条件があるかチェック
+     * 生年月日の検索条件があるかチェック（AND検索対応）
+     * 年・月・日のいずれかが入力されていれば検索対象とする
      */
     private boolean hasDateCriteria(Map<String, String> processedCriteria) {
-        return !processedCriteria.get("year").isEmpty() &&
-                !processedCriteria.get("month").isEmpty() &&
+        return !processedCriteria.get("year").isEmpty() ||
+                !processedCriteria.get("month").isEmpty() ||
                 !processedCriteria.get("day").isEmpty();
     }
 
     /**
-     * 生年月日のマッチング処理
+     * 生年月日のマッチング処理（AND検索対応）
+     * 入力された項目すべてがマッチした場合のみtrueを返す
      * 
      * @param engineer          エンジニアDTO
      * @param processedCriteria 前処理済み検索条件
-     * @return マッチした場合true
+     * @return すべての入力項目がマッチした場合true
      */
     private boolean matchesBirthDate(EngineerDTO engineer, Map<String, String> processedCriteria) {
         try {
-            LocalDate searchDate = LocalDate.of(
-                    Integer.parseInt(processedCriteria.get("year")),
-                    Integer.parseInt(processedCriteria.get("month")),
-                    Integer.parseInt(processedCriteria.get("day")));
+            LocalDate engineerBirthDate = engineer.getBirthDate();
 
-            return engineer.getBirthDate().equals(searchDate);
+            // 年の検索条件チェック
+            String searchYear = processedCriteria.get("year");
+            if (!searchYear.isEmpty()) {
+                int targetYear = Integer.parseInt(searchYear);
+                if (engineerBirthDate.getYear() != targetYear) {
+                    return false;
+                }
+            }
 
+            // 月の検索条件チェック
+            String searchMonth = processedCriteria.get("month");
+            if (!searchMonth.isEmpty()) {
+                int targetMonth = Integer.parseInt(searchMonth);
+                if (engineerBirthDate.getMonthValue() != targetMonth) {
+                    return false;
+                }
+            }
+
+            // 日の検索条件チェック
+            String searchDay = processedCriteria.get("day");
+            if (!searchDay.isEmpty()) {
+                int targetDay = Integer.parseInt(searchDay);
+                if (engineerBirthDate.getDayOfMonth() != targetDay) {
+                    return false;
+                }
+            }
+
+            return true;
+
+        } catch (NumberFormatException e) {
+            LogHandler.getInstance().log(Level.WARNING, LogType.SYSTEM,
+                    "生年月日の数値変換に失敗: " + e.getMessage());
+            return false;
         } catch (Exception e) {
             LogHandler.getInstance().log(Level.WARNING, LogType.SYSTEM,
-                    "生年月日の比較処理でエラーが発生");
+                    "生年月日の比較処理でエラーが発生: " + e.getMessage());
             return false;
         }
     }
 
     /**
-     * 検索可能な条件があるかチェック
+     * 検索可能な条件があるかチェック（AND検索対応）
      * 
      * @param searchCriteria 検索条件
      * @return 検索可能な条件がある場合true
@@ -185,8 +216,8 @@ public class EngineerSearchService {
         return hasNonEmptyValue(searchCriteria.getId()) ||
                 hasNonEmptyValue(searchCriteria.getName()) ||
                 hasNonEmptyValue(searchCriteria.getCareer()) ||
-                (hasNonEmptyValue(searchCriteria.getYear()) &&
-                        hasNonEmptyValue(searchCriteria.getMonth()) &&
+                (hasNonEmptyValue(searchCriteria.getYear()) ||
+                        hasNonEmptyValue(searchCriteria.getMonth()) ||
                         hasNonEmptyValue(searchCriteria.getDay()));
     }
 
@@ -198,7 +229,7 @@ public class EngineerSearchService {
     }
 
     /**
-     * 検索条件の要約を取得（ログ出力用）
+     * 検索条件の要約を取得（ログ出力用）（AND検索対応）
      * 
      * @param searchCriteria 検索条件
      * @return 検索条件の要約文字列
@@ -212,18 +243,27 @@ public class EngineerSearchService {
         if (hasNonEmptyValue(searchCriteria.getName())) {
             conditions.add("氏名: " + searchCriteria.getName());
         }
-        if (hasNonEmptyValue(searchCriteria.getYear()) &&
-                hasNonEmptyValue(searchCriteria.getMonth()) &&
-                hasNonEmptyValue(searchCriteria.getDay())) {
-            conditions.add(String.format("生年月日: %s年%s月%s日",
-                    searchCriteria.getYear(),
-                    searchCriteria.getMonth(),
-                    searchCriteria.getDay()));
+
+        // 生年月日の個別要素をチェック（AND検索対応）
+        List<String> dateConditions = new ArrayList<>();
+        if (hasNonEmptyValue(searchCriteria.getYear())) {
+            dateConditions.add(searchCriteria.getYear() + "年");
         }
+        if (hasNonEmptyValue(searchCriteria.getMonth())) {
+            dateConditions.add(searchCriteria.getMonth() + "月");
+        }
+        if (hasNonEmptyValue(searchCriteria.getDay())) {
+            dateConditions.add(searchCriteria.getDay() + "日");
+        }
+        if (!dateConditions.isEmpty()) {
+            conditions.add("生年月日: " + String.join("", dateConditions));
+        }
+
         if (hasNonEmptyValue(searchCriteria.getCareer())) {
             conditions.add("エンジニア歴: " + searchCriteria.getCareer() + "年");
         }
 
         return conditions.isEmpty() ? "条件なし" : String.join(", ", conditions);
     }
+
 }

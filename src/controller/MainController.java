@@ -123,14 +123,14 @@ public class MainController {
         }
 
         /**
-         * 生年月日に関する検索条件が設定されているかを判定
+         * 生年月日に関する検索条件が設定されているかを判定（AND検索対応）
          * 
          * @return 年、月、日のいずれかが設定されている場合はtrue
          */
         public boolean hasDateCriteria() {
-            return (year != null && !year.isEmpty()) ||
-                    (month != null && !month.isEmpty()) ||
-                    (day != null && !day.isEmpty());
+            return (year != null && !year.isEmpty() && !"未選択".equals(year)) ||
+                    (month != null && !month.isEmpty() && !"未選択".equals(month)) ||
+                    (day != null && !day.isEmpty() && !"未選択".equals(day));
         }
 
         /** ゲッターメソッド群 */
