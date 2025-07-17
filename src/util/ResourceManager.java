@@ -1,11 +1,19 @@
 package util;
 
-import java.io.*;
+import java.io.BufferedWriter;
+import java.io.Closeable;
+import java.io.File;
+import java.io.IOException;
 import java.nio.charset.StandardCharsets;
-import java.nio.file.*;
-import java.util.*;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.logging.Level;
+
 import util.LogHandler.LogType;
 
 /**
@@ -156,6 +164,7 @@ public class ResourceManager {
     /**
      * CSVファイルの確認と作成
      * ファイルが存在しない場合は、ヘッダー行を持つ新しいファイルを作成
+     * ファイルが存在する場合は、1行目にヘッダー行を上書き
      *
      * @throws IOException ファイルの作成に失敗した場合
      */
@@ -170,7 +179,57 @@ public class ResourceManager {
             }
             System.out.println("新しいCSVファイルを作成: " + engineerCsvPath);
         } else {
-            System.out.println("既存のCSVファイルを使用: " + engineerCsvPath);
+            // 既存ファイルの1行目にヘッダー行を上書き
+            overwriteHeaderLine();
+            System.out.println("既存のCSVファイルのヘッダー行を更新: " + engineerCsvPath);
+        }
+    }
+
+    /**
+     * 既存CSVファイルの1行目にヘッダー行を上書きする処理
+     * 
+     * @throws IOException ファイルの読み書きに失敗した場合
+     */
+    private void overwriteHeaderLine() throws IOException {
+        try {
+            // 現在のファイル内容を全て読み込み
+            List<String> lines = Files.readAllLines(engineerCsvPath, StandardCharsets.UTF_8);
+
+            // プロパティからCSVヘッダーを取得
+            String csvHeader = props.getString("csv.header", DEFAULT_CSV_HEADER);
+
+            // ファイルが空の場合またはヘッダーのみの場合の処理
+            if (lines.isEmpty()) {
+                // 空ファイルの場合はヘッダーのみを追加
+                try (BufferedWriter writer = Files.newBufferedWriter(engineerCsvPath,
+                        StandardCharsets.UTF_8)) {
+                    writer.write(csvHeader);
+                    writer.newLine();
+                }
+                LogHandler.getInstance().log(Level.INFO, LogType.SYSTEM,
+                        "空のCSVファイルにヘッダー行を追加: " + engineerCsvPath);
+                return;
+            }
+
+            // 1行目をヘッダー行に置き換え
+            lines.set(0, csvHeader);
+
+            // ファイルを書き直し
+            try (BufferedWriter writer = Files.newBufferedWriter(engineerCsvPath,
+                    StandardCharsets.UTF_8)) {
+                for (String line : lines) {
+                    writer.write(line);
+                    writer.newLine();
+                }
+            }
+
+            LogHandler.getInstance().log(Level.INFO, LogType.SYSTEM,
+                    "CSVファイルのヘッダー行を更新: " + engineerCsvPath);
+
+        } catch (IOException _e) {
+            LogHandler.getInstance().logError(LogType.SYSTEM,
+                    "CSVファイルのヘッダー行更新に失敗", _e);
+            throw new IOException("CSVファイルのヘッダー行更新に失敗", _e);
         }
     }
 
