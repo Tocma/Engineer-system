@@ -39,12 +39,15 @@ import javax.swing.SwingUtilities;
 import javax.swing.SwingWorker;
 import javax.swing.table.DefaultTableModel;
 import javax.swing.table.TableRowSorter;
+import javax.swing.text.AbstractDocument;
 
 import controller.MainController;
 import model.EngineerDTO;
 import util.ListenerManager;
 import util.LogHandler;
 import util.LogHandler.LogType;
+import util.PropertiesManager;
+import util.TextLengthFilter;
 import util.Constants.SystemConstants;
 
 /**
@@ -622,16 +625,18 @@ public class ListPanel extends JPanel {
     private JPanel createSearchPanel() {
         JPanel searchPanel = new JPanel(new FlowLayout(FlowLayout.LEFT));
 
-        // 社員ID
+        // 社員ID - 10文字制限適用
         searchPanel.add(new JLabel("社員ID:"));
-        idField = new PlaceholderTextField("5桁の数値");
+        idField = new PlaceholderTextField("10文字以内");
         idField.setColumns(7);
+        applySearchFieldLengthFilter(idField, getSearchEmployeeIdMaxLength(), "社員ID検索");
         searchPanel.add(idField);
 
-        // 氏名
+        // 氏名 - 20文字制限適用
         searchPanel.add(new JLabel("氏名:"));
         nameField = new PlaceholderTextField("20文字以内");
-        nameField.setColumns(8);
+        nameField.setColumns(10);
+        applySearchFieldLengthFilter(nameField, SystemConstants.MAX_NAME_LENGTH, "氏名検索");
         searchPanel.add(nameField);
 
         // 生年月日
@@ -667,9 +672,92 @@ public class ListPanel extends JPanel {
         searchPanel.add(endSearchButton);
 
         LogHandler.getInstance().log(Level.INFO, LogType.SYSTEM,
-                "検索パネルのリスナーを登録：" + 2 + "個");
+                "検索パネルのリスナーと文字数制限を登録完了");
 
         return searchPanel;
+    }
+
+    /**
+     * 検索フィールド専用の文字数制限適用メソッド
+     * PlaceholderTextFieldに対応したDocumentFilter適用処理
+     * 
+     * @param textField 対象のPlaceholderTextField
+     * @param maxLength 最大文字数
+     * @param fieldName フィールド名（ログ用）
+     */
+    private void applySearchFieldLengthFilter(PlaceholderTextField textField, int maxLength, String fieldName) {
+        try {
+            if (textField == null) {
+                LogHandler.getInstance().logError(LogType.UI,
+                        fieldName + "フィールドがnullのため、文字数制限を適用できません", null);
+                return;
+            }
+
+            if (maxLength <= 0) {
+                LogHandler.getInstance().logError(LogType.UI,
+                        fieldName + "フィールドの最大文字数が不正です: " + maxLength, null);
+                return;
+            }
+
+            // PlaceholderTextFieldにDocumentFilterを適用
+            TextLengthFilter filter = new TextLengthFilter(maxLength, fieldName);
+            ((AbstractDocument) textField.getDocument()).setDocumentFilter(filter);
+
+            LogHandler.getInstance().log(Level.INFO, LogType.UI,
+                    fieldName + "フィールドに" + maxLength + "文字制限を適用しました");
+
+        } catch (Exception e) {
+            LogHandler.getInstance().logError(LogType.UI,
+                    fieldName + "フィールドへの文字数制限適用中にエラーが発生", e);
+        }
+    }
+
+    /**
+     * 検索用社員IDの最大文字数を取得
+     * 通常の登録用とは異なり、検索では柔軟な入力を許可するため10文字制限
+     * 
+     * @return 検索用社員IDの最大文字数
+     */
+    private int getSearchEmployeeIdMaxLength() {
+        try {
+            // 検索用は登録用より柔軟な制限を適用
+            return PropertiesManager.getInstance().getInt("validation.employee.id.max.length", 10);
+        } catch (Exception e) {
+            LogHandler.getInstance().logError(LogType.SYSTEM,
+                    "検索用社員ID最大文字数の取得に失敗、デフォルト値を使用", e);
+            return 10;
+        }
+    }
+
+    /**
+     * 検索フィールドのクリア処理（文字数制限対応版）
+     * 検索終了時に実行される処理
+     */
+    private void clearSearchFields() {
+        try {
+            if (idField != null) {
+                idField.setText("");
+                LogHandler.getInstance().log(Level.INFO, LogType.UI, "社員ID検索フィールドをクリア");
+            }
+
+            if (nameField != null) {
+                nameField.setText("");
+                LogHandler.getInstance().log(Level.INFO, LogType.UI, "氏名検索フィールドをクリア");
+            }
+
+            // コンボボックスの初期化
+            if (yearBox != null)
+                yearBox.setSelectedIndex(0);
+            if (monthBox != null)
+                monthBox.setSelectedIndex(0);
+            if (dayBox != null)
+                dayBox.setSelectedIndex(0);
+            if (careerBox != null)
+                careerBox.setSelectedIndex(0);
+
+        } catch (Exception e) {
+            LogHandler.getInstance().logError(LogType.UI, "検索フィールドのクリア中にエラーが発生", e);
+        }
     }
 
     // ===== 機能メソッド群 =====
@@ -756,12 +844,7 @@ public class ListPanel extends JPanel {
             @Override
             protected Void doInBackground() {
                 SwingUtilities.invokeLater(() -> {
-                    idField.setText("");
-                    nameField.setText("");
-                    yearBox.setSelectedIndex(0);
-                    monthBox.setSelectedIndex(0);
-                    dayBox.setSelectedIndex(0);
-                    careerBox.setSelectedIndex(0);
+                    clearSearchFields();
                 });
 
                 resetSearchAndShowAllData();
@@ -773,6 +856,8 @@ public class ListPanel extends JPanel {
                 statusLabel.setText("");
                 endSearchButton.setVisible(false);
                 setUIComponentsEnabled(true);
+
+                LogHandler.getInstance().log(Level.INFO, LogType.UI, "検索終了処理が完了しました");
             }
         };
         searchWorker.execute();
