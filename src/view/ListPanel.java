@@ -627,7 +627,7 @@ public class ListPanel extends JPanel {
 
         // 社員ID - 10文字制限適用
         searchPanel.add(new JLabel("社員ID:"));
-        idField = new PlaceholderTextField("10文字以内");
+        idField = new PlaceholderTextField("5桁の数値");
         idField.setColumns(10);
         applySearchFieldLengthFilter(idField, getSearchEmployeeIdMaxLength(), "社員ID検索");
         searchPanel.add(idField);
