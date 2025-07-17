@@ -4,6 +4,8 @@ import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
 import java.time.format.DateTimeParseException;
 
+import util.StringUtil;
+
 /**
  * 日付検証用の基底バリデータ
  * 生年月日と入社年月の検証で共通利用される日付検証を実行
@@ -49,14 +51,14 @@ public abstract class DateValidator extends AbstractValidator {
             return null;
         }
 
-        // 前後の空白を除去
-        String trimmed = value.trim();
-        if (trimmed.isEmpty()) {
+        // 全ての半角・全角スペースを除去
+        String noSpaces = StringUtil.removeSpaces(value);
+        if (noSpaces.isEmpty()) {
             return "";
         }
 
         // 日付フォーマットの正規化を試行
-        String normalized = normalizeDateFormat(trimmed);
+        String normalized = normalizeDateFormat(noSpaces);
 
         return normalized;
     }

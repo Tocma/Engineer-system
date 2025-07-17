@@ -2,6 +2,8 @@ package util.validator;
 
 import java.time.LocalDate;
 
+import util.StringUtil;
+
 /**
  * 入社年月検証用バリデータ
  * 入社年月の形式と範囲（1950年～現在）の検証を実行
@@ -36,18 +38,19 @@ public class JoinDateValidator extends DateValidator {
             return null;
         }
 
-        // 前後の空白を除去
-        String trimmed = value.trim();
-        if (trimmed.isEmpty()) {
+        // 全ての半角・全角スペースを除去
+        String noSpaces = StringUtil.removeSpaces(value);
+        if (noSpaces.isEmpty()) {
             return "";
         }
 
         // 年月形式（YYYY-MM）の場合は日を補完
-        if (trimmed.matches("\\d{4}-\\d{2}")) {
-            trimmed = trimmed + "-01";
+        String withDay = noSpaces;
+        if (withDay.matches("\\d{4}-\\d{2}")) {
+            withDay = withDay + "-01";
         }
 
-        // 親クラスの前処理を実行
-        return super.preprocess(trimmed);
+        // 親クラスの正規化処理を実行
+        return super.normalizeDateFormat(withDay);
     }
 }

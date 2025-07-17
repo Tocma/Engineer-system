@@ -44,14 +44,14 @@ public class CareerValidator extends AbstractValidator {
             return null;
         }
 
-        // 前後の空白を除去
-        String trimmed = value.trim();
-        if (trimmed.isEmpty()) {
+        // 全ての半角・全角スペースを除去
+        String noSpaces = StringUtil.removeSpaces(value);
+        if (noSpaces.isEmpty()) {
             return "";
         }
 
         // 全角数字を半角に変換
-        String converted = StringUtil.convertFullWidthToHalfWidth(trimmed);
+        String converted = StringUtil.convertFullWidthToHalfWidth(noSpaces);
 
         // 数値以外の文字を除去
         String normalized = normalizeNumeric(converted);

@@ -39,14 +39,11 @@ public class NameValidator extends AbstractValidator {
             return null;
         }
 
-        // 前後の空白を除去
-        String trimmed = value.trim();
-        if (trimmed.isEmpty()) {
+        // 全ての半角・全角スペースを除去
+        String noSpaces = StringUtil.removeSpaces(value);
+        if (noSpaces.isEmpty()) {
             return "";
         }
-
-        // スペースを除去
-        String noSpaces = StringUtil.removeSpaces(trimmed);
 
         // 半角カタカナを全角に変換
         String converted = StringUtil.convertHalfWidthKatakanaToFullWidth(noSpaces);

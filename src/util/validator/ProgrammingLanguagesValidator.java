@@ -1,12 +1,13 @@
 package util.validator;
 
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashSet;
 import java.util.List;
-import java.util.ArrayList;
 import java.util.Set;
 
 import util.DateOptionUtil;
+import util.StringUtil;
 
 /**
  * プログラミング言語選択検証用バリデータ
@@ -45,14 +46,14 @@ public class ProgrammingLanguagesValidator extends AbstractValidator {
             return null;
         }
 
-        // 前後の空白を除去
-        String trimmed = value.trim();
-        if (trimmed.isEmpty()) {
+        // 全ての半角・全角スペースを除去
+        String noSpaces = StringUtil.removeSpaces(value);
+        if (noSpaces.isEmpty()) {
             return "";
         }
 
         // 各言語の前後の空白を除去
-        List<String> languages = parseLanguages(trimmed);
+        List<String> languages = parseLanguages(noSpaces);
         String normalized = String.join(LANGUAGE_DELIMITER, languages);
 
         return normalized;

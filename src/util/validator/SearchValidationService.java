@@ -12,6 +12,7 @@ import java.util.regex.Pattern;
 import controller.MainController.SearchCriteria;
 import util.LogHandler;
 import util.LogHandler.LogType;
+import util.StringUtil;
 
 /**
  * 検索条件の前処理・バリデーション専用サービスクラス
@@ -152,10 +153,11 @@ public class SearchValidationService {
         if (id == null)
             return "";
 
-        id = id.trim().replaceAll("　", ""); // 全角スペース除去
+        // 全ての半角・全角スペースを除去
+        String noSpaces = StringUtil.removeSpaces(id);
 
         Pattern pattern = Pattern.compile("[０-９]");
-        Matcher matcher = pattern.matcher(id);
+        Matcher matcher = pattern.matcher(noSpaces);
 
         StringBuffer buffer = new StringBuffer();
         while (matcher.find()) {
@@ -174,9 +176,8 @@ public class SearchValidationService {
         if (name == null)
             return "";
 
-        return name.trim()
-                .replaceAll("　", " ") // 全角スペース→半角スペース
-                .replaceAll("\\s+", " "); // 連続する空白文字を単一の半角スペースに
+        // 全ての半角・全角スペースを除去
+        return StringUtil.removeSpaces(name);
     }
 
     /**
@@ -186,8 +187,11 @@ public class SearchValidationService {
         if (value == null || "未選択".equals(value))
             return "";
 
+        // 全ての半角・全角スペースを除去
+        String noSpaces = StringUtil.removeSpaces(value);
+
         Pattern pattern = Pattern.compile("[０-９]");
-        Matcher matcher = pattern.matcher(value);
+        Matcher matcher = pattern.matcher(noSpaces);
 
         StringBuffer buffer = new StringBuffer();
         while (matcher.find()) {
@@ -196,7 +200,7 @@ public class SearchValidationService {
         }
         matcher.appendTail(buffer);
 
-        return buffer.toString().trim();
+        return buffer.toString();
     }
 
     /**

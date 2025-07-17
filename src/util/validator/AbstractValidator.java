@@ -1,8 +1,10 @@
 package util.validator;
 
+import java.util.logging.Level;
+
 import util.LogHandler;
 import util.LogHandler.LogType;
-import java.util.logging.Level;
+import util.StringUtil;
 
 /**
  * フィールドバリデータの抽象基底クラス
@@ -48,17 +50,18 @@ public abstract class AbstractValidator implements FieldValidator {
 
     /**
      * デフォルトの前処理実装
-     * 前後の空白を除去
+     * 全ての半角・全角スペースを除去
+     * * @param value 入力値
      * 
-     * @param value 入力値
-     * @return トリムされた値
+     * @return スペースが除去された値
      */
     @Override
     public String preprocess(String value) {
         if (value == null) {
             return null;
         }
-        return value.trim();
+        // 全ての半角・全角スペースを除去
+        return StringUtil.removeSpaces(value);
     }
 
     /**

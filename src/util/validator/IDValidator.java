@@ -48,17 +48,14 @@ public class IDValidator extends AbstractValidator {
             return null;
         }
 
-        // 前後の空白を除去
-        String trimmed = value.trim();
-        if (trimmed.isEmpty()) {
+        // 全ての半角・全角スペースを除去
+        String noSpaces = StringUtil.removeSpaces(value);
+        if (noSpaces.isEmpty()) {
             return "";
         }
 
-        // 全ての空白文字を除去
-        String noWhitespace = removeAllWhitespace(trimmed);
-
         // 全角数字を半角に変換
-        String converted = convertFullWidthToHalfWidth(noWhitespace);
+        String converted = convertFullWidthToHalfWidth(noSpaces);
 
         // ID標準形式への変換
         String standardized = standardizeId(converted);

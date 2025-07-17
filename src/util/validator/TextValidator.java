@@ -64,14 +64,14 @@ public class TextValidator extends AbstractValidator {
             return null;
         }
 
-        // 前後の空白を除去
-        String trimmed = value.trim();
-        if (trimmed.isEmpty()) {
+        // 全ての半角・全角スペースを除去
+        String noSpaces = StringUtil.removeSpaces(value);
+        if (noSpaces.isEmpty()) {
             return "";
         }
 
         // Unicode正規化とサニタイズ
-        String normalized = StringUtil.normalizeAndSanitize(trimmed);
+        String normalized = StringUtil.normalizeAndSanitize(noSpaces);
 
         // 全角英数字を半角に変換
         String converted = StringUtil.convertFullWidthAlphanumericToHalfWidth(normalized);
