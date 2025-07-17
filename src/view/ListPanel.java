@@ -8,6 +8,7 @@ import java.awt.FontMetrics;
 import java.awt.Graphics;
 import java.awt.Graphics2D;
 import java.awt.GridLayout;
+import java.awt.event.ActionListener;
 import java.awt.event.InputEvent;
 import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
@@ -24,6 +25,7 @@ import java.util.Set;
 import java.util.logging.Level;
 import java.util.stream.Collectors;
 
+import javax.swing.DefaultComboBoxModel;
 import javax.swing.JButton;
 import javax.swing.JComboBox;
 import javax.swing.JLabel;
@@ -43,6 +45,7 @@ import javax.swing.text.AbstractDocument;
 
 import controller.MainController;
 import model.EngineerDTO;
+import util.DateOptionUtil;
 import util.ListenerManager;
 import util.LogHandler;
 import util.LogHandler.LogType;
@@ -53,8 +56,7 @@ import util.Constants.SystemConstants;
 /**
  * エンジニア一覧を表示するパネルクラス（ListenerManager統合版）
  * ページング、ソート、検索、追加、取込、削除機能
- * 
- * ListenerManagerによる統合リスナー管理の導入
+ * * ListenerManagerによる統合リスナー管理の導入
  * リスナーのライフサイクル管理の明確化
  *
  * @author Nakano
@@ -215,7 +217,6 @@ public class ListPanel extends JPanel {
     /**
      * パネルを初期化
      * UIコンポーネントの配置と初期設定
-     * 
      */
     public void initialize() {
         try {
@@ -254,7 +255,6 @@ public class ListPanel extends JPanel {
 
     /**
      * ページネーションのイベント設定（ListenerManager統合版）
-     * 
      */
     private void setupPaginationEventsWithManager() {
         // 前へボタンのリスナー登録
@@ -277,7 +277,6 @@ public class ListPanel extends JPanel {
 
     /**
      * ソート機能のイベント設定（ListenerManager統合版）
-     * 
      */
     private void configureSorterWithManager() {
         // ソート可能な列を設定
@@ -309,8 +308,7 @@ public class ListPanel extends JPanel {
 
     /**
      * テーブルのイベント設定（ListenerManager統合版）
-     * 
-     * 1. リスナーの目的が明確（説明文付き）
+     * * 1. リスナーの目的が明確（説明文付き）
      * 2. デバッグ時にリスナーの動作を追跡可能
      * 3. 必要に応じて個別のリスナーを無効化可能
      * 4. メモリリーク防止のための確実な削除
@@ -394,12 +392,10 @@ public class ListPanel extends JPanel {
 
     /**
      * すべてのリスナーを削除（クリーンアップ用）
-     * 
-     * このメソッドは、パネルが破棄される際やアプリケーション終了時に
+     * * このメソッドは、パネルが破棄される際やアプリケーション終了時に
      * 呼び出されます。すべてのリスナーを確実に削除することで、
      * メモリリークを防止し、システムリソースを適切に解放します。
-     * 
-     * @return 削除されたリスナーの数
+     * * @return 削除されたリスナーの数
      */
     public int removeAllListeners() {
         if (!listenersInitialized) {
@@ -444,11 +440,9 @@ public class ListPanel extends JPanel {
 
     /**
      * リスナー管理の詳細情報を取得（デバッグ用）
-     * 
-     * 開発時やトラブルシューティング時に、現在登録されている
+     * * 開発時やトラブルシューティング時に、現在登録されている
      * リスナーの状況を詳しく確認できる
-     * 
-     * @return リスナー管理情報の詳細な文字列
+     * * @return リスナー管理情報の詳細な文字列
      */
     public String getListenerDebugInfo() {
         StringBuilder info = new StringBuilder();
@@ -651,6 +645,11 @@ public class ListPanel extends JPanel {
         searchPanel.add(dayBox);
         searchPanel.add(new JLabel("日"));
 
+        // 年月コンボボックスにリスナーを追加
+        ActionListener dateUpdateListener = _e -> updateSearchDayOptions();
+        yearBox.addActionListener(dateUpdateListener);
+        monthBox.addActionListener(dateUpdateListener);
+
         // エンジニア歴
         searchPanel.add(new JLabel("エンジニア歴:"));
         careerBox = new JComboBox<>(getCareerYears());
@@ -678,10 +677,37 @@ public class ListPanel extends JPanel {
     }
 
     /**
+     * 検索パネルの日の選択肢を動的に更新する
+     */
+    private void updateSearchDayOptions() {
+        String selectedYear = (String) yearBox.getSelectedItem();
+        String selectedMonth = (String) monthBox.getSelectedItem();
+        String currentDay = (String) dayBox.getSelectedItem();
+
+        // 新しい日の選択肢を取得
+        String[] newDayOptions = DateOptionUtil.getDayOptions(selectedYear, selectedMonth);
+
+        // 日のコンボボックスのモデルを更新
+        dayBox.setModel(new DefaultComboBoxModel<>(newDayOptions));
+
+        // 以前の選択値が新しい選択肢に存在すれば再選択
+        if (currentDay != null) {
+            for (String option : newDayOptions) {
+                if (currentDay.equals(option)) {
+                    dayBox.setSelectedItem(currentDay);
+                    return;
+                }
+            }
+        }
+        // 存在しない場合は先頭（空欄）を選択
+        dayBox.setSelectedIndex(0);
+    }
+
+    /**
      * 検索フィールド専用の文字数制限適用メソッド
      * PlaceholderTextFieldに対応したDocumentFilter適用処理
+     * * @param textField 対象のPlaceholderTextField
      * 
-     * @param textField 対象のPlaceholderTextField
      * @param maxLength 最大文字数
      * @param fieldName フィールド名（ログ用）
      */
@@ -715,8 +741,7 @@ public class ListPanel extends JPanel {
     /**
      * 検索用社員IDの最大文字数を取得
      * 通常の登録用とは異なり、検索では柔軟な入力を許可するため10文字制限
-     * 
-     * @return 検索用社員IDの最大文字数
+     * * @return 検索用社員IDの最大文字数
      */
     private int getSearchEmployeeIdMaxLength() {
         try {
