@@ -5,8 +5,7 @@ import util.StringUtil;
 /**
  * エンジニア歴検証用バリデータ
  * エンジニア歴の数値形式と範囲（0～50年）の検証を実行
- * 
- * @author Nakano
+ * * @author Nakano
  */
 public class CareerValidator extends AbstractValidator {
 
@@ -16,10 +15,13 @@ public class CareerValidator extends AbstractValidator {
     /** 最大値 */
     private final int maxValue;
 
+    /** 整数のみを許可する正規表現パターン */
+    private static final String INTEGER_PATTERN = "^\\d+$";
+
     /**
      * コンストラクタ
+     * * @param fieldName フィールド名
      * 
-     * @param fieldName    フィールド名
      * @param errorMessage エラーメッセージ
      * @param minValue     最小値
      * @param maxValue     最大値
@@ -33,9 +35,9 @@ public class CareerValidator extends AbstractValidator {
 
     /**
      * エンジニア歴の前処理を実行
-     * 数値形式の正規化を行います
+     * スペースの除去と全角数字の半角変換のみ行います。
+     * * @param value 入力値
      * 
-     * @param value 入力値
      * @return 前処理済みの値
      */
     @Override
@@ -51,42 +53,26 @@ public class CareerValidator extends AbstractValidator {
         }
 
         // 全角数字を半角に変換
-        String converted = StringUtil.convertFullWidthToHalfWidth(noSpaces);
-
-        // 数値以外の文字を除去
-        String normalized = normalizeNumeric(converted);
-
-        return normalized;
-    }
-
-    /**
-     * 数値形式の正規化
-     * 
-     * @param value 入力値
-     * @return 正規化された数値文字列
-     */
-    private String normalizeNumeric(String value) {
-        // 数字以外を除去
-        return value.replaceAll("[^0-9]", "");
+        return StringUtil.convertFullWidthToHalfWidth(noSpaces);
     }
 
     /**
      * エンジニア歴の検証を実行
+     * * @param value 検証対象の値（前処理済み）
      * 
-     * @param value 検証対象の値（前処理済み）
      * @return 検証成功の場合true
      */
     @Override
     public boolean validate(String value) {
-        // nullチェック
-        if (value == null) {
-            logWarning("エンジニア歴検証失敗: null値");
+        // nullまたは空文字は必須項目のためエラー
+        if (value == null || value.isEmpty()) {
+            logWarning("エンジニア歴検証失敗: 空文字");
             return false;
         }
 
-        // 空文字チェック
-        if (value.isEmpty()) {
-            logWarning("エンジニア歴検証失敗: 空文字");
+        // 整数形式チェック（完全一致）
+        if (!checkPattern(value, INTEGER_PATTERN)) {
+            logWarning("エンジニア歴検証失敗: 形式が不正です - " + value);
             return false;
         }
 
@@ -101,7 +87,7 @@ public class CareerValidator extends AbstractValidator {
 
         // 範囲チェック
         if (!checkRange(intValue)) {
-            logWarning("エンジニア歴検証失敗: 範囲外 - " + intValue);
+            logWarning("エンジニア歴検証失敗: 範囲外 (0-50) - " + intValue);
             return false;
         }
 
@@ -110,8 +96,8 @@ public class CareerValidator extends AbstractValidator {
 
     /**
      * 範囲チェック
+     * * @param value チェック対象の値
      * 
-     * @param value チェック対象の値
      * @return 範囲内の場合true
      */
     private boolean checkRange(int value) {
