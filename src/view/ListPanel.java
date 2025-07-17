@@ -628,7 +628,7 @@ public class ListPanel extends JPanel {
         // 社員ID - 10文字制限適用
         searchPanel.add(new JLabel("社員ID:"));
         idField = new PlaceholderTextField("10文字以内");
-        idField.setColumns(7);
+        idField.setColumns(10);
         applySearchFieldLengthFilter(idField, getSearchEmployeeIdMaxLength(), "社員ID検索");
         searchPanel.add(idField);
 
@@ -783,24 +783,23 @@ public class ListPanel extends JPanel {
         statusLabel.setText("検索中・・・");
         setUIComponentsEnabled(false);
 
-        // SwingWorkerを使用してバックグラウンドで検索を実行
         SwingWorker<MainController.SearchResult, Void> worker = new SwingWorker<>() {
             @Override
             protected MainController.SearchResult doInBackground() throws Exception {
-                // バックグラウンドスレッドで重い処理を実行
                 return mainController.searchEngineers(criteria);
             }
 
             @Override
             protected void done() {
                 try {
-                    // UIの更新はEDTで行う
                     MainController.SearchResult result = get();
                     if (result.hasErrors()) {
-                        DialogManager.getInstance().showValidationErrorDialog(result.getErrors());
+                        // 【変更点】バリデーションエラーを統一形式に変更
+                        DialogManager.getInstance().showInfoDialog("検索結果", "該当するエンジニアは見つかりませんでした。");
                     } else {
                         List<EngineerDTO> searchResults = result.getResults();
                         if (searchResults.isEmpty()) {
+                            // 検索結果なしの場合（既存と同じ）
                             DialogManager.getInstance().showInfoDialog("検索結果", "該当するエンジニアは見つかりませんでした。");
                         }
                         updateSearchResults(searchResults);
@@ -809,7 +808,6 @@ public class ListPanel extends JPanel {
                     LogHandler.getInstance().logError(LogType.UI, "検索処理中にエラーが発生", e);
                     DialogManager.getInstance().showErrorDialog("検索エラー", "検索処理中にエラーが発生しました。");
                 } finally {
-                    // 処理が完了したらUIの状態を元に戻す
                     setUIComponentsEnabled(true);
                     statusLabel.setText("");
                     endSearchButton.setVisible(true);
@@ -817,7 +815,7 @@ public class ListPanel extends JPanel {
             }
         };
 
-        worker.execute(); // SwingWorkerを開始
+        worker.execute();
     }
 
     /**

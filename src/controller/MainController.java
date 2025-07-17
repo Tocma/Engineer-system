@@ -446,8 +446,8 @@ public class MainController {
     private void handleSearchResultForListPanel(ListPanel listPanel, SearchResult result) {
         try {
             if (result.hasErrors()) {
-                // 検証エラーがある場合はエラーダイアログを表示
-                DialogManager.getInstance().showValidationErrorDialog(result.getErrors());
+                // 【変更点】バリデーションエラーを統一形式に変更
+                DialogManager.getInstance().showInfoDialog("検索結果", "該当するエンジニアは見つかりませんでした。");
                 LogHandler.getInstance().log(Level.WARNING, LogType.SYSTEM,
                         "検索条件にエラーがあります: " + String.join(", ", result.getErrors()));
             } else {
@@ -455,7 +455,7 @@ public class MainController {
                 List<EngineerDTO> searchResults = result.getResults();
 
                 if (searchResults.isEmpty()) {
-                    // 検索結果が空の場合は通知
+                    // 検索結果が空の場合は通知（既存と同じ）
                     DialogManager.getInstance().showInfoDialog("検索結果", "該当するエンジニアは見つかりませんでした。");
                     LogHandler.getInstance().log(Level.INFO, LogType.SYSTEM,
                             "検索結果が0件でした");
@@ -464,8 +464,6 @@ public class MainController {
                             String.format("検索結果を表示します: %d件", searchResults.size()));
                 }
 
-                // 検索結果をListPanelに通知（具体的な実装はListPanel側で対応）
-                // 注意: この部分はListPanel側に対応するメソッドを追加する必要があります
                 LogHandler.getInstance().log(Level.INFO, LogType.SYSTEM,
                         "検索結果をListPanelに反映しました");
             }
