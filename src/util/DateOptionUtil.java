@@ -1,5 +1,6 @@
 package util;
 
+import java.text.DecimalFormat;
 import java.time.LocalDate;
 import java.time.Year;
 import java.time.YearMonth;
@@ -202,13 +203,12 @@ public final class DateOptionUtil {
      * @return エンジニア歴の選択肢配列（空文字 + 1-50年）
      */
     public static String[] getCareerOptions() {
-        String[] careers = new String[52]; // 空 + 1-50年
+        String[] careers = new String[51];
         careers[0] = "";
-
+        DecimalFormat df = new DecimalFormat("0");
         for (int i = 1; i <= 50; i++) {
-            careers[i] = String.valueOf(i);
+            careers[i] = df.format(i);
         }
-
         return careers;
     }
 

@@ -59,7 +59,7 @@ public class EngineerBuilder {
             throw new IllegalStateException("入社年月は必須です");
         }
         if (engineer.getCareer() < 0) {
-            throw new IllegalStateException("エンジニア歴は0以上の値が必要です");
+            throw new IllegalStateException("エンジニア歴は1以上の値が必要です");
         }
         if (engineer.getProgrammingLanguages() == null || engineer.getProgrammingLanguages().isEmpty()) {
             throw new IllegalStateException("扱える言語は最低1つ設定する必要があります");

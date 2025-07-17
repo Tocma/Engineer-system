@@ -82,7 +82,7 @@ public enum ValidatorEnum {
          * エンジニア歴フィールドの検証
          * 制約：
          * 必須項目
-         * 0年目から50年目までの整数値
+         * 1年目から50年目までの整数値
          */
         CAREER("career", () -> new CareerValidator("career",
                         MessageEnum.VALIDATION_ERROR_CAREER.getMessage(), 1, 50)),

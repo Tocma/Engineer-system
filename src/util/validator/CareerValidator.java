@@ -4,7 +4,7 @@ import util.StringUtil;
 
 /**
  * エンジニア歴検証用バリデータ
- * エンジニア歴の数値形式と範囲（0～50年）の検証を実行
+ * エンジニア歴の数値形式と範囲（1～50年）の検証を実行
  * * @author Nakano
  */
 public class CareerValidator extends AbstractValidator {
@@ -87,7 +87,7 @@ public class CareerValidator extends AbstractValidator {
 
         // 範囲チェック
         if (!checkRange(intValue)) {
-            logWarning("エンジニア歴検証失敗: 範囲外 (0-50) - " + intValue);
+            logWarning("エンジニア歴検証失敗: 範囲外 (1-50) - " + intValue);
             return false;
         }
 
