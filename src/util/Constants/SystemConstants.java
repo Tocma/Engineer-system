@@ -31,8 +31,14 @@ public final class SystemConstants {
     public static final int MAX_SELECTION_COUNT = props.getInt("data.max.selection.count", 100);
 
     // ========== 文字数制限値 ==========
+    /** 社員ID最大文字数（新規追加） */
+    public static final int MAX_EMPLOYEE_ID_LENGTH = props.getInt("validation.employee.id.max.length", 10);
+
     /** 氏名最大文字数 */
     public static final int MAX_NAME_LENGTH = props.getInt("validation.max.name.length", 20);
+
+    /** フリガナ最大文字数（新規追加） */
+    public static final int MAX_NAME_KANA_LENGTH = props.getInt("validation.max.name.kana.length", 20);
 
     /** 経歴最大文字数 */
     public static final int MAX_CAREER_HISTORY_LENGTH = props.getInt("validation.max.career.history.length", 200);
@@ -43,7 +49,7 @@ public final class SystemConstants {
     /** 備考最大文字数 */
     public static final int MAX_NOTE_LENGTH = props.getInt("validation.max.note.length", 500);
 
-    /** 社員ID桁数 */
+    /** 社員ID桁数（従来互換性維持用） */
     public static final int EMPLOYEE_ID_LENGTH = props.getInt("validation.employee.id.length", 5);
 
     /** 禁止社員ID */

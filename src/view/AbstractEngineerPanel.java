@@ -31,11 +31,15 @@ import javax.swing.JTextField;
 import javax.swing.SwingConstants;
 import javax.swing.SwingUtilities;
 import javax.swing.border.Border;
+import javax.swing.text.AbstractDocument;
 import javax.swing.text.JTextComponent;
 
 import util.LogHandler;
 import util.LogHandler.LogType;
+import util.PropertiesManager;
+import util.TextLengthFilter;
 import util.Constants.MessageEnum;
+import util.Constants.SystemConstants;
 import util.Constants.UIConstants;
 import util.validator.FieldValidator;
 import util.validator.IDValidator;
@@ -358,27 +362,32 @@ public abstract class AbstractEngineerPanel extends JPanel {
      * 氏名、氏名(カナ)、社員IDフィールドで適切なエラー表示を実装
      */
     protected void createBasicInfoSection(JPanel container, boolean isDetailMode) {
-        // 氏名フィールド（必須）
-        JLabel nameLabel = createFieldLabel("氏名", true);
-        nameField = new JTextField(20);
-        registerComponent("nameField", nameField);
-        container.add(createFormRow(nameLabel, nameField, "name"));
-
-        // 氏名 (カナ)フィールド（必須）
-        JLabel nameKanaLabel = createFieldLabel("氏名 (カナ)", true);
-        nameKanaField = new JTextField(20);
-        registerComponent("nameKanaField", nameKanaField);
-        container.add(createFormRow(nameKanaLabel, nameKanaField, "nameKana"));
-
-        // 社員IDフィールド（必須）
+        // 社員IDフィールド（必須）- 10文字制限
         JLabel idLabel = createFieldLabel("社員ID", true);
         idField = new JTextField(20);
         if (isDetailMode) {
             idField.setEditable(false);
             idField.setBackground(new Color(240, 240, 240));
+        } else {
+            // 編集可能な場合のみ文字数制限を適用
+            applyTextLengthFilter(idField, getEmployeeIdMaxLength(), "社員ID");
         }
         registerComponent("idField", idField);
         container.add(createFormRow(idLabel, idField, "id"));
+
+        // 氏名フィールド（必須）- 20文字制限
+        JLabel nameLabel = createFieldLabel("氏名", true);
+        nameField = new JTextField(20);
+        applyTextLengthFilter(nameField, SystemConstants.MAX_NAME_LENGTH, "氏名");
+        registerComponent("nameField", nameField);
+        container.add(createFormRow(nameLabel, nameField, "name"));
+
+        // 氏名 (カナ)フィールド（必須）- 20文字制限
+        JLabel nameKanaLabel = createFieldLabel("氏名 (カナ)", true);
+        nameKanaField = new JTextField(20);
+        applyTextLengthFilter(nameKanaField, getNameKanaMaxLength(), "氏名（カナ）");
+        registerComponent("nameKanaField", nameKanaField);
+        container.add(createFormRow(nameKanaLabel, nameKanaField, "nameKana"));
 
         // 生年月日（必須）
         createBirthDateSection(container);
@@ -395,6 +404,30 @@ public abstract class AbstractEngineerPanel extends JPanel {
         createCareerSection(container);
 
         container.add(createVerticalSpacer(20));
+    }
+
+    /**
+     * テキストフィールドに文字数制限を適用
+     * Unicode文字（サロゲートペア、絵文字）を考慮した制限を実装
+     * 
+     * @param textField 対象のテキストフィールド
+     * @param maxLength 最大文字数
+     * @param fieldName フィールド名（ログ用）
+     */
+    private void applyTextLengthFilter(JTextComponent textComponent, int maxLength, String fieldName) {
+        try {
+
+            // DocumentFilterを適用
+            TextLengthFilter filter = new TextLengthFilter(maxLength, fieldName);
+            ((AbstractDocument) textComponent.getDocument()).setDocumentFilter(filter);
+
+            LogHandler.getInstance().log(Level.INFO, LogType.UI,
+                    fieldName + "フィールドに" + maxLength + "文字制限を適用しました");
+
+        } catch (Exception e) {
+            LogHandler.getInstance().logError(LogType.UI,
+                    fieldName + "フィールドへの文字数制限適用中にエラーが発生", e);
+        }
     }
 
     /**
@@ -549,18 +582,20 @@ public abstract class AbstractEngineerPanel extends JPanel {
      * @param container 配置先のコンテナ
      */
     protected void createCareerHistorySection(JPanel container) {
-        // 経歴フィールドのラベル作成（他のフィールドと統一）
         JLabel careerHistoryLabel = createFieldLabel("経歴", false);
 
         careerHistoryArea = new JTextArea(5, 40);
         careerHistoryArea.setLineWrap(true);
         careerHistoryArea.setWrapStyleWord(true);
         careerHistoryArea.setFont(new Font(Font.SANS_SERIF, Font.PLAIN, 12));
-        JScrollPane careerScrollPane = new JScrollPane(careerHistoryArea);
+
+        // 200文字制限を適用
+        applyTextLengthFilter(careerHistoryArea, SystemConstants.MAX_CAREER_HISTORY_LENGTH, "経歴");
+
+        JScrollPane careerHistoryScrollPane = new JScrollPane(careerHistoryArea);
         registerComponent("careerHistoryArea", careerHistoryArea);
 
-        // createFormRowでラベルとエラー表示を統一
-        container.add(createFormRow(careerHistoryLabel, careerScrollPane, "careerHistory"));
+        container.add(createFormRow(careerHistoryLabel, careerHistoryScrollPane, "careerHistory"));
         container.add(createVerticalSpacer(20));
     }
 
@@ -570,18 +605,20 @@ public abstract class AbstractEngineerPanel extends JPanel {
      * @param container 配置先のコンテナ
      */
     protected void createTrainingSection(JPanel container) {
-        // 研修受講歴フィールドのラベル作成（他のフィールドと統一）
         JLabel trainingHistoryLabel = createFieldLabel("研修の受講歴", false);
 
-        trainingHistoryArea = new JTextArea(2, 40);
+        trainingHistoryArea = new JTextArea(5, 40);
         trainingHistoryArea.setLineWrap(true);
         trainingHistoryArea.setWrapStyleWord(true);
         trainingHistoryArea.setFont(new Font(Font.SANS_SERIF, Font.PLAIN, 12));
-        JScrollPane trainingScrollPane = new JScrollPane(trainingHistoryArea);
+
+        // 200文字制限を適用
+        applyTextLengthFilter(trainingHistoryArea, SystemConstants.MAX_TRAINING_HISTORY_LENGTH, "研修の受講歴");
+
+        JScrollPane trainingHistoryScrollPane = new JScrollPane(trainingHistoryArea);
         registerComponent("trainingHistoryArea", trainingHistoryArea);
 
-        // createFormRowでラベルとエラー表示を統一
-        container.add(createFormRow(trainingHistoryLabel, trainingScrollPane, "trainingHistory"));
+        container.add(createFormRow(trainingHistoryLabel, trainingHistoryScrollPane, "trainingHistory"));
         container.add(createVerticalSpacer(20));
     }
 
@@ -642,18 +679,19 @@ public abstract class AbstractEngineerPanel extends JPanel {
      * @param container 配置先のコンテナ
      */
     protected void createNoteSection(JPanel container) {
-        // 備考フィールドのラベル作成（他のフィールドと統一）
         JLabel noteLabel = createFieldLabel("備考", false);
 
         noteArea = new JTextArea(5, 40);
         noteArea.setLineWrap(true);
         noteArea.setWrapStyleWord(true);
-        // Unicode文字（絵文字・サロゲートペア）を適切に表示するためのフォント設定
         noteArea.setFont(new Font(Font.SANS_SERIF, Font.PLAIN, 12));
+
+        // 500文字制限を適用
+        applyTextLengthFilter(noteArea, SystemConstants.MAX_NOTE_LENGTH, "備考");
+
         JScrollPane noteScrollPane = new JScrollPane(noteArea);
         registerComponent("noteArea", noteArea);
 
-        // createFormRowでラベルとエラー表示を統一
         container.add(createFormRow(noteLabel, noteScrollPane, "note"));
         container.add(createVerticalSpacer(20));
     }
@@ -736,6 +774,38 @@ public abstract class AbstractEngineerPanel extends JPanel {
         formData.put("leadership", getComboBoxValue(leadershipComboBox));
 
         return formData;
+    }
+
+    /**
+     * 社員IDの最大文字数を取得
+     * 設定値から取得、未設定の場合はデフォルト値（10）を返す
+     * 
+     * @return 社員IDの最大文字数
+     */
+    private int getEmployeeIdMaxLength() {
+        try {
+            return PropertiesManager.getInstance().getInt("validation.employee.id.max.length", 10);
+        } catch (Exception e) {
+            LogHandler.getInstance().logError(LogType.SYSTEM,
+                    "社員ID最大文字数の取得に失敗、デフォルト値を使用", e);
+            return 10;
+        }
+    }
+
+    /**
+     * フリガナの最大文字数を取得
+     * 設定値から取得、未設定の場合はデフォルト値（20）を返す
+     * 
+     * @return フリガナの最大文字数
+     */
+    private int getNameKanaMaxLength() {
+        try {
+            return PropertiesManager.getInstance().getInt("validation.max.name.kana.length", 20);
+        } catch (Exception e) {
+            LogHandler.getInstance().logError(LogType.SYSTEM,
+                    "フリガナ最大文字数の取得に失敗、デフォルト値を使用", e);
+            return 20;
+        }
     }
 
     /**
