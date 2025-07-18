@@ -1,5 +1,7 @@
 package controller;
 
+import java.awt.Component;
+import java.awt.Container;
 import java.io.File;
 import java.io.FileOutputStream;
 import java.nio.file.Path;
@@ -18,6 +20,7 @@ import java.util.stream.Collectors;
 import javax.swing.JFileChooser;
 import javax.swing.JOptionPane;
 import javax.swing.JPanel;
+import javax.swing.JTextField;
 import javax.swing.SwingUtilities;
 import javax.swing.filechooser.FileNameExtensionFilter;
 
@@ -45,15 +48,14 @@ import view.MainFrame;
  * 画面遷移、イベント処理、スレッド管理、エンジニア検索機能を統括するクラス
  *
  * このクラスは、アプリケーション全体の制御を担当：
- * 
- * 画面遷移の管理
+ * * 画面遷移の管理
  * エンジニア情報の検索とフィルタリング
  * 非同期タスクの管理
  * イベント処理のディスパッチ
  * リソースの管理と初期化
  * シャットダウン処理の制御
+ * *
  * 
- *
  * @author Nakano
  */
 public class MainController {
@@ -92,6 +94,22 @@ public class MainController {
     private final Set<String> deletingIds = ConcurrentHashMap.newKeySet();
 
     /**
+     * JFileChooser内のファイル名テキストフィールドを無効化する
+     * 
+     * @param container
+     */
+    private void disableFileNameTextField(Container container) {
+        for (Component c : container.getComponents()) {
+            if (c instanceof JTextField) {
+                ((JTextField) c).setEditable(false);
+                return;
+            } else if (c instanceof Container) {
+                disableFileNameTextField((Container) c);
+            }
+        }
+    }
+
+    /**
      * エンジニア検索条件を保持するクラス
      * 検索フォームから入力された各種条件を格納し、検索処理に使用
      */
@@ -105,8 +123,8 @@ public class MainController {
 
         /**
          * 検索条件を初期化するコンストラクタ
+         * * @param id 社員ID検索条件
          * 
-         * @param id     社員ID検索条件
          * @param name   氏名検索条件
          * @param year   生年月日（年）検索条件
          * @param month  生年月日（月）検索条件
@@ -124,8 +142,7 @@ public class MainController {
 
         /**
          * 生年月日に関する検索条件が設定されているかを判定（AND検索対応）
-         * 
-         * @return 年、月、日のいずれかが設定されている場合はtrue
+         * * @return 年、月、日のいずれかが設定されている場合はtrue
          */
         public boolean hasDateCriteria() {
             return (year != null && !year.isEmpty() && !"未選択".equals(year)) ||
@@ -169,9 +186,9 @@ public class MainController {
 
         /**
          * 検索結果を初期化するコンストラクタ
+         * * @param results 検索にヒットしたエンジニアのリスト
          * 
-         * @param results 検索にヒットしたエンジニアのリスト
-         * @param errors  検索処理中に発生したエラーメッセージのリスト
+         * @param errors 検索処理中に発生したエラーメッセージのリスト
          */
         public SearchResult(List<EngineerDTO> results, List<String> errors) {
             this.results = results != null ? results : new ArrayList<>();
@@ -180,8 +197,7 @@ public class MainController {
 
         /**
          * 検索処理でエラーが発生したかを判定
-         * 
-         * @return エラーが存在する場合はtrue
+         * * @return エラーが存在する場合はtrue
          */
         public boolean hasErrors() {
             return !errors.isEmpty();
@@ -261,8 +277,8 @@ public class MainController {
     /**
      * エンジニア検索処理
      * 検索条件に基づいてエンジニア情報を検索し、結果を返却
+     * * @param searchCriteria 検索条件オブジェクト
      * 
-     * @param searchCriteria 検索条件オブジェクト
      * @return 検索結果オブジェクト（結果リストとエラー情報を含む）
      */
     public SearchResult searchEngineers(SearchCriteria searchCriteria) {
@@ -386,8 +402,7 @@ public class MainController {
     /**
      * エンジニア検索処理のイベントハンドラ
      * 検索要求を受け取り、非同期で検索処理を実行
-     * 
-     * @param data 検索条件オブジェクト（SearchCriteria型）
+     * * @param data 検索条件オブジェクト（SearchCriteria型）
      */
     private void handleSearchEngineers(Object data) {
         if (!(data instanceof SearchCriteria)) {
@@ -439,9 +454,9 @@ public class MainController {
     /**
      * ListPanel向けの検索結果処理
      * 検索結果をListPanelに適切に反映
+     * * @param listPanel 更新対象のListPanel
      * 
-     * @param listPanel 更新対象のListPanel
-     * @param result    検索結果
+     * @param result 検索結果
      */
     private void handleSearchResultForListPanel(ListPanel listPanel, SearchResult result) {
         try {
@@ -512,8 +527,7 @@ public class MainController {
 
     /**
      * エンジニア情報の削除処理を非同期で実行
-     * 
-     * @param data 削除対象のエンジニアDTOリスト
+     * * @param data 削除対象のエンジニアDTOリスト
      */
     @SuppressWarnings("unchecked")
     private void handleDeleteEngineer(Object data) {
@@ -599,22 +613,18 @@ public class MainController {
 
     /**
      * データ保存処理を実行します
-     * 
-     * このメソッドはエンジニア情報の保存処理を非同期的に実行します。単一エンジニアの追加と
+     * * このメソッドはエンジニア情報の保存処理を非同期的に実行します。単一エンジニアの追加と
      * 複数エンジニアの一括更新に対応しています。保存処理の成功後は、UIを適切に更新し、
      * 必要に応じてダイアログ表示や画面遷移を行います。
-     * 
-     * 主な処理の流れ：
-     * 
-     * データ型の判定（単一エンジニアまたはエンジニアリスト）
+     * * 主な処理の流れ：
+     * * データ型の判定（単一エンジニアまたはエンジニアリスト）
      * コンテキスト情報（元画面の参照）の取得と保持
      * 非同期タスクとしての保存処理実行
      * 成功時のUI更新（リスト更新、ダイアログ表示など）
      * エラー時の例外処理と状態復元
-     * 
-     * このメソッドは特に次の点に注意して実装されています：
-     * 
-     * @param data 保存するデータ（{@link EngineerDTO}または{@link List}&lt;{@link EngineerDTO}&gt;）
+     * * このメソッドは特に次の点に注意して実装されています：
+     * * @param data
+     * 保存するデータ（{@link EngineerDTO}または{@link List}&lt;{@link EngineerDTO}&gt;）
      */
     private void handleSaveData(Object data) {
         // シャットダウン中は処理しない
@@ -972,8 +982,7 @@ public class MainController {
     /**
      * 詳細表示処理
      * エンジニアIDを指定して詳細画面に遷移
-     * 
-     * @param engineerId 表示するエンジニアID
+     * * @param engineerId 表示するエンジニアID
      */
     private void handleViewDetail(String engineerId) {
         // 削除中のIDは遷移禁止
@@ -1055,8 +1064,7 @@ public class MainController {
 
     /**
      * テンプレート出力確認処理
-     * 
-     * @return 出力許可の場合true
+     * * @return 出力許可の場合true
      */
     private boolean confirmTemplateExport() {
         int confirm = JOptionPane.showConfirmDialog(
@@ -1077,12 +1085,13 @@ public class MainController {
     /**
      * ResourceManagerを活用したテンプレート出力用ファイル選択処理
      * 重複ファイル名の自動回避機能を追加
+     * * @param defaultFileName デフォルトファイル名
      * 
-     * @param defaultFileName デフォルトファイル名
      * @return 選択されたファイル、キャンセル時はnull
      */
     private File exportTemplateFileWithResourceManager(String defaultFileName) {
         JFileChooser fileChooser = new JFileChooser(System.getProperty("user.dir"));
+        disableFileNameTextField(fileChooser);
         fileChooser.setDialogTitle("テンプレートCSV出力先");
         fileChooser.setSelectedFile(new File(defaultFileName));
 
@@ -1122,8 +1131,7 @@ public class MainController {
     /**
      * ResourceManagerを活用したテンプレート出力処理の実行
      * リソース管理の統合とエラーハンドリングの改善
-     * 
-     * @param outputFile 出力先ファイル
+     * * @param outputFile 出力先ファイル
      */
     private void executeTemplateExportWithResourceManager(File selectedFile) {
         String resourceKey = "template_export_" + System.currentTimeMillis();
@@ -1160,8 +1168,7 @@ public class MainController {
     /**
      * エンジニア情報のCSV出力を非同期で実行
      * ResourceManagerを活用したファイル操作の統合版
-     * 
-     * @param data CSV出力対象のエンジニアDTOリスト
+     * * @param data CSV出力対象のエンジニアDTOリスト
      */
     @SuppressWarnings("unchecked")
     public void handleExportCSV(Object data) {
@@ -1182,12 +1189,13 @@ public class MainController {
     /**
      * ResourceManagerを活用したCSV出力用ファイル選択処理
      * 重複ファイル名の自動回避機能を追加
+     * * @param defaultFileName デフォルトファイル名
      * 
-     * @param defaultFileName デフォルトファイル名
      * @return 選択されたファイル、キャンセル時はnull
      */
     private File exportFileWithResourceManager(String defaultFileName) {
         JFileChooser fileChooser = new JFileChooser(System.getProperty("user.dir"));
+        disableFileNameTextField(fileChooser);
         fileChooser.setDialogTitle("CSVファイルの保存先");
         fileChooser.setSelectedFile(new File(defaultFileName));
 
@@ -1225,8 +1233,8 @@ public class MainController {
     /**
      * ResourceManagerを活用したファイル検証
      * 統一されたバリデーションロジックとエラーハンドリング
+     * * @param file 検証対象ファイル
      * 
-     * @param file 検証対象ファイル
      * @return 検証結果
      */
     private FileValidationResult validateFileSelectionWithResourceManager(File file) {
@@ -1267,8 +1275,8 @@ public class MainController {
     /**
      * ResourceManagerを活用したCSV出力処理の実行
      * リソース管理とエラーハンドリングの統合
+     * * @param targetList 出力対象データ
      * 
-     * @param targetList 出力対象データ
      * @param outputFile 出力先ファイル
      */
     private void executeCSVExportWithResourceManager(List<EngineerDTO> targetList, File selectedFile) {
@@ -1312,8 +1320,7 @@ public class MainController {
 
     /**
      * エクスポートステータスのクリア
-     * 
-     * @param panel 対象パネル
+     * * @param panel 対象パネル
      */
     private void clearExportStatus(JPanel panel) {
         SwingUtilities.invokeLater(() -> {
@@ -1350,8 +1357,7 @@ public class MainController {
 
     /**
      * キャッシュからListPanelを取得するヘルパーメソッド
-     * 
-     * @return ListPanelインスタンス（見つからない場合はnull）
+     * * @return ListPanelインスタンス（見つからない場合はnull）
      */
     private JPanel getListPanelFromCache() {
         // ScreenTransitionControllerからパネルを取得
@@ -1458,8 +1464,8 @@ public class MainController {
 
     /**
      * ResourceManagerを活用したCSVインポート処理の実行
+     * * @param selectedFile インポート対象ファイル
      * 
-     * @param selectedFile インポート対象ファイル
      * @param currentPanel ステータス表示用パネル
      */
     private void executeCSVImportWithResourceManager(File selectedFile, JPanel currentPanel) {
@@ -1516,9 +1522,8 @@ public class MainController {
 
     /**
      * ResourceManagerを活用したインポート結果の処理
+     * * * @param importResult インポート結果
      * 
-     * 
-     * @param importResult     インポート結果
      * @param currentEngineers 現在のエンジニアリスト
      * @param currentPanel     ステータス表示用パネル
      */
@@ -1652,8 +1657,8 @@ public class MainController {
     /**
      * 既存データとの重複チェックを実行
      * インポートデータと既存エンジニアデータを比較し、重複IDを検出
+     * * @param importResult インポート結果オブジェクト
      * 
-     * @param importResult     インポート結果オブジェクト
      * @param currentEngineers 現在の既存エンジニアデータ
      */
     private void performDuplicateCheckWithExistingData(CSVAccessResult importResult,
@@ -1751,8 +1756,8 @@ public class MainController {
     /**
      * 分析結果に基づくデータ更新処理
      * CSVAccessResultの分析機能を活用して効率的なデータ更新を実行
+     * * @param importResult 拡張されたCSVAccessResult
      * 
-     * @param importResult      拡張されたCSVAccessResult
      * @param importedEngineers 取り込み予定のエンジニアデータ
      * @param currentEngineers  現在のエンジニアデータ
      */
@@ -1818,8 +1823,8 @@ public class MainController {
     /**
      * 処理結果と分析結果の整合性検証
      * 予想された結果と実際の結果が一致することを確認
+     * * @param importResult 分析済みのCSVAccessResult
      * 
-     * @param importResult       分析済みのCSVAccessResult
      * @param actualAddedCount   実際に追加されたデータ件数
      * @param actualUpdatedCount 実際に更新されたデータ件数
      * @param actualSkippedCount 実際にスキップされたデータ件数
@@ -1866,8 +1871,8 @@ public class MainController {
     /**
      * インポート完了後のUI更新
      * CSVAccessResultの拡張機能を使用して、詳細な結果表示を実行
+     * * @param importResult 分析済みのCSVAccessResult
      * 
-     * @param importResult 分析済みのCSVAccessResult
      * @param currentPanel ステータス表示用パネル
      */
     private void updateUIAfterImportWithAnalysis(CSVAccessResult importResult, JPanel currentPanel) {
@@ -1898,8 +1903,7 @@ public class MainController {
     /**
      * 分析機能を活用した詳細なインポート結果表示
      * CSVAccessResultの拡張機能により、ユーザーフレンドリーな結果表示を実現
-     * 
-     * @param importResult 分析済みのCSVAccessResult
+     * * @param importResult 分析済みのCSVAccessResult
      */
     private void showDetailedImportResultWithAnalysis(CSVAccessResult importResult) {
         try {
@@ -1925,8 +1929,8 @@ public class MainController {
     /**
      * インポートエラーの処理（既存メソッドを保持）
      * エラー時の統一的な処理を提供
+     * * @param _e 発生した例外
      * 
-     * @param _e           発生した例外
      * @param currentPanel ステータス表示用パネル
      */
     private void handleImportError(Exception _e, JPanel currentPanel) {
@@ -1958,9 +1962,9 @@ public class MainController {
     /**
      * 未知のイベント処理
      * 未定義のイベントを処理します
+     * * @param event イベント種別
      * 
-     * @param event イベント種別
-     * @param data  イベントデータ
+     * @param data イベントデータ
      */
     private void handleUnknownEvent(String event, Object data) {
         LogHandler.getInstance().log(Level.WARNING, LogType.SYSTEM,
@@ -1974,8 +1978,8 @@ public class MainController {
 
     /**
      * ResourceManagerを活用したインポートファイルの検証
+     * * @param file 検証対象ファイル
      * 
-     * @param file 検証対象ファイル
      * @return 検証結果
      */
     private FileValidationResult validateImportFileWithResourceManager(File file) {
@@ -2004,8 +2008,7 @@ public class MainController {
     /**
      * エラー処理
      * 通常のエラーを処理します
-     * 
-     * @param _e 発生した例外
+     * * @param _e 発生した例外
      */
     private void handleError(Exception _e) {
         // 通常のエラー処理
@@ -2020,8 +2023,7 @@ public class MainController {
     /**
      * 致命的なエラー処理
      * アプリケーションを安全に終了します
-     * 
-     * @param _e 発生した例外
+     * * @param _e 発生した例外
      */
     private void handleFatalError(Exception _e) {
         LogHandler.getInstance().logError(LogType.SYSTEM, "致命的なエラー", _e);
@@ -2252,8 +2254,7 @@ public class MainController {
 
     /**
      * 実行中タスク数を取得
-     * 
-     * @return 実行中のタスク数
+     * * @return 実行中のタスク数
      */
     public int getRunningTaskCount() {
         return runningTasks.size();
@@ -2261,8 +2262,7 @@ public class MainController {
 
     /**
      * シャットダウン状態の確認
-     * 
-     * @return シャットダウン中の場合はtrue
+     * * @return シャットダウン中の場合はtrue
      */
     public boolean isShuttingDown() {
         return isShuttingDown.get();
@@ -2270,8 +2270,7 @@ public class MainController {
 
     /**
      * エンジニアコントローラーを取得
-     * 
-     * @return エンジニアコントローラー
+     * * @return エンジニアコントローラー
      */
     public EngineerController getEngineerController() {
         return engineerController;
@@ -2279,8 +2278,7 @@ public class MainController {
 
     /**
      * 画面遷移コントローラーを取得
-     * 
-     * @return 画面遷移コントローラー
+     * * @return 画面遷移コントローラー
      */
     public ScreenTransitionController getScreenController() {
         return screenController;
