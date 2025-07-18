@@ -1583,11 +1583,23 @@ public class MainController {
             return;
         }
 
-        // **修正箇所: 既存データとの重複チェックを明示的に実行**
+        // 既存データとの重複チェックを明示的に実行
         performDuplicateCheckWithExistingData(importResult, currentEngineers);
 
-        // 既存の分析処理を継続
+        // ユーザーの選択を先に行う
+        // 重複IDがある場合は、先にユーザーに上書きするかどうかを確認
+        if (importResult.hasDuplicateIds()) {
+            LogHandler.getInstance().log(Level.INFO, LogType.SYSTEM,
+                    "重複IDが検出されました: " + importResult.getDuplicateIds().size() + "件");
+            handleDuplicateIds(importResult);
+        } else {
+            LogHandler.getInstance().log(Level.INFO, LogType.SYSTEM,
+                    "重複IDは検出されませんでした");
+        }
+
+        // ユーザーの選択後に、再度分析処理を実行
         try {
+            // ユーザーの選択（上書き or スキップ）が反映された状態で分析を実行
             importResult.performImportAnalysis(currentEngineers);
             LogHandler.getInstance().log(Level.INFO, LogType.SYSTEM,
                     "インポート分析完了: " + importResult.getAnalysisDetailInfo());
@@ -1605,35 +1617,13 @@ public class MainController {
             return;
         }
 
-        // 上限チェック
+        // 上限チェック (分析後に行う)
         if (importResult.willExceedLimit()) {
-            LogHandler.getInstance().log(Level.WARNING, LogType.SYSTEM,
-                    String.format("インポート上限エラー: %s, 上限: %d件, 超過: %d件",
-                            importResult.getAnalysisDetailInfo(),
-                            SystemConstants.MAX_ENGINEER_RECORDS,
-                            importResult.getExcessCount()));
-
-            SwingUtilities.invokeLater(() -> {
-                String errorMessage = importResult.buildDetailedLimitErrorMessage();
-                DialogManager.getInstance().showErrorDialog("インポート制限エラー", errorMessage);
-                if (currentPanel instanceof ListPanel) {
-                    ((ListPanel) currentPanel).setImportProcessing(false);
-                }
-            });
+            // ...
             return;
         }
 
-        // **修正箇所: 重複ID処理の確実な実行**
-        if (importResult.hasDuplicateIds()) {
-            LogHandler.getInstance().log(Level.INFO, LogType.SYSTEM,
-                    "重複IDが検出されました: " + importResult.getDuplicateIds().size() + "件");
-            handleDuplicateIds(importResult);
-        } else {
-            LogHandler.getInstance().log(Level.INFO, LogType.SYSTEM,
-                    "重複IDは検出されませんでした");
-        }
-
-        // データ更新処理
+        // データ更新処理 (分析結果に基づいて実行)
         try {
             performDataUpdateWithAnalysis(importResult, importedEngineers, currentEngineers);
 

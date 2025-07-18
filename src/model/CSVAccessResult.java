@@ -499,8 +499,8 @@ public class CSVAccessResult {
     /**
      * ユーザー向けの詳細なインポート完了メッセージを構築
      * 処理結果をユーザーが理解しやすい形で提供
+     * * @return 詳細な完了メッセージ
      * 
-     * @return 詳細な完了メッセージ
      * @throws IllegalStateException 分析が未実行の場合
      */
     public String buildDetailedCompletionMessage() {
@@ -517,8 +517,10 @@ public class CSVAccessResult {
             message.append(String.format("・上書き更新: %,d件\n", calculatedOverwriteDataCount));
         }
 
-        if (calculatedSkipDataCount > 0) {
-            message.append(String.format("・重複スキップ: %,d件\n", calculatedSkipDataCount));
+        // 重複IDの総数から上書き件数を引いて、純粋なスキップ件数を計算・表示
+        int actualSkippedCount = getDuplicateIdCount() - getCalculatedOverwriteDataCount();
+        if (actualSkippedCount > 0) {
+            message.append(String.format("・重複スキップ: %,d件\n", actualSkippedCount));
         }
 
         if (getErrorCount() > 0) {
