@@ -172,9 +172,9 @@ public class ScreenTransitionController {
                     isTransitioning.set(false);
                 }
             });
-        } catch (Exception e) {
+        } catch (Exception _e) {
             isTransitioning.set(false);
-            LogHandler.getInstance().logError(LogType.SYSTEM, "パネル表示中にエラー", e);
+            LogHandler.getInstance().logError(LogType.SYSTEM, "パネル表示中にエラー", _e);
         }
     }
 

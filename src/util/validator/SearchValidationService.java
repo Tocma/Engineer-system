@@ -108,11 +108,11 @@ public class SearchValidationService {
                     errorMessages,
                     validationResult.getProcessedValues());
 
-        } catch (Exception e) {
+        } catch (Exception _e) {
             LogHandler.getInstance().logError(LogType.SYSTEM,
-                    "検索条件バリデーション中にエラーが発生", e);
+                    "検索条件バリデーション中にエラーが発生", _e);
             return new SearchValidationResult(false,
-                    List.of("検索条件の検証中にエラーが発生: " + e.getMessage()),
+                    List.of("検索条件の検証中にエラーが発生: " + _e.getMessage()),
                     new HashMap<>());
         }
     }
@@ -235,7 +235,7 @@ public class SearchValidationService {
                     errors.add("生年月日が100年以上前に設定されています。正しい日付か確認してください");
                 }
 
-            } catch (Exception e) {
+            } catch (Exception _e) {
                 errors.add("無効な生年月日が指定されています");
             }
         }
@@ -248,7 +248,7 @@ public class SearchValidationService {
                     if (yearValue < 1950 || yearValue > LocalDate.now().getYear()) {
                         errors.add("年は1950年から現在年まで入力してください");
                     }
-                } catch (NumberFormatException e) {
+                } catch (NumberFormatException _e) {
                     errors.add("年は数値で入力してください");
                 }
             }
@@ -260,7 +260,7 @@ public class SearchValidationService {
                     if (monthValue < 1 || monthValue > 12) {
                         errors.add("月は1から12の範囲で入力してください");
                     }
-                } catch (NumberFormatException e) {
+                } catch (NumberFormatException _e) {
                     errors.add("月は数値で入力してください");
                 }
             }
@@ -272,7 +272,7 @@ public class SearchValidationService {
                     if (dayValue < 1 || dayValue > 31) {
                         errors.add("日は1から31の範囲で入力してください");
                     }
-                } catch (NumberFormatException e) {
+                } catch (NumberFormatException _e) {
                     errors.add("日は数値で入力してください");
                 }
             }
@@ -286,7 +286,7 @@ public class SearchValidationService {
                 if (careerYears > 50) {
                     errors.add("エンジニア歴は50年以下で指定してください");
                 }
-            } catch (NumberFormatException e) {
+            } catch (NumberFormatException _e) {
                 errors.add("エンジニア歴は数値で指定してください");
             }
         }

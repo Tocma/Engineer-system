@@ -66,7 +66,7 @@ public class Main {
                     }
                 }
             } catch (ClassNotFoundException | InstantiationException | IllegalAccessException
-                    | UnsupportedLookAndFeelException e) {
+                    | UnsupportedLookAndFeelException _e) {
                 // Nimbusが利用できない場合は、システムデフォルトを使用
                 try {
                     UIManager.setLookAndFeel(UIManager.getSystemLookAndFeelClassName());

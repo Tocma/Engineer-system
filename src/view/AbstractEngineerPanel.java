@@ -426,9 +426,9 @@ public abstract class AbstractEngineerPanel extends JPanel {
             LogHandler.getInstance().log(Level.INFO, LogType.UI,
                     fieldName + "フィールドに" + maxLength + "文字制限を適用しました");
 
-        } catch (Exception e) {
+        } catch (Exception _e) {
             LogHandler.getInstance().logError(LogType.UI,
-                    fieldName + "フィールドへの文字数制限適用中にエラーが発生", e);
+                    fieldName + "フィールドへの文字数制限適用中にエラーが発生", _e);
         }
     }
 
@@ -787,9 +787,9 @@ public abstract class AbstractEngineerPanel extends JPanel {
     private int getEmployeeIdMaxLength() {
         try {
             return PropertiesManager.getInstance().getInt("validation.employee.id.max.length", 10);
-        } catch (Exception e) {
+        } catch (Exception _e) {
             LogHandler.getInstance().logError(LogType.SYSTEM,
-                    "社員ID最大文字数の取得に失敗、デフォルト値を使用", e);
+                    "社員ID最大文字数の取得に失敗、デフォルト値を使用", _e);
             return 10;
         }
     }
@@ -803,9 +803,9 @@ public abstract class AbstractEngineerPanel extends JPanel {
     private int getNameKanaMaxLength() {
         try {
             return PropertiesManager.getInstance().getInt("validation.max.name.kana.length", 20);
-        } catch (Exception e) {
+        } catch (Exception _e) {
             LogHandler.getInstance().logError(LogType.SYSTEM,
-                    "フリガナ最大文字数の取得に失敗、デフォルト値を使用", e);
+                    "フリガナ最大文字数の取得に失敗、デフォルト値を使用", _e);
             return 20;
         }
     }

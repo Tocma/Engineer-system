@@ -229,10 +229,10 @@ public class PerformanceMonitor {
         long executionTime = 0;
         try {
             task.run();
-        } catch (Exception e) {
+        } catch (Exception _e) {
             logHandler.logError(LogType.SYSTEM,
-                    "測定中にエラーが発生: " + methodName, e);
-            throw e;
+                    "測定中にエラーが発生: " + methodName, _e);
+            throw _e;
         } finally {
             executionTime = endMeasurement(methodName);
         }

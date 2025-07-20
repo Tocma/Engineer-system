@@ -65,8 +65,8 @@ public class LogHandler {
             if (!INSTANCE.isInitialized) {
                 try {
                     INSTANCE.initialize();
-                } catch (IOException e) {
-                    System.err.println("LogHandlerの初期化に失敗: " + e.getMessage());
+                } catch (IOException _e) {
+                    System.err.println("LogHandlerの初期化に失敗: " + _e.getMessage());
                     System.err.println("標準出力へのフォールバックを使用");
                 }
             }
@@ -102,9 +102,9 @@ public class LogHandler {
 
             log(LogType.SYSTEM, "ログシステムを初期化完了: " + this.logDirectory);
 
-        } catch (IOException e) {
+        } catch (IOException _e) {
             cleanup();
-            throw new IOException("ログシステムの初期化に失敗", e);
+            throw new IOException("ログシステムの初期化に失敗", _e);
         }
     }
 
@@ -127,7 +127,7 @@ public class LogHandler {
             lockFilePath.toFile().deleteOnExit();
             System.out.println("ログファイルロックを取得: " + lockFilePath);
 
-        } catch (IOException e) {
+        } catch (IOException _e) {
             if (lockChannel != null) {
                 try {
                     lockChannel.close();
@@ -135,7 +135,7 @@ public class LogHandler {
                     // クローズエラーは無視
                 }
             }
-            throw e;
+            throw _e;
         }
     }
 
@@ -161,9 +161,9 @@ public class LogHandler {
 
             System.out.println("ログファイルを設定: " + logFilePath);
 
-        } catch (IOException e) {
-            System.err.println("ログファイルハンドラーの作成に失敗: " + e.getMessage());
-            throw e;
+        } catch (IOException _e) {
+            System.err.println("ログファイルハンドラーの作成に失敗: " + _e.getMessage());
+            throw _e;
         }
     }
 
@@ -173,8 +173,8 @@ public class LogHandler {
                 logger.removeHandler(fileHandler);
                 fileHandler.flush();
                 fileHandler.close();
-            } catch (Exception e) {
-                System.err.println("既存のFileHandlerのクリーンアップに失敗: " + e.getMessage());
+            } catch (Exception _e) {
+                System.err.println("既存のFileHandlerのクリーンアップに失敗: " + _e.getMessage());
             } finally {
                 fileHandler = null;
             }
@@ -264,8 +264,8 @@ public class LogHandler {
                     type != null ? type.getCode() : "UNKNOWN",
                     message != null ? message : ""));
             writer.flush();
-        } catch (IOException e) {
-            System.err.println("直接ログ書き込みに失敗: " + e.getMessage());
+        } catch (IOException _e) {
+            System.err.println("直接ログ書き込みに失敗: " + _e.getMessage());
         }
     }
 
@@ -274,8 +274,8 @@ public class LogHandler {
         if (currentLogFilePath != null && Files.exists(Paths.get(currentLogFilePath))) {
             try {
                 return Files.size(Paths.get(currentLogFilePath));
-            } catch (IOException e) {
-                logError(LogType.SYSTEM, "ログファイルサイズの取得に失敗", e);
+            } catch (IOException _e) {
+                logError(LogType.SYSTEM, "ログファイルサイズの取得に失敗", _e);
             }
         }
         return 0;
@@ -292,7 +292,7 @@ public class LogHandler {
                     .sorted((p1, p2) -> {
                         try {
                             return Files.getLastModifiedTime(p2).compareTo(Files.getLastModifiedTime(p1));
-                        } catch (IOException e) {
+                        } catch (IOException _e) {
                             return 0;
                         }
                     })
@@ -301,12 +301,12 @@ public class LogHandler {
                         try {
                             Files.deleteIfExists(path);
                             log(LogType.SYSTEM, "古いアーカイブファイルを削除: " + path.getFileName());
-                        } catch (IOException e) {
-                            logError(LogType.SYSTEM, "アーカイブファイル削除に失敗: " + path.getFileName(), e);
+                        } catch (IOException _e) {
+                            logError(LogType.SYSTEM, "アーカイブファイル削除に失敗: " + path.getFileName(), _e);
                         }
                     });
-        } catch (IOException e) {
-            logError(LogType.SYSTEM, "アーカイブクリーンアップ処理でエラー", e);
+        } catch (IOException _e) {
+            logError(LogType.SYSTEM, "アーカイブクリーンアップ処理でエラー", _e);
         }
     }
 
@@ -324,8 +324,8 @@ public class LogHandler {
         // ローテーション中でなければ日付チェックを実行
         try {
             checkAndRotateLogFile();
-        } catch (IOException e) {
-            System.err.println("ログローテーションに失敗: " + e.getMessage());
+        } catch (IOException _e) {
+            System.err.println("ログローテーションに失敗: " + _e.getMessage());
         }
 
         if (message == null)
@@ -358,8 +358,8 @@ public class LogHandler {
 
         try {
             checkAndRotateLogFile();
-        } catch (IOException e) {
-            System.err.println("ログローテーションに失敗: " + e.getMessage());
+        } catch (IOException _e) {
+            System.err.println("ログローテーションに失敗: " + _e.getMessage());
         }
 
         if (message == null)
@@ -418,9 +418,9 @@ public class LogHandler {
                     System.out.println(lckFilePath.getFileName() + " を削除しました。");
                 }
             }
-        } catch (Exception e) {
+        } catch (Exception _e) {
             // ファイル名取得でエラーになる可能性も考慮
-            System.err.println("ログの.lckファイルの削除に失敗しました: " + e.getMessage());
+            System.err.println("ログの.lckファイルの削除に失敗しました: " + _e.getMessage());
         }
     }
 
@@ -429,8 +429,8 @@ public class LogHandler {
             try {
                 logFileLock.release();
                 System.out.println("ログファイルロックを解放");
-            } catch (IOException e) {
-                System.err.println("ログファイルロックの解放に失敗: " + e.getMessage());
+            } catch (IOException _e) {
+                System.err.println("ログファイルロックの解放に失敗: " + _e.getMessage());
             } finally {
                 logFileLock = null;
             }
@@ -439,8 +439,8 @@ public class LogHandler {
         if (lockChannel != null) {
             try {
                 lockChannel.close();
-            } catch (IOException e) {
-                System.err.println("ロックチャンネルのクローズに失敗: " + e.getMessage());
+            } catch (IOException _e) {
+                System.err.println("ロックチャンネルのクローズに失敗: " + _e.getMessage());
             } finally {
                 lockChannel = null;
             }

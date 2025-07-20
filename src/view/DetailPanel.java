@@ -429,8 +429,8 @@ public class DetailPanel extends AbstractEngineerPanel {
                 noteArea.repaint();
             });
 
-        } catch (Exception e) {
-            LogHandler.getInstance().logError(LogType.UI, "エンジニア情報の画面反映中にエラーが発生", e);
+        } catch (Exception _e) {
+            LogHandler.getInstance().logError(LogType.UI, "エンジニア情報の画面反映中にエラーが発生", _e);
             showErrorMessage("エンジニア情報の表示中にエラーが発生しました");
         }
     }
