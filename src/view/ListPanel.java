@@ -221,27 +221,27 @@ public class ListPanel extends JPanel {
     public void initialize() {
         try {
             // 上部パネル（タイトルと操作ボタン）
-            add(createTopPanel(), BorderLayout.NORTH);
+            this.add(createTopPanel(), BorderLayout.NORTH);
 
             // 中央部（テーブル）
             JScrollPane scrollPane = new JScrollPane(table);
             scrollPane.getViewport().setBackground(Color.WHITE);
-            add(scrollPane, BorderLayout.CENTER);
+            this.add(scrollPane, BorderLayout.CENTER);
 
             // 下部パネル（ページネーション）
-            add(createBottomPanel(), BorderLayout.SOUTH);
+            this.add(createBottomPanel(), BorderLayout.SOUTH);
 
             // ページネーションのイベント設定（ListenerManager経由）
-            setupPaginationEventsWithManager();
+            this.setupPaginationEventsWithManager();
 
             // ソート設定とイベント登録（ListenerManager経由）
-            configureSorterWithManager();
+            this.configureSorterWithManager();
 
             // テーブルのイベント設定（ListenerManager経由）
-            setupTableEventsWithManager();
+            this.setupTableEventsWithManager();
 
             // リスナー初期化完了フラグを設定
-            listenersInitialized = true;
+            this.listenersInitialized = true;
 
             LogHandler.getInstance().log(Level.INFO, LogType.SYSTEM,
                     "エンジニア一覧画面を初期化完了");

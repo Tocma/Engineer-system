@@ -106,13 +106,13 @@ public class DetailPanel extends AbstractEngineerPanel {
 
         try {
             // フォームコンポーネントの作成
-            createFormComponents();
+            this.createFormComponents();
 
             // ボタン領域の作成
-            createButtonArea();
+            this.createButtonArea();
 
             // 変更リスナーの設定
-            setupChangeListeners();
+            this.setupChangeListeners();
 
             LogHandler.getInstance().log(Level.INFO, LogType.UI, "DetailPanelの初期化完了");
         } catch (Exception _e) {

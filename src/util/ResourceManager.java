@@ -91,13 +91,13 @@ public class ResourceManager {
             System.out.println("SRCディレクトリの絶対パス: " + srcDirectoryPath);
 
             // 各ディレクトリパスの設定
-            setDirectoryPaths();
+            this.setDirectoryPaths();
 
             // ディレクトリの確認と作成
-            checkAndCreateDirectories();
+            this.checkAndCreateDirectories();
 
             // CSVファイルの確認と作成
-            checkAndCreateCsvFile();
+            this.checkAndCreateCsvFile();
 
             // 初期化完了
             initialized = true;
@@ -119,8 +119,8 @@ public class ResourceManager {
         String dataDir = props.getString("directory.data", "data");
         String csvFileName = props.getString("file.csv.default", "engineers.csv");
 
-        dataDirectoryPath = srcDirectoryPath.resolve(dataDir);
-        engineerCsvPath = dataDirectoryPath.resolve(csvFileName);
+        this.dataDirectoryPath = srcDirectoryPath.resolve(dataDir);
+        this.engineerCsvPath = dataDirectoryPath.resolve(csvFileName);
     }
 
     /**

@@ -87,13 +87,13 @@ public class AddPanel extends AbstractEngineerPanel {
         try {
             // 最新のエンジニアIDセットでバリデータを初期化
             Set<String> currentIds = getExistingEngineerIds();
-            updateExistingIds(currentIds);
+            this.updateExistingIds(currentIds);
 
             // フォームコンポーネントの作成
-            createFormComponents();
+            this.createFormComponents();
 
             // ボタン領域の作成
-            createButtonArea();
+            this.createButtonArea();
 
             LogHandler.getInstance().log(Level.INFO, LogType.UI, "アドパネルの初期化完了");
         } catch (Exception _e) {

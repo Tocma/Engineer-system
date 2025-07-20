@@ -1,7 +1,9 @@
 package view;
 
-import javax.swing.*;
-import java.awt.*;
+import java.awt.Dimension;
+
+import javax.swing.JFrame;
+
 import util.LogHandler;
 import util.LogHandler.LogType;
 import util.Constants.UIConstants;
@@ -33,8 +35,8 @@ public abstract class AbstractFrame {
      */
     protected void initialize() {
         try {
-            initializeFrame();
-            customizeFrame();
+            this.initializeFrame();
+            this.customizeFrame();
         } catch (Exception _e) {
             LogHandler.getInstance().logError(LogType.SYSTEM, "フレームの初期化に失敗", _e);
             throw new RuntimeException("フレームの初期化に失敗", _e);
@@ -45,8 +47,8 @@ public abstract class AbstractFrame {
      * 基本的なフレーム設定を実行
      */
     protected void initializeFrame() {
-        frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
-        setFrameSize(UIConstants.DEFAULT_WINDOW_WIDTH, UIConstants.DEFAULT_WINDOW_HEIGHT);
+        this.frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
+        this.setFrameSize(UIConstants.DEFAULT_WINDOW_WIDTH, UIConstants.DEFAULT_WINDOW_HEIGHT);
         frame.setLocationRelativeTo(null);
     }
 

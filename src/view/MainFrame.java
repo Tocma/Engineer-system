@@ -1,10 +1,6 @@
 package view;
 
-import util.LogHandler;
-import util.LogHandler.LogType;
-import javax.swing.*;
-import controller.MainController;
-import java.awt.*;
+import java.awt.BorderLayout;
 import java.awt.event.WindowAdapter;
 import java.awt.event.WindowEvent;
 import java.util.ArrayList;
@@ -13,6 +9,13 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
 import java.util.logging.Level;
+
+import javax.swing.JFrame;
+import javax.swing.JPanel;
+
+import controller.MainController;
+import util.LogHandler;
+import util.LogHandler.LogType;
 import util.Constants.SystemConstants;
 
 /**
@@ -61,7 +64,7 @@ public class MainFrame extends AbstractFrame {
         this.listPanel = new ListPanel();
 
         // ウィンドウ終了イベントのハンドリング
-        setupWindowCloseHandler();
+        this.setupWindowCloseHandler();
     }
 
     public ListPanel getListPanel() {

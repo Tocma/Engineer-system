@@ -1,8 +1,13 @@
 package util;
 
-import java.io.*;
+import java.io.BufferedReader;
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.InputStreamReader;
 import java.nio.charset.StandardCharsets;
-import java.nio.file.*;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.Properties;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.logging.Level;
@@ -65,12 +70,12 @@ public class PropertiesManager {
                         "プロパティファイルをクラスパスから読み込み: " + DEFAULT_PROPERTIES_FILE);
             } else {
                 // 2. ファイルシステムから読み込み
-                loadFromFileSystem();
+                this.loadFromFileSystem();
             }
         }
 
         // システムプロパティで上書き
-        overrideWithSystemProperties();
+        this.overrideWithSystemProperties();
 
         initialized = true;
         LogHandler.getInstance().log(Level.INFO, LogHandler.LogType.SYSTEM,
@@ -97,10 +102,6 @@ public class PropertiesManager {
                 }
             }
         }
-
-        // デフォルト値で初期化
-        //System.out.println("プロパティファイルが見つかりません。デフォルト値を使用");
-        //loadDefaults();
     }
 
     /**
