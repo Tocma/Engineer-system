@@ -16,7 +16,6 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.logging.Level;
-import java.util.stream.Collectors;
 
 import util.LogHandler;
 import util.LogHandler.LogType;
@@ -501,57 +500,6 @@ public class EngineerCSVDAO implements EngineerDAO {
         } catch (Exception _e) {
             LogHandler.getInstance().logError(LogType.SYSTEM, "CSV書き込み中にエラーが発生", _e);
             return false;
-        }
-    }
-
-    /**
-     * 重複ID処理
-     * 重複IDが検出された場合の処理を行う
-     * * @param result CSVアクセス結果
-     */
-    private void handleDuplicateIds(CSVAccessResult result) {
-        if (!result.hasDuplicateIds()) {
-            return;
-        }
-
-        try {
-            // 重複ID確認ダイアログを表示
-            boolean overwrite = dialogManager.showDuplicateIdConfirmDialog(result.getDuplicateIds());
-
-            // 上書き確認結果を設定
-            result.setOverwriteConfirmed(overwrite);
-
-            if (overwrite) {
-                LogHandler.getInstance().log(Level.INFO, LogType.SYSTEM,
-                        "重複IDの上書きが確認されました: " + result.getDuplicateIds().size() + "件");
-            } else {
-                LogHandler.getInstance().log(Level.INFO, LogType.SYSTEM,
-                        "重複IDの保持が確認されました: " + result.getDuplicateIds().size() + "件");
-
-                // 重複IDを持つデータを成功データから削除（上書き拒否の場合）
-                List<EngineerDTO> filteredData = result.getSuccessData().stream()
-                        .filter(engineer -> !result.getDuplicateIds().contains(engineer.getId()))
-                        .collect(Collectors.toList());
-
-                // 成功データを更新
-                result.getSuccessData().clear();
-                result.getSuccessData().addAll(filteredData);
-            }
-
-        } catch (Exception _e) {
-            LogHandler.getInstance().logError(LogType.SYSTEM, "重複ID処理中にエラーが発生", _e);
-
-            // エラー時は上書きしない
-            result.setOverwriteConfirmed(false);
-
-            // 重複IDを持つデータを成功データから削除
-            List<EngineerDTO> filteredData = result.getSuccessData().stream()
-                    .filter(engineer -> !result.getDuplicateIds().contains(engineer.getId()))
-                    .collect(Collectors.toList());
-
-            // 成功データを更新
-            result.getSuccessData().clear();
-            result.getSuccessData().addAll(filteredData);
         }
     }
 

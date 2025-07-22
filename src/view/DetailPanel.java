@@ -138,6 +138,7 @@ public class DetailPanel extends AbstractEngineerPanel {
         // 最新登録日表示パネル（右上に配置）
         JPanel registeredDatePanel = new JPanel(new FlowLayout(FlowLayout.RIGHT));
         registeredDatePanel.setBackground(Color.WHITE);
+        registeredDatePanel.setAlignmentX(Component.LEFT_ALIGNMENT);
 
         // 最新登録日ラベル
         registeredDateLabel = new JLabel("最新登録日: ");

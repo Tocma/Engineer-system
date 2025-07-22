@@ -28,7 +28,6 @@ import javax.swing.JPanel;
 import javax.swing.JScrollPane;
 import javax.swing.JTextArea;
 import javax.swing.JTextField;
-import javax.swing.SwingConstants;
 import javax.swing.SwingUtilities;
 import javax.swing.border.Border;
 import javax.swing.text.AbstractDocument;
@@ -411,8 +410,8 @@ public abstract class AbstractEngineerPanel extends JPanel {
     /**
      * テキストフィールドに文字数制限を適用
      * Unicode文字（サロゲートペア、絵文字）を考慮した制限を実装
+     * * @param textField 対象のテキストフィールド
      * 
-     * @param textField 対象のテキストフィールド
      * @param maxLength 最大文字数
      * @param fieldName フィールド名（ログ用）
      */
@@ -461,7 +460,6 @@ public abstract class AbstractEngineerPanel extends JPanel {
         birthDatePanel.add(birthDayComboBox);
         birthDatePanel.add(new JLabel("日"));
 
-        createFieldErrorLabel("birthDate");
         container.add(createFormRow(birthDateLabel, birthDatePanel, "birthDate"));
     }
 
@@ -487,7 +485,6 @@ public abstract class AbstractEngineerPanel extends JPanel {
         joinDatePanel.add(joinMonthComboBox);
         joinDatePanel.add(new JLabel("月"));
 
-        createFieldErrorLabel("joinDate");
         container.add(createFormRow(joinDateLabel, joinDatePanel, "joinDate"));
     }
 
@@ -498,8 +495,8 @@ public abstract class AbstractEngineerPanel extends JPanel {
 
     /**
      * 年月選択に基づいて日の選択肢を動的に更新
+     * * @param yearCombo 年選択コンボボックス
      * 
-     * @param yearCombo  年選択コンボボックス
      * @param monthCombo 月選択コンボボックス
      * @param dayCombo   日選択コンボボックス（nullの場合は更新しない）
      */
@@ -550,8 +547,6 @@ public abstract class AbstractEngineerPanel extends JPanel {
         registerComponent("careerComboBox", careerComboBox);
         careerPanel.add(careerComboBox);
         careerPanel.add(new JLabel("年"));
-
-        createFieldErrorLabel("career");
 
         container.add(createFormRow(careerLabel, careerPanel, "career"));
     }
@@ -702,8 +697,7 @@ public abstract class AbstractEngineerPanel extends JPanel {
 
     /**
      * 共通入力検証を実行
-     * 
-     * @return 検証成功の場合true、失敗の場合false
+     * * @return 検証成功の場合true、失敗の場合false
      */
     protected boolean validateCommonInput() {
         try {
@@ -738,8 +732,7 @@ public abstract class AbstractEngineerPanel extends JPanel {
 
     /**
      * フォームデータを収集
-     * 
-     * @return フィールド名と値のマップ
+     * * @return フィールド名と値のマップ
      */
     private Map<String, String> collectFormData() {
         Map<String, String> formData = new HashMap<>();
@@ -781,8 +774,7 @@ public abstract class AbstractEngineerPanel extends JPanel {
     /**
      * 社員IDの最大文字数を取得
      * 設定値から取得、未設定の場合はデフォルト値（10）を返す
-     * 
-     * @return 社員IDの最大文字数
+     * * @return 社員IDの最大文字数
      */
     private int getEmployeeIdMaxLength() {
         try {
@@ -797,8 +789,7 @@ public abstract class AbstractEngineerPanel extends JPanel {
     /**
      * フリガナの最大文字数を取得
      * 設定値から取得、未設定の場合はデフォルト値（20）を返す
-     * 
-     * @return フリガナの最大文字数
+     * * @return フリガナの最大文字数
      */
     private int getNameKanaMaxLength() {
         try {
@@ -927,8 +918,7 @@ public abstract class AbstractEngineerPanel extends JPanel {
 
     /**
      * 最後のバリデーション結果を取得
-     * 
-     * @return バリデーション結果（まだ実行されていない場合はnull）
+     * * @return バリデーション結果（まだ実行されていない場合はnull）
      */
     protected ValidationResult getLastValidationResult() {
         return lastValidationResult;
@@ -936,8 +926,7 @@ public abstract class AbstractEngineerPanel extends JPanel {
 
     /**
      * 既存のIDセットを更新（動的な重複チェック用）
-     * 
-     * @param existingIds 新しい既存IDセット
+     * * @param existingIds 新しい既存IDセット
      */
     protected void updateExistingIds(Set<String> existingIds) {
         if (validators != null && validators.containsKey("id")) {
@@ -989,23 +978,13 @@ public abstract class AbstractEngineerPanel extends JPanel {
      * ラベルの右部に表示されるエラーメッセージラベルを作成
      */
     protected JLabel createFieldErrorLabel(String fieldName) {
-        JLabel errorLabel = new JLabel("");
+        JLabel errorLabel = new JLabel(" "); // 初期状態で高さを確保
         errorLabel.setForeground(UIConstants.ERROR_COLOR);
-        errorLabel.setVisible(false);
+        errorLabel.setVisible(false); // 初期状態では非表示
         errorLabel.setFont(errorLabel.getFont().deriveFont(Font.PLAIN, UIConstants.ERROR_MESSAGE_FONT_SIZE));
-        errorLabel.setHorizontalAlignment(SwingConstants.LEFT);
-        errorLabel.setVerticalAlignment(SwingConstants.CENTER);
-
-        // 最大幅のみ設定し、高さは内容に応じて自動調整
-        errorLabel.setMaximumSize(new Dimension(400, Integer.MAX_VALUE));
-        // 最小サイズを設定して、短いメッセージでもレイアウトが崩れないようにする
-        errorLabel.setMinimumSize(new Dimension(100, 15));
 
         fieldErrorLabels.put(fieldName, errorLabel);
         registerComponent(fieldName + "ErrorLabel", errorLabel);
-
-        LogHandler.getInstance().log(Level.INFO, LogType.UI,
-                "フィールドエラーラベルを作成しました: " + fieldName);
 
         return errorLabel;
     }
@@ -1065,37 +1044,39 @@ public abstract class AbstractEngineerPanel extends JPanel {
     }
 
     /**
-     * フォーム行パネルを作成（エラーラベル右側表示対応版）
-     * フィールドラベルの右側にエラーメッセージを表示するレイアウトを実装
+     * フォーム行パネルを作成（エラーラベル下部表示対応版）
      */
     protected JPanel createFormRow(JLabel label, Component field, String fieldName) {
+        // Main container for the row
         JPanel rowPanel = new JPanel();
         rowPanel.setLayout(new BoxLayout(rowPanel, BoxLayout.Y_AXIS));
         rowPanel.setBackground(Color.WHITE);
+        rowPanel.setAlignmentX(Component.LEFT_ALIGNMENT); // Align components to the left
 
-        // 上部パネル：ラベルとエラーメッセージを水平配置
-        JPanel topPanel = new JPanel(new BorderLayout(10, 0));
-        topPanel.setBackground(Color.WHITE);
+        // Panel for the label
+        JPanel labelPanel = new JPanel(new FlowLayout(FlowLayout.LEFT, 0, 0));
+        labelPanel.setBackground(Color.WHITE);
+        labelPanel.add(label);
+        labelPanel.setAlignmentX(Component.LEFT_ALIGNMENT);
 
-        // ラベルを左側に配置
-        topPanel.add(label, BorderLayout.WEST);
+        // Panel for the input field
+        JPanel fieldPanel = new JPanel(new FlowLayout(FlowLayout.LEFT, 0, 0));
+        fieldPanel.setBackground(Color.WHITE);
+        fieldPanel.add(field);
+        fieldPanel.setAlignmentX(Component.LEFT_ALIGNMENT);
 
-        // エラーラベルを作成して右側に配置
+        // Panel for the error label
         JLabel errorLabel = createFieldErrorLabel(fieldName);
-        JPanel errorPanel = new JPanel(new FlowLayout(FlowLayout.LEFT, 0, 0));
+        JPanel errorPanel = new JPanel(new FlowLayout(FlowLayout.LEFT, 5, 0)); // Add a small horizontal gap
         errorPanel.setBackground(Color.WHITE);
         errorPanel.add(errorLabel);
-        topPanel.add(errorPanel, BorderLayout.CENTER);
+        errorPanel.setAlignmentX(Component.LEFT_ALIGNMENT);
 
-        // フィールドパネル：入力コンポーネントを配置
-        JPanel fieldPanel = new JPanel(new BorderLayout());
-        fieldPanel.setBackground(Color.WHITE);
-        fieldPanel.add(field, BorderLayout.WEST);
-
-        // 行パネルに上部パネルとフィールドパネルを追加
-        rowPanel.add(topPanel);
-        rowPanel.add(Box.createVerticalStrut(UIConstants.LABEL_FIELD_MARGIN));
+        // Add components to the row panel
+        rowPanel.add(labelPanel);
+        rowPanel.add(Box.createVerticalStrut(2)); // Space between label and field
         rowPanel.add(fieldPanel);
+        rowPanel.add(errorPanel); // Add error panel directly below field
 
         return rowPanel;
     }
@@ -1118,32 +1099,16 @@ public abstract class AbstractEngineerPanel extends JPanel {
 
     /**
      * フィールド固有のエラーメッセージを表示
-     * createFieldErrorLabelで作成されたラベルに適切にエラーメッセージを表示
      */
     protected void showFieldError(String fieldName, String errorMessage) {
         JLabel errorLabel = fieldErrorLabels.get(fieldName);
-
-        LogHandler.getInstance().log(Level.INFO, LogType.UI,
-                "フィールドエラー表示: フィールド=" + fieldName + ", エラーラベル存在=" + (errorLabel != null));
-
         if (errorLabel != null) {
-            // エラーメッセージをラベルに設定
             errorLabel.setText(errorMessage);
             errorLabel.setVisible(true);
-
-            // 対応するコンポーネントにもエラーマークを設定
             String componentName = getComponentNameFromFieldName(fieldName);
             markComponentError(componentName, null);
-
-            LogHandler.getInstance().log(Level.INFO, LogType.UI,
-                    "フィールドエラーラベルにメッセージを設定: " + fieldName + " - " + errorMessage);
         } else {
-            // エラーラベルが見つからない場合は全体エラーメッセージにフォールバック
-            LogHandler.getInstance().log(Level.WARNING, LogType.UI,
-                    "フィールドエラーラベルが見つからないため全体エラーに表示: " + fieldName);
             showErrorMessage(errorMessage);
-
-            // コンポーネントのエラーマークは設定
             String componentName = getComponentNameFromFieldName(fieldName);
             markComponentError(componentName, null);
         }
@@ -1159,24 +1124,15 @@ public abstract class AbstractEngineerPanel extends JPanel {
 
     /**
      * すべてのフィールドエラーメッセージをクリア
-     * エラーラベルの状態を確実にリセット
      */
     protected void clearAllFieldErrors() {
-
-        for (Map.Entry<String, JLabel> entry : fieldErrorLabels.entrySet()) {
-            JLabel errorLabel = entry.getValue();
-
+        for (JLabel errorLabel : fieldErrorLabels.values()) {
             if (errorLabel != null) {
-                errorLabel.setText("");
+                errorLabel.setText(" ");
                 errorLabel.setVisible(false);
             }
         }
-
-        // 全体エラーメッセージもクリア
         clearErrorMessage();
-
-        LogHandler.getInstance().log(Level.INFO, LogType.UI,
-                "全フィールドエラークリア完了");
     }
 
     /**
