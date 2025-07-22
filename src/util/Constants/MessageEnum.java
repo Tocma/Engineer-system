@@ -65,7 +65,7 @@ public enum MessageEnum {
      * ユーザーに対してプログラミング言語の選択を促すメッセージです。
      * プログラミング言語は必須項目であり、少なくとも1つ以上選択することが求められます。
      */
-    VALIDATION_ERROR_PROGRAMMING_LANGUAGES("*は必須項目です。1つ以上項目範囲の開発言語をを選択してください。"),
+    VALIDATION_ERROR_PROGRAMMING_LANGUAGES("*は必須項目です。項目範囲の開発言語を1つ以上選択してください。"),
 
     /**
      * 経歴入力エラー時のバリデーションエラーメッセージ。
