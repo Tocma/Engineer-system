@@ -1557,7 +1557,7 @@ public class MainController {
             return;
         }
 
-        // ファイル内重複IDチェック（新規追加）
+        // 【修正】ファイル内重複IDチェックを最初に行う
         List<String> internalDuplicateIds = importResult.checkInternalDuplicateIds();
         if (!internalDuplicateIds.isEmpty()) {
             LogHandler.getInstance().log(Level.WARNING, LogType.SYSTEM,
@@ -1565,12 +1565,12 @@ public class MainController {
 
             SwingUtilities.invokeLater(() -> {
                 StringBuilder errorMessage = new StringBuilder();
-                errorMessage.append("取り込みファイル内に重複したIDが存在します。\n\n");
-                errorMessage.append("重複ID:\n");
+                errorMessage.append("エラー：取り込みファイル内に重複したIDが存在します。\n\n");
+                errorMessage.append("重複しているID:\n");
                 for (String duplicateId : internalDuplicateIds) {
-                    errorMessage.append("  ").append(duplicateId).append("\n");
+                    errorMessage.append("  - ").append(duplicateId).append("\n");
                 }
-                errorMessage.append("\nファイルを修正してから再度インポートしてください。");
+                errorMessage.append("\nファイルを修正してから、再度インポートしてください。");
 
                 DialogManager.getInstance().showErrorDialog(
                         "ファイル内重複IDエラー",
@@ -1579,11 +1579,13 @@ public class MainController {
                 if (currentPanel instanceof ListPanel) {
                     ((ListPanel) currentPanel).setImportProcessing(false);
                 }
+                // 重複エラー時もボタンを有効化
+                screenController.setRegisterButtonEnabled(true);
             });
-            return;
+            return; // 処理を中断
         }
 
-        // 既存データとの重複チェックを明示的に実行
+        // 既存データとの重複チェックを実行
         performDuplicateCheckWithExistingData(importResult, currentEngineers);
 
         // ユーザーの選択を先に行う

@@ -450,14 +450,8 @@ public class EngineerCSVDAO implements EngineerDAO {
             Object result = csvAccess.getResult();
 
             if (result instanceof CSVAccessResult) {
-                CSVAccessResult accessResult = (CSVAccessResult) result;
-
-                // 重複IDの処理
-                if (accessResult.hasDuplicateIds() && !accessResult.isOverwriteConfirmed()) {
-                    handleDuplicateIds(accessResult);
-                }
-
-                return accessResult;
+                // 【修正】ここでは重複IDの処理を行わず、結果をそのまま返す
+                return (CSVAccessResult) result;
             } else {
                 LogHandler.getInstance().log(Level.WARNING, LogType.SYSTEM,
                         "CSV読み込み結果が不正な形式です: " + (result != null ? result.getClass().getName() : "null"));
