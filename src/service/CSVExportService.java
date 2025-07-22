@@ -1,14 +1,15 @@
 // src/service/CSVExportService.java
 package service;
 
-import model.EngineerDTO;
-import model.EngineerCSVDAO;
-import util.LogHandler;
-import util.LogHandler.LogType;
-import util.ResourceManager;
 import java.io.File;
 import java.util.List;
 import java.util.logging.Level;
+
+import model.EngineerCSVDAO;
+import model.EngineerDTO;
+import util.LogHandler;
+import util.LogHandler.LogType;
+import util.ResourceManager;
 
 /**
  * CSV出力サービス
@@ -32,6 +33,11 @@ public class CSVExportService {
      * @return 出力成功の場合true
      */
     public boolean exportTemplate(File selectedFile) {
+        try {
+            Thread.sleep(5000); // 5秒待機
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+        }
         try {
             LogHandler.getInstance().log(Level.INFO, LogType.SYSTEM,
                     "テンプレートCSV出力を開始: " + selectedFile.getPath());
@@ -63,6 +69,12 @@ public class CSVExportService {
      * @return 出力成功の場合true
      */
     public boolean exportCSV(List<EngineerDTO> targetList, File selectedFile) {
+        try {
+            Thread.sleep(5000); // 5秒待機
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+        }
+
         try {
             if (targetList == null || targetList.isEmpty()) {
                 LogHandler.getInstance().log(Level.WARNING, LogType.SYSTEM,

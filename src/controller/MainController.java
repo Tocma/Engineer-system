@@ -2038,6 +2038,12 @@ public class MainController {
                 "MainController主導で統合シャットダウンを開始します");
 
         try {
+            Thread.sleep(5000); // 5秒待機
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+        }
+
+        try {
             // ステップ1: ビジネスロジック層の終了
             performBusinessLayerShutdown();
 
