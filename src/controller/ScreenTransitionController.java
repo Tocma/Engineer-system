@@ -438,13 +438,34 @@ public class ScreenTransitionController {
     }
 
     public void ensureAllPanelsInitialized() {
-    String[] panelTypes = {"LIST", "DETAIL", "ADD"};
-    for (String type : panelTypes) {
-        if (!panelCache.containsKey(type)) {
-            getPanel(type); // パネルを強制作成
+        String[] panelTypes = { "LIST", "DETAIL", "ADD" };
+        for (String type : panelTypes) {
+            if (!panelCache.containsKey(type)) {
+                getPanel(type); // パネルを強制作成
+            }
+        }
+        LogHandler.getInstance().log(Level.INFO, LogType.SYSTEM,
+                "全パネルの初期化を確認完了");
+    }
+
+    /**
+     * すべての関連パネル（詳細・追加）の処理中状態を一括で設定します。
+     * CSV処理中など、システム全体でUI操作を制限する場合に使用します。
+     *
+     * @param processing trueの場合、処理中状態に設定
+     */
+    public void setPanelsProcessing(boolean processing) {
+        LogHandler.getInstance().log(Level.INFO, LogType.SYSTEM,
+                "全パネルの処理中状態を設定: " + processing);
+
+        // DetailPanelの状態を設定
+        if (detailPanel != null) {
+            detailPanel.setProcessing(processing);
+        }
+
+        // AddPanelの状態を設定
+        if (addPanel != null) {
+            addPanel.setProcessing(processing);
         }
     }
-    LogHandler.getInstance().log(Level.INFO, LogType.SYSTEM, 
-        "全パネルの初期化を確認完了");
-}
 }

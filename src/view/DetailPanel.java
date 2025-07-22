@@ -30,8 +30,7 @@ import util.LogHandler.LogType;
 /**
  * エンジニア情報の詳細表示・編集画面を提供するパネルクラス
  * AbstractEngineerPanelの共通機能を活用し、更新機能に特化した実装を提供
- * 
- * エンジニア人材管理システムにおいて既存のエンジニア情報を
+ * * エンジニア人材管理システムにおいて既存のエンジニア情報を
  * 表示・編集するためのユーザーインターフェースを提供します。AbstractEngineerPanelを
  * 継承し、共通のフォーム作成機能とバリデーション機能を活用
  *
@@ -88,8 +87,7 @@ public class DetailPanel extends AbstractEngineerPanel {
 
     /**
      * 現在表示中のエンジニア情報を取得
-     * 
-     * @return 現在表示中のエンジニア情報
+     * * @return 現在表示中のエンジニア情報
      */
     public EngineerDTO getCurrentEngineer() {
         return currentEngineer;
@@ -183,17 +181,14 @@ public class DetailPanel extends AbstractEngineerPanel {
      */
     private void createButtonArea() {
         // 処理中表示ラベル
-        progressLabel = new JLabel("保存中...");
+        progressLabel = new JLabel("処理中...");
         progressLabel.setVisible(false);
         addButtonPanelComponent(progressLabel);
 
         // 戻るボタン
         backButton = new JButton("一覧へ戻る");
-        backButton.addActionListener(_e -> {
-            if (!processing) {
-                goBack();
-            }
-        });
+        backButton.addActionListener(_e -> goBack());
+
         addButton(backButton);
 
         // 更新ボタン
@@ -273,11 +268,13 @@ public class DetailPanel extends AbstractEngineerPanel {
     private void onFormChanged() {
         if (!formModified) {
             formModified = true;
-            SwingUtilities.invokeLater(() -> {
-                updateButton.setEnabled(true);
-                LogHandler.getInstance().log(Level.INFO, LogType.UI,
-                        "フォーム変更を検知: 保存ボタンを有効化");
-            });
+            if (!processing) {
+                SwingUtilities.invokeLater(() -> {
+                    updateButton.setEnabled(true);
+                    LogHandler.getInstance().log(Level.INFO, LogType.UI,
+                            "フォーム変更を検知: 保存ボタンを有効化");
+                });
+            }
         }
     }
 
@@ -300,11 +297,13 @@ public class DetailPanel extends AbstractEngineerPanel {
     private void setFormModified(boolean modified) {
         this.formModified = modified;
 
-        SwingUtilities.invokeLater(() -> {
-            updateButton.setEnabled(modified);
-            LogHandler.getInstance().log(Level.INFO, LogType.UI,
-                    "フォーム変更状態を変更: " + modified + ", 保存ボタン状態: " + (updateButton.isEnabled() ? "有効" : "無効"));
-        });
+        if (!processing) {
+            SwingUtilities.invokeLater(() -> {
+                updateButton.setEnabled(modified);
+                LogHandler.getInstance().log(Level.INFO, LogType.UI,
+                        "フォーム変更状態を変更: " + modified + ", 保存ボタン状態: " + (updateButton.isEnabled() ? "有効" : "無効"));
+            });
+        }
     }
 
     /**
@@ -439,8 +438,8 @@ public class DetailPanel extends AbstractEngineerPanel {
     /**
      * エスケープされた改行文字を実際の改行文字に復元
      * CSV保存時にエスケープされた改行文字を画面表示用に変換
+     * * @param value エスケープされた文字列
      * 
-     * @param value エスケープされた文字列
      * @return 改行文字が復元された文字列
      */
     private String restoreNewlines(String value) {
@@ -735,12 +734,13 @@ public class DetailPanel extends AbstractEngineerPanel {
     public void setProcessing(boolean processing) {
         this.processing = processing;
 
-        setAllComponentsEnabled(!processing);
-
-        updateButton.setEnabled(!processing);
-        backButton.setEnabled(!processing);
-
         progressLabel.setVisible(processing);
+
+        if (processing) {
+            updateButton.setEnabled(false);
+        } else {
+            updateButton.setEnabled(formModified);
+        }
     }
 
     /**

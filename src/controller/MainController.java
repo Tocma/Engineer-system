@@ -1064,11 +1064,16 @@ public class MainController {
                     ((ListPanel) panel).setButtonsEnabled(false);
                     ((ListPanel) panel).setStatus("テンプレート出力中...");
                 }
-                screenController.setRegisterButtonEnabled(false);
+                screenController.setPanelsProcessing(true);
             });
 
             // ビジネスロジック：テンプレート出力処理の実行
-            executeTemplateExportWithResourceManager(selectedFile);
+            try {
+                executeTemplateExportWithResourceManager(selectedFile);
+            } finally {
+                // 処理完了後、UIスレッドで状態をリセット
+                SwingUtilities.invokeLater(() -> screenController.setPanelsProcessing(false));
+            }
         });
     }
 
@@ -1201,11 +1206,16 @@ public class MainController {
                     ((ListPanel) panel).setButtonsEnabled(false);
                     ((ListPanel) panel).setStatus("CSV処理中...");
                 }
-                screenController.setRegisterButtonEnabled(false);
+                screenController.setPanelsProcessing(true);
             });
 
             // ビジネスロジック：CSV出力処理の実行
-            executeCSVExportWithResourceManager(targetList, selectedFile);
+            try {
+                executeCSVExportWithResourceManager(targetList, selectedFile);
+            } finally {
+                // 処理完了後、UIスレッドで状態をリセット
+                SwingUtilities.invokeLater(() -> screenController.setPanelsProcessing(false));
+            }
         });
     }
 
@@ -1467,7 +1477,7 @@ public class MainController {
         if (currentPanel instanceof ListPanel) {
             ((ListPanel) currentPanel).setImportProcessing(true);
         }
-        screenController.setRegisterButtonEnabled(false);
+        screenController.setPanelsProcessing(true);
 
         // 全パネルの初期化を確認
         screenController.ensureAllPanelsInitialized();
@@ -1526,6 +1536,13 @@ public class MainController {
                             "取込エラー：AddPanel/DetailPanelのボタンを有効化");
                 });
             } finally {
+                SwingUtilities.invokeLater(() -> {
+                    if (currentPanel instanceof ListPanel) {
+                        ((ListPanel) currentPanel).setImportProcessing(false);
+                    }
+                    screenController.setPanelsProcessing(false);
+                });
+
                 // ResourceManagerを通じたリソースクリーンアップ
                 try {
                     resourceManager.releaseResource(resourceKey);

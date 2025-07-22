@@ -1472,9 +1472,7 @@ public class ListPanel extends JPanel {
                 if (confirmed) {
                     LogHandler.getInstance().log(Level.INFO, LogType.SYSTEM,
                             "CSV出力確認が承認されました");
-                    // ★以下の2行を削除またはコメントアウト
-                    // setButtonsEnabled(false);
-                    // mainController.getScreenController().setRegisterButtonEnabled(false);
+
                     mainController.handleEvent("EXPORT_CSV", selectedEngineers);
                 } else {
                     LogHandler.getInstance().log(Level.INFO, LogType.SYSTEM,

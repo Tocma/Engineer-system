@@ -150,17 +150,14 @@ public class AddPanel extends AbstractEngineerPanel {
      */
     private void createButtonArea() {
         // 処理中表示ラベル
-        progressLabel = new JLabel("登録中...");
+        progressLabel = new JLabel("処理中...");
         progressLabel.setVisible(false);
         addButtonPanelComponent(progressLabel);
 
         // 戻るボタン
         backButton = new JButton("戻る");
-        backButton.addActionListener(_e -> {
-            if (!processing) {
-                goBack();
-            }
-        });
+        backButton.addActionListener(_e -> goBack());
+
         addButton(backButton);
 
         // 登録ボタン
@@ -485,7 +482,7 @@ public class AddPanel extends AbstractEngineerPanel {
 
     /**
      * 処理中状態の設定
-     * 処理中はUIコンポーネントを無効化し、プログレスインジケーターを表示
+     * 処理中はUIコンポーネントを無効化し
      *
      * @param processing 処理中の場合true
      */
@@ -493,14 +490,11 @@ public class AddPanel extends AbstractEngineerPanel {
         this.processing = processing;
 
         // UIコンポーネントの有効/無効を切り替え
-        setAllComponentsEnabled(!processing);
-
-        // ボタンの有効/無効を切り替え
-        addButton.setEnabled(!processing);
-        backButton.setEnabled(!processing);
-
-        // プログレスインジケーターの表示/非表示を切り替え
         progressLabel.setVisible(processing);
+
+        // 登録ボタンの状態を制御
+        // 処理中(processing=true)なら無効、そうでなければ常に有効（AddPanelはformModifiedがないため）
+        addButton.setEnabled(!processing);
     }
 
     /**
