@@ -1408,7 +1408,7 @@ public class ListPanel extends JPanel {
         if (processing) {
             // インポート処理中はボタンを無効化
             setButtonsEnabled(false);
-            setStatus("CSVファイル読み込み中...");
+            setStatus("CSV処理中...");
 
             LogHandler.getInstance().log(Level.INFO, LogType.UI,
                     "インポート処理開始：UIコンポーネントを無効化");
@@ -1431,17 +1431,8 @@ public class ListPanel extends JPanel {
     private void importData() {
         LogHandler.getInstance().log(Level.INFO, LogType.UI, "取込ボタンが押されました");
         if (mainController != null) {
-            // インポート処理開始前に状態を設定
-            setImportProcessing(true);
-
-            try {
-                mainController.handleImportData();
-            } catch (Exception _e) {
-                // エラー時は状態をリセット
-                setImportProcessing(false);
-                LogHandler.getInstance().logError(LogType.UI,
-                        "インポート処理の開始に失敗", _e);
-            }
+            // MainControllerに処理を移譲するのみに変更
+            mainController.handleImportData();
         } else {
             LogHandler.getInstance().log(Level.WARNING, LogType.UI,
                     "MainControllerが設定されていないためCSVインポートできません");
@@ -1465,12 +1456,8 @@ public class ListPanel extends JPanel {
         if (mainController != null) {
             LogHandler.getInstance().log(Level.INFO, LogType.UI, "出力ボタンが押されました");
 
-            // 修正：selectedEngineerIdsを使用して全ページの選択状態をチェック
-            if (!selectedEngineerIds.isEmpty()) { // ←修正ポイント
+            if (!selectedEngineerIds.isEmpty()) {
                 List<EngineerDTO> selectedEngineers = getSelectedEngineers();
-
-                setButtonsEnabled(false);
-                mainController.getScreenController().setRegisterButtonEnabled(false);
 
                 List<String> selectedTargets = selectedEngineers.stream()
                         .map(engineer -> engineer.getId() + " : " + engineer.getName())
@@ -1485,12 +1472,15 @@ public class ListPanel extends JPanel {
                 if (confirmed) {
                     LogHandler.getInstance().log(Level.INFO, LogType.SYSTEM,
                             "CSV出力確認が承認されました");
+                    // ★以下の2行を削除またはコメントアウト
+                    // setButtonsEnabled(false);
+                    // mainController.getScreenController().setRegisterButtonEnabled(false);
                     mainController.handleEvent("EXPORT_CSV", selectedEngineers);
                 } else {
                     LogHandler.getInstance().log(Level.INFO, LogType.SYSTEM,
                             "CSV出力確認がキャンセルされました");
-                    setButtonsEnabled(true);
-                    mainController.getScreenController().setRegisterButtonEnabled(true);
+                    // setButtonsEnabled(true); // こちらは clearExportStatus でカバーされるため不要
+                    // mainController.getScreenController().setRegisterButtonEnabled(true);
                 }
             }
         }

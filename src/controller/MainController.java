@@ -1045,17 +1045,27 @@ public class MainController {
      */
     public void handleTemplateExport() {
         startAsyncTask("TemplateCSV", () -> {
+            final JPanel panel = screenController.getCurrentPanel(); // パネルを取得
+
             // UI操作：出力確認
             if (!confirmTemplateExport()) {
                 return;
             }
 
             // ResourceManagerを活用したファイル選択処理
-            // デフォルトのデータディレクトリを初期表示ディレクトリとして使用
             File selectedFile = exportTemplateFileWithResourceManager("エンジニア情報テンプレート.csv");
             if (selectedFile == null) {
+                // ユーザーがファイル選択をキャンセルした場合
                 return;
             }
+
+            SwingUtilities.invokeLater(() -> {
+                if (panel instanceof ListPanel) {
+                    ((ListPanel) panel).setButtonsEnabled(false);
+                    ((ListPanel) panel).setStatus("テンプレート出力中...");
+                }
+                screenController.setRegisterButtonEnabled(false);
+            });
 
             // ビジネスロジック：テンプレート出力処理の実行
             executeTemplateExportWithResourceManager(selectedFile);
@@ -1135,6 +1145,7 @@ public class MainController {
      */
     private void executeTemplateExportWithResourceManager(File selectedFile) {
         String resourceKey = "template_export_" + System.currentTimeMillis();
+        final JPanel panel = screenController.getCurrentPanel(); // 最初にパネルを取得
 
         try (FileOutputStream fos = new FileOutputStream(selectedFile)) {
             resourceManager.registerResource(resourceKey, fos);
@@ -1151,6 +1162,8 @@ public class MainController {
                     DialogManager.getInstance().showErrorDialog("出力エラー",
                             "テンプレート出力に失敗しました。");
                 }
+                // 処理完了後にボタン状態を復元
+                clearExportStatus(panel);
             });
 
         } catch (Exception _e) {
@@ -1159,6 +1172,7 @@ public class MainController {
             SwingUtilities.invokeLater(() -> {
                 DialogManager.getInstance().showErrorDialog("システムエラー",
                         "出力中にエラーが発生しました。");
+                clearExportStatus(panel);
             });
         } finally {
             resourceManager.releaseResource(resourceKey);
@@ -1173,6 +1187,7 @@ public class MainController {
     @SuppressWarnings("unchecked")
     public void handleExportCSV(Object data) {
         List<EngineerDTO> targetList = (List<EngineerDTO>) data;
+        final JPanel panel = screenController.getCurrentPanel(); // パネルを取得
 
         startAsyncTask("export_engineers", () -> {
             // ResourceManagerを活用したファイル選択とバリデーション
@@ -1180,6 +1195,14 @@ public class MainController {
             if (selectedFile == null) {
                 return; // ユーザーがキャンセルした場合
             }
+
+            SwingUtilities.invokeLater(() -> {
+                if (panel instanceof ListPanel) {
+                    ((ListPanel) panel).setButtonsEnabled(false);
+                    ((ListPanel) panel).setStatus("CSV処理中...");
+                }
+                screenController.setRegisterButtonEnabled(false);
+            });
 
             // ビジネスロジック：CSV出力処理の実行
             executeCSVExportWithResourceManager(targetList, selectedFile);
@@ -1390,11 +1413,6 @@ public class MainController {
         // 現在のパネルを取得（状態管理用）
         final JPanel currentPanel = screenController.getCurrentPanel();
 
-        // ListPanelの場合、インポート処理中状態を設定
-        if (currentPanel instanceof ListPanel) {
-            ((ListPanel) currentPanel).setImportProcessing(true);
-        }
-
         // ファイル選択ダイアログの表示
         JFileChooser fileChooser = new JFileChooser(System.getProperty("user.dir"));
         fileChooser.setDialogTitle("インポートするCSVファイルを選択");
@@ -1402,19 +1420,13 @@ public class MainController {
 
         int result = fileChooser.showOpenDialog(mainFrame.getJFrame());
         if (result != JFileChooser.APPROVE_OPTION) {
-            // キャンセル時は状態をリセット
-            if (currentPanel instanceof ListPanel) {
-                ((ListPanel) currentPanel).setImportProcessing(false);
-            }
+            // キャンセル時は何もせず終了
             return;
         }
 
         final File selectedFile = fileChooser.getSelectedFile();
         if (selectedFile == null || !selectedFile.exists()) {
             DialogManager.getInstance().showErrorDialog("エラー", "ファイルが見つかりません。");
-            if (currentPanel instanceof ListPanel) {
-                ((ListPanel) currentPanel).setImportProcessing(false);
-            }
             return;
         }
 
@@ -1451,6 +1463,11 @@ public class MainController {
 
         LogHandler.getInstance().log(Level.INFO, LogType.SYSTEM,
                 "ファイル読み込みが確認されました: " + fileName);
+
+        if (currentPanel instanceof ListPanel) {
+            ((ListPanel) currentPanel).setImportProcessing(true);
+        }
+        screenController.setRegisterButtonEnabled(false);
 
         // 全パネルの初期化を確認
         screenController.ensureAllPanelsInitialized();
