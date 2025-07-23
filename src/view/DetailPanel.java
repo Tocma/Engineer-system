@@ -238,7 +238,7 @@ public class DetailPanel extends AbstractEngineerPanel {
         noteArea.getDocument().addDocumentListener(documentListener);
 
         // コンボボックスにリスナー追加
-        ActionListener comboListener = _e -> onFormChanged();
+        ActionListener comboListener = _e -> setFormModified(true);
 
         birthYearComboBox.addActionListener(comboListener);
         birthMonthComboBox.addActionListener(comboListener);
@@ -252,7 +252,7 @@ public class DetailPanel extends AbstractEngineerPanel {
         leadershipComboBox.addActionListener(comboListener);
 
         // 言語選択コンボボックスのリスナー設定
-        languageComboBox.addActionListener(_e -> onFormChanged());
+        languageComboBox.addActionListener(comboListener);
 
         // リスナー初期化完了フラグを設定
         listenersInitialized = true;
