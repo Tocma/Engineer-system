@@ -299,7 +299,7 @@ public class EngineerCSVDAO implements EngineerDAO {
     }
 
     @Override
-    public void deleteAll(List<String> ids) {
+    public boolean deleteAll(List<String> ids) {
         if (ids == null || ids.isEmpty()) {
             throw new IllegalArgumentException("削除対象のIDリストが空です");
         }
@@ -314,18 +314,19 @@ public class EngineerCSVDAO implements EngineerDAO {
                     .filter(dto -> !ids.contains(dto.getId()))
                     .toList();
 
-            // CSVに先に書き込み
-            writeCSV(filtered);
-
-            // メモリ上のリスト（currentData）からも除外
-            original.removeIf(dto -> ids.contains(dto.getId()));
-
-            LogHandler.getInstance().log(Level.INFO, LogType.SYSTEM,
-                    String.format("CSV削除後、%d件のエンジニアをメモリ上からも削除", ids.size()));
+            // CSVへの書き込みを行い、その結果を返す
+            boolean success = writeCSV(filtered);
+            if (success) {
+                // 成功した場合のみメモリ上のリストを更新
+                original.removeIf(dto -> ids.contains(dto.getId()));
+                LogHandler.getInstance().log(Level.INFO, LogType.SYSTEM,
+                        String.format("CSV削除後、%d件のエンジニアをメモリ上からも削除", ids.size()));
+            }
+            return success;
 
         } catch (Exception _e) {
             LogHandler.getInstance().logError(LogType.SYSTEM, "エンジニア情報の一括削除に失敗", _e);
-            throw new RuntimeException("エンジニア情報の一括削除に失敗", _e);
+            return false;
         }
     }
 

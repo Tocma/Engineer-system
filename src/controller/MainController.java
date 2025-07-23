@@ -534,55 +534,54 @@ public class MainController {
         List<EngineerDTO> targetList = (List<EngineerDTO>) data;
         JPanel panel = screenController.getCurrentPanel();
 
-        if (panel instanceof ListPanel listPanel) {
-            listPanel.setStatus("削除中...   ");
+        if (!(panel instanceof ListPanel)) {
+            LogHandler.getInstance().log(Level.WARNING, LogType.SYSTEM, "ListPanelでないため削除処理を中断します。");
+            return;
         }
+        final ListPanel listPanel = (ListPanel) panel;
 
-        // 削除中フラグがtrueであれば、登録ボタンを無効化
+        // UIを処理中状態に設定
+        listPanel.setStatus("削除中...   ");
         screenController.setRegisterButtonEnabled(false);
-
-        // 削除対象IDを記録
         targetList.forEach(dto -> deletingIds.add(dto.getId()));
 
         startAsyncTask("delete_engineers", () -> {
-            EngineerController controller = new EngineerController();
-            controller.deleteEngineers(targetList, () -> {
-                SwingUtilities.invokeLater(() -> {
-                    if (panel instanceof ListPanel listPanel) {
-                        listPanel.clearStatus();
-
+            try {
+                // 1. 削除処理の実行
+                EngineerController controller = new EngineerController();
+                controller.deleteEngineers(targetList, new Runnable() {
+                    @Override
+                    public void run() {
+                        // 削除完了後の処理
+                        LogHandler.getInstance().log(Level.INFO, LogType.SYSTEM,
+                                "エンジニア情報の削除が完了しました: " + targetList.size() + "件");
                     }
-
-                    DialogManager.getInstance().showCompletionDialog("削除が完了しました。", () -> {
-                        try {
-                            // 削除完了後に対象IDを解除
-                            targetList.forEach(dto -> deletingIds.remove(dto.getId()));
-                            // CSV から最新データを再取得
-                            List<EngineerDTO> updatedList = engineerController.loadEngineers();
-                            // ListPanel に再設定（再描画される）
-                            JPanel refreshedPanel = screenController.getCurrentPanel();
-                            if (refreshedPanel instanceof ListPanel listPanel) {
-                                listPanel.setEngineerData(updatedList);
-                            }
-                            // 登録ボタン再有効化
-                            screenController.setRegisterButtonEnabled(true);
-                            if (panel instanceof ListPanel listPanel) {
-                                listPanel.onDeleteCompleted(); // ←ここで削除中フラグ解除
-
-                            }
-
-                            ListPanel.setNeedsRefresh(true); // ← 一覧更新フラグON
-
-                            LogHandler.getInstance().log(Level.INFO, LogType.SYSTEM, "削除後のデータを再読み込み");
-
-                        } catch (Exception _e) {
-                            LogHandler.getInstance().logError(LogType.SYSTEM, "削除後の再読み込みに失敗", _e);
-                        }
-
-                    });
-
                 });
-            });
+
+                // 2. 成功時の処理
+                SwingUtilities.invokeLater(() -> {
+                    DialogManager.getInstance().showCompletionDialog("削除が完了しました。", () -> {
+                        // 成功後にデータを再読み込みしてUIを更新
+                        List<EngineerDTO> updatedList = engineerController.loadEngineers();
+                        listPanel.setEngineerData(updatedList);
+                        ListPanel.setNeedsRefresh(true);
+                    });
+                });
+
+            } catch (Exception _e) {
+                // 3. 失敗時の処理
+                LogHandler.getInstance().logError(LogType.SYSTEM, "エンジニア情報の削除中にエラーが発生しました", _e);
+                SwingUtilities.invokeLater(() -> {
+                    DialogManager.getInstance().showSystemErrorDialog("削除中にエラーが発生しました。", _e);
+                });
+            } finally {
+                // 4. 成功・失敗にかかわらず、必ずUIの状態をリセット
+                SwingUtilities.invokeLater(() -> {
+                    targetList.forEach(dto -> deletingIds.remove(dto.getId()));
+                    listPanel.onDeleteCompleted(); // UIの状態をリセットするメソッド
+                    listPanel.clearStatus();
+                });
+            }
         });
     }
 

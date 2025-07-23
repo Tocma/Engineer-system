@@ -5,13 +5,10 @@ import java.util.List;
 import java.util.logging.Level;
 import java.util.stream.Collectors;
 
-import javax.swing.SwingUtilities;
-
 import model.EngineerDTO;
 import service.EngineerService;
 import util.LogHandler;
 import util.LogHandler.LogType;
-import view.DialogManager;
 
 /**
  * エンジニア情報に関する操作を制御するコントローラークラス
@@ -111,22 +108,13 @@ public class EngineerController {
                                 targetList.stream()
                                         .map(EngineerDTO::getName)
                                         .collect(Collectors.joining(", ")));
-            }
-
-            if (!success) {
+            } else {
                 LogHandler.getInstance().log(Level.WARNING, LogType.SYSTEM,
-                        "エンジニア情報を削除しました: ID=" + ids + "氏名=" +
-                                targetList.stream()
-                                        .map(EngineerDTO::getName)
-                                        .collect(Collectors.joining(", ")));
-                throw new RuntimeException("削除処理に失敗しました");
-
+                        "エンジニア情報の削除に失敗しました: ID=" + ids);
+                throw new RuntimeException("削除処理に失敗しました。");
             }
-
         } catch (Exception _e) {
-            DialogManager.getInstance().showSystemErrorDialog("削除中にエラーが発生。", _e);
-        } finally {
-            SwingUtilities.invokeLater(onFinish);
+            throw _e;
         }
     }
 

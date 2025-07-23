@@ -1,15 +1,16 @@
 // src/service/EngineerService.java
 package service;
 
-import model.EngineerDTO;
-import model.EngineerDAO;
-import model.EngineerCSVDAO;
-import util.LogHandler;
-import util.LogHandler.LogType;
-import util.Constants.SystemConstants;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.logging.Level;
+
+import model.EngineerCSVDAO;
+import model.EngineerDAO;
+import model.EngineerDTO;
+import util.LogHandler;
+import util.LogHandler.LogType;
+import util.Constants.SystemConstants;
 
 /**
  * エンジニア情報のCRUD操作を提供するサービスクラス
@@ -120,10 +121,10 @@ public class EngineerService {
      */
     public boolean delete(List<String> ids) {
         try {
-            engineerDAO.deleteAll(ids);
             LogHandler.getInstance().log(Level.INFO, LogType.SYSTEM,
                     String.format("%d件のエンジニア情報を削除", ids.size()));
-            return true;
+            // DAOのdeleteAllが返すboolean値をそのまま返す
+            return engineerDAO.deleteAll(ids);
         } catch (Exception _e) {
             LogHandler.getInstance().logError(LogType.SYSTEM, "エンジニア情報の削除に失敗", _e);
             return false;
