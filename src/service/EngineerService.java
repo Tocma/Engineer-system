@@ -37,7 +37,6 @@ public class EngineerService {
      */
     public List<EngineerDTO> findAll() {
         try {
-            LogHandler.getInstance().log(Level.INFO, LogType.SYSTEM, "エンジニアデータの読み込みを開始");
             List<EngineerDTO> engineers = engineerDAO.findAll();
             LogHandler.getInstance().log(Level.INFO, LogType.SYSTEM,
                     "Loaded " + engineers.size() + " engineers");
@@ -84,9 +83,6 @@ public class EngineerService {
             }
 
             engineerDAO.save(engineer);
-            LogHandler.getInstance().log(Level.INFO, LogType.SYSTEM,
-                    String.format("エンジニア情報を作成: ID=%s, 名前=%s",
-                            engineer.getId(), engineer.getName()));
             return true;
 
         } catch (TooManyRecordsException _e) {

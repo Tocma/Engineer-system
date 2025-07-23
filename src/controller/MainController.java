@@ -1827,8 +1827,6 @@ public class MainController {
                     // 新規ID: 新しいデータとして追加
                     engineerController.addEngineer(engineer);
                     actualAddedCount++;
-                    LogHandler.getInstance().log(Level.FINE, LogType.SYSTEM,
-                            "データ新規追加完了: " + engineerId);
                 }
             } catch (Exception _e) {
                 LogHandler.getInstance().logError(LogType.SYSTEM,
@@ -2206,8 +2204,6 @@ public class MainController {
             // ウィンドウを閉じる
             if (mainFrame != null) {
                 mainFrame.getJFrame().dispose();
-                LogHandler.getInstance().log(Level.INFO, LogType.SYSTEM,
-                        "メインウィンドウを閉じました");
             }
 
             // 終了処理完了フラグを設定
