@@ -489,6 +489,9 @@ public class ListPanel extends JPanel {
         sorter = new TableRowSorter<>(tableModel);
         newTable.setRowSorter(sorter);
 
+        // カラムのドラッグ＆ドロップによる並び替えを禁止
+        newTable.getTableHeader().setReorderingAllowed(false);
+
         // 列幅設定
         newTable.getColumnModel().getColumn(0).setPreferredWidth(100); // 社員ID
         newTable.getColumnModel().getColumn(1).setPreferredWidth(150); // 氏名
