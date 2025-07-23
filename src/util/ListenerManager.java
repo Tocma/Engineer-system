@@ -260,9 +260,7 @@ public class ListenerManager {
                     component, ComponentListenerInfo::new);
             componentInfo.addListener(listenerId, type);
 
-            LogHandler.getInstance().log(Level.INFO, LogType.SYSTEM,
-                    String.format("リスナーを登録: ID=%s, Type=%s, Component=%s, Description=%s",
-                            listenerId, type.getTypeName(), component.getClass().getSimpleName(), description));
+            //LogHandler.getInstance().log(Level.INFO, LogType.SYSTEM,String.format("リスナーを登録: ID=%s, Type=%s, Component=%s, Description=%s",listenerId, type.getTypeName(), component.getClass().getSimpleName(), description));
 
             return listenerId;
 

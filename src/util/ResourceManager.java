@@ -102,9 +102,6 @@ public class ResourceManager {
             // 初期化完了
             initialized = true;
 
-            LogHandler.getInstance().log(Level.INFO, LogType.SYSTEM,
-                    "リソースマネージャーを初期化完了");
-
         } catch (IOException _e) {
             LogHandler.getInstance().logError(LogType.SYSTEM,
                     "リソースマネージャーの初期化に失敗", _e);
@@ -280,7 +277,7 @@ public class ResourceManager {
 
         openResources.put(key, resource);
         // ログに登録情報を記録
-        LogHandler.getInstance().log(Level.INFO, LogType.SYSTEM, "リソースを登録: " + key);
+        //LogHandler.getInstance().log(Level.INFO, LogType.SYSTEM, "リソースを登録: " + key);
     };
 
     /**
@@ -299,7 +296,7 @@ public class ResourceManager {
             try {
                 resource.close();
                 // ログに解放情報を記録
-                LogHandler.getInstance().log(Level.INFO, LogType.SYSTEM, "リソースを解放: " + key);
+                //LogHandler.getInstance().log(Level.INFO, LogType.SYSTEM, "リソースを解放: " + key);
 
                 return true;
             } catch (IOException _e) {

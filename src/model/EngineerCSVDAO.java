@@ -236,12 +236,6 @@ public class EngineerCSVDAO implements EngineerDAO {
 
     @Override
     public void save(EngineerDTO engineer) {
-        try {
-            Thread.sleep(5000); // 5秒待機
-        } catch (InterruptedException e) {
-            Thread.currentThread().interrupt();
-        }
-
         if (engineer == null) {
             throw new IllegalArgumentException("エンジニア情報がnullです");
         }
@@ -268,12 +262,6 @@ public class EngineerCSVDAO implements EngineerDAO {
 
     @Override
     public void update(EngineerDTO engineer) {
-        try {
-            Thread.sleep(5000); // 5秒待機
-        } catch (InterruptedException e) {
-            Thread.currentThread().interrupt();
-        }
-
         if (engineer == null) {
             throw new IllegalArgumentException("エンジニア情報がnullです");
         }
@@ -312,12 +300,6 @@ public class EngineerCSVDAO implements EngineerDAO {
 
     @Override
     public void deleteAll(List<String> ids) {
-        try {
-            Thread.sleep(5000); // 5秒待機
-        } catch (InterruptedException e) {
-            Thread.currentThread().interrupt();
-        }
-
         if (ids == null || ids.isEmpty()) {
             throw new IllegalArgumentException("削除対象のIDリストが空です");
         }

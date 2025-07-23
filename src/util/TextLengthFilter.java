@@ -33,12 +33,6 @@ public class TextLengthFilter extends DocumentFilter {
         }
         this.maxLength = maxLength;
         this.fieldName = fieldName != null ? fieldName : "不明";
-        
-        LogHandler.getInstance().log(
-            java.util.logging.Level.INFO, 
-            LogType.UI, 
-            "TextLengthFilter初期化完了: フィールド=" + this.fieldName + ", 最大文字数=" + maxLength
-        );
     }
     
     /**

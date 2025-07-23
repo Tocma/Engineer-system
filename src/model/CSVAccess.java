@@ -407,8 +407,7 @@ public class CSVAccess extends AccessThread {
         }
 
         try {
-            LogHandler.getInstance().log(Level.INFO, LogType.SYSTEM,
-                    "CSVファイル読み込み開始: " + csvFile.getPath());
+            //LogHandler.getInstance().log(Level.INFO, LogType.SYSTEM,"CSVファイル読み込み開始: " + csvFile.getPath());
 
             // ファイルが存在しない場合の処理
             if (!csvFile.exists()) {
@@ -447,8 +446,7 @@ public class CSVAccess extends AccessThread {
                 }
             }
 
-            LogHandler.getInstance().log(Level.INFO, LogType.SYSTEM,
-                    "CSVファイル読み込み完了: " + csvFile.getPath() + ", " + csvRows.size() + "行");
+            //LogHandler.getInstance().log(Level.INFO, LogType.SYSTEM,"CSVファイル読み込み完了: " + csvFile.getPath() + ", " + csvRows.size() + "行");
 
         } catch (IOException _e) {
             LogHandler.getInstance().logError(LogType.SYSTEM,
@@ -556,8 +554,7 @@ public class CSVAccess extends AccessThread {
         }
 
         try {
-            LogHandler.getInstance().log(Level.INFO, LogType.SYSTEM,
-                    "CSVファイル" + (appendMode ? "追記" : "書き込み") + "開始: " + csvFile.getPath());
+            //LogHandler.getInstance().log(Level.INFO, LogType.SYSTEM,"CSVファイル" + (appendMode ? "追記" : "書き込み") + "開始: " + csvFile.getPath());
 
             // 親ディレクトリが存在しない場合は作成
             File parentDir = csvFile.getParentFile();
@@ -601,8 +598,7 @@ public class CSVAccess extends AccessThread {
                 }
             }
 
-            LogHandler.getInstance().log(Level.INFO, LogType.SYSTEM,
-                    "CSVファイル" + (appendMode ? "追記" : "書き込み") + "完了: " + csvFile.getPath() + ", " + lines.size() + "行");
+            //LogHandler.getInstance().log(Level.INFO, LogType.SYSTEM,"CSVファイル" + (appendMode ? "追記" : "書き込み") + "完了: " + csvFile.getPath() + ", " + lines.size() + "行");
 
             return true;
 

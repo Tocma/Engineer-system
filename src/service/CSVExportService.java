@@ -34,11 +34,6 @@ public class CSVExportService {
      */
     public boolean exportTemplate(File selectedFile) {
         try {
-            Thread.sleep(5000); // 5秒待機
-        } catch (InterruptedException e) {
-            Thread.currentThread().interrupt();
-        }
-        try {
             LogHandler.getInstance().log(Level.INFO, LogType.SYSTEM,
                     "テンプレートCSV出力を開始: " + selectedFile.getPath());
 
@@ -69,12 +64,6 @@ public class CSVExportService {
      * @return 出力成功の場合true
      */
     public boolean exportCSV(List<EngineerDTO> targetList, File selectedFile) {
-        try {
-            Thread.sleep(5000); // 5秒待機
-        } catch (InterruptedException e) {
-            Thread.currentThread().interrupt();
-        }
-
         try {
             if (targetList == null || targetList.isEmpty()) {
                 LogHandler.getInstance().log(Level.WARNING, LogType.SYSTEM,

@@ -42,11 +42,6 @@ public class EngineerSearchService {
      */
     public SearchResult searchEngineers(SearchCriteria searchCriteria) {
         try {
-            Thread.sleep(5000); // 5秒待機
-        } catch (InterruptedException e) {
-            Thread.currentThread().interrupt();
-        }
-        try {
             LogHandler.getInstance().log(Level.INFO, LogType.SYSTEM,
                     "エンジニア検索処理を開始します");
 
