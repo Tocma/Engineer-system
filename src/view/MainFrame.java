@@ -86,6 +86,8 @@ public class MainFrame extends AbstractFrame {
         frame.addWindowListener(new WindowAdapter() {
             @Override
             public void windowClosing(WindowEvent _e) {
+                // 即座にウィンドウを非表示にする
+                frame.setVisible(false);
                 // 単純にMainControllerに終了処理を委譲するだけ
                 if (mainController != null) {
                     LogHandler.getInstance().log(Level.INFO, LogType.SYSTEM,

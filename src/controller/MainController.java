@@ -2071,8 +2071,13 @@ public class MainController {
         LogHandler.getInstance().log(Level.INFO, LogType.SYSTEM,
                 "MainController主導で統合シャットダウンを開始します");
 
+        // 先にUIを非表示にする
+        if (mainFrame != null) {
+            mainFrame.setVisible(false);
+        }
+
         try {
-            Thread.sleep(5000); // 5秒待機
+            Thread.sleep(5000); // 5秒待機（バックグラウンド処理のシミュレーション）
         } catch (InterruptedException e) {
             Thread.currentThread().interrupt();
         }
