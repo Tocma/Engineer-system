@@ -95,6 +95,9 @@ public class ListPanel extends JPanel {
     /** 削除中状態フラグ */
     private boolean deleting = false;
 
+    /** ファイル処理中状態フラグ (追加) */
+    private boolean isFileProcessing = false;
+
     /** 一覧画面が次回表示時に再描画すべきかどうかのフラグ */
     private static boolean needsRefresh = false;
 
@@ -329,7 +332,7 @@ public class ListPanel extends JPanel {
                      */
                     @Override
                     public void mousePressed(MouseEvent _e) {
-                        if (isSearching)
+                        if (isSearching || deleting || isFileProcessing)
                             return; // 検索中は処理をスキップ
                         // 修飾キーの状態を記録（複数選択制御用）
                         isCtrlPressed = (_e.getModifiersEx() & InputEvent.CTRL_DOWN_MASK) != 0;
@@ -346,7 +349,7 @@ public class ListPanel extends JPanel {
                      */
                     @Override
                     public void mouseReleased(MouseEvent _e) {
-                        if (isSearching)
+                        if (isSearching || deleting || isFileProcessing)
                             return; // 検索中は処理をスキップ
                         try {
                             // 選択されたエンジニアIDを更新
@@ -371,7 +374,7 @@ public class ListPanel extends JPanel {
                      */
                     @Override
                     public void mouseClicked(MouseEvent _e) {
-                        if (isSearching)
+                        if (isSearching || deleting || isFileProcessing)
                             return; // 検索中は処理をスキップ
                         if (_e.getClickCount() == 2) { // ダブルクリックの検出
                             try {
@@ -1413,7 +1416,7 @@ public class ListPanel extends JPanel {
         if (processing) {
             // インポート処理中はボタンを無効化
             setButtonsEnabled(false);
-            setStatus("CSV処理中...");
+            setFileProcessing(processing, "CSV処理中...");
 
             LogHandler.getInstance().log(Level.INFO, LogType.UI,
                     "インポート処理開始：UIコンポーネントを無効化");
@@ -1427,6 +1430,28 @@ public class ListPanel extends JPanel {
 
             LogHandler.getInstance().log(Level.INFO, LogType.UI,
                     "インポート処理完了：UIコンポーネントを有効化");
+        }
+    }
+
+    /**
+     * ファイル処理中の状態を設定する
+     * 
+     * @param processing    処理中の場合はtrue
+     * @param statusMessage 表示するステータスメッセージ
+     */
+    public void setFileProcessing(boolean processing, String statusMessage) {
+        this.isFileProcessing = processing;
+        if (processing) {
+            setButtonsEnabled(false);
+            setStatus(statusMessage);
+            LogHandler.getInstance().log(Level.INFO, LogType.UI,
+                    statusMessage + "開始：UIコンポーネントを無効化");
+        } else {
+            setButtonsEnabled(true);
+            clearStatus();
+            updateButtonState();
+            LogHandler.getInstance().log(Level.INFO, LogType.UI,
+                    "ファイル処理完了：UIコンポーネントを有効化");
         }
     }
 

@@ -1061,7 +1061,7 @@ public class MainController {
             SwingUtilities.invokeLater(() -> {
                 if (panel instanceof ListPanel) {
                     ((ListPanel) panel).setButtonsEnabled(false);
-                    ((ListPanel) panel).setStatus("テンプレート出力中...");
+                    ((ListPanel) panel).setFileProcessing(true, "テンプレート出力中...");
                 }
                 screenController.setPanelsProcessing(true);
             });
@@ -1203,7 +1203,7 @@ public class MainController {
             SwingUtilities.invokeLater(() -> {
                 if (panel instanceof ListPanel) {
                     ((ListPanel) panel).setButtonsEnabled(false);
-                    ((ListPanel) panel).setStatus("CSV処理中...");
+                    ((ListPanel) panel).setFileProcessing(true, "CSV処理中...");
                 }
                 screenController.setPanelsProcessing(true);
             });
@@ -1357,7 +1357,7 @@ public class MainController {
     private void clearExportStatus(JPanel panel) {
         SwingUtilities.invokeLater(() -> {
             if (panel instanceof ListPanel listPanel) {
-                listPanel.setStatus("");
+                listPanel.setFileProcessing(false, "");
                 // ボタン状態を有効化
                 listPanel.setButtonsEnabled(true);
             }
