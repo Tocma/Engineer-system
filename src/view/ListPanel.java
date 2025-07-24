@@ -502,19 +502,7 @@ public class ListPanel extends JPanel {
 
     // ===== 検索関連メソッド群 =====
 
-    /**
-     * 年のコンボボックス用データを生成
-     */
-    private String[] getYears() {
-        String[] years = new String[87];
-        years[0] = "";
-        DecimalFormat df = new DecimalFormat("0");
-        int startYear = 1950;
-        for (int yearIndex = 1; yearIndex < years.length; yearIndex++) {
-            years[yearIndex] = df.format(startYear + (yearIndex - 1));
-        }
-        return years;
-    }
+
 
     /**
      * 月のコンボボックス用データを生成
@@ -627,7 +615,7 @@ public class ListPanel extends JPanel {
 
         // 生年月日
         searchPanel.add(new JLabel("生年月日:"));
-        yearBox = new JComboBox<>(getYears());
+        yearBox = new JComboBox<>(DateOptionUtil.getSearchYearOptions());
         monthBox = new JComboBox<>(getMonths());
         dayBox = new JComboBox<>(getDays());
         searchPanel.add(yearBox);

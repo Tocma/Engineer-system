@@ -38,7 +38,7 @@ public class SearchValidationService {
     private static final Pattern NAME_PATTERN = Pattern.compile("^[\\p{IsHan}\\p{IsHiragana}\\p{IsKatakana}ー　\\s]*$");
 
     /** 年月日検証パターン */
-    private static final Pattern YEAR_PATTERN = Pattern.compile("^(19[5-9]\\d|20[0-2]\\d)$");
+    private static final Pattern YEAR_PATTERN = Pattern.compile("^(19[5-9]\\d|20[0-9]\\d)$");
     private static final Pattern MONTH_PATTERN = Pattern.compile("^(0?[1-9]|1[0-2])$");
     private static final Pattern DAY_PATTERN = Pattern.compile("^(0?[1-9]|[12]\\d|3[01])$");
 
