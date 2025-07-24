@@ -1271,17 +1271,26 @@ public class ListPanel extends JPanel {
         }
         int previousSelectionCount = selectedEngineerIds.size();
 
+        // UI上で現在選択されている行のIDを取得
         Set<String> newlySelectedIds = collectSelectedIds(displayData, startIndex, isShiftDown);
-        Set<String> currentPageIds = getCurrentPageIds(displayData, startIndex);
-        removeUnselectedIds(currentPageIds, newlySelectedIds);
 
-        if (!isCtrlDown && !isShiftDown) {
+        if (isCtrlDown || isShiftDown) {
+            // CtrlまたはShiftが押されている場合（複数選択または範囲選択）
+            // まず、現在のページに表示されているIDを全体の選択リストから一旦削除する
+            Set<String> currentPageIds = getCurrentPageIds(displayData, startIndex);
+            selectedEngineerIds.removeIf(currentPageIds::contains);
+
+            // その後、現在のUI上の選択状態を全体の選択リストに追加する
+            // 他のページの選択は維持しつつ、現在のページの選択だけが更新される
+            selectedEngineerIds.addAll(newlySelectedIds);
+        } else {
+            // 通常のクリックの場合
+            // すべての選択をクリアし、現在の選択のみを保持する
             clearSelection();
+            selectedEngineerIds.addAll(newlySelectedIds);
             LogHandler.getInstance().log(Level.INFO, LogType.UI,
                     "通常クリックによる選択: 既存の選択はクリア");
         }
-
-        selectedEngineerIds.addAll(newlySelectedIds);
 
         int currentSelectionCount = selectedEngineerIds.size();
 
@@ -1332,19 +1341,6 @@ public class ListPanel extends JPanel {
                 .limit(SystemConstants.PAGE_SIZE)
                 .map(EngineerDTO::getId)
                 .collect(Collectors.toSet());
-    }
-
-    /**
-     * 現在のページで選択解除されたIDのみを選択IDセットから削除する
-     */
-    private void removeUnselectedIds(Set<String> currentPageIds, Set<String> newlySelectedIds) {
-        Iterator<String> selectedIditerator = selectedEngineerIds.iterator();
-        while (selectedIditerator.hasNext()) {
-            String id = selectedIditerator.next();
-            if (currentPageIds.contains(id) && !newlySelectedIds.contains(id)) {
-                selectedIditerator.remove();
-            }
-        }
     }
 
     /**
