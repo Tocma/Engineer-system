@@ -80,6 +80,7 @@ public class ListPanel extends JPanel {
     private final JButton nextButton;
 
     /** ボタンのフィールド化 */
+    private JButton addButton;
     private JButton importButton;
     private JButton templateButton;
     private JButton exportButton;
@@ -502,8 +503,6 @@ public class ListPanel extends JPanel {
 
     // ===== 検索関連メソッド群 =====
 
-
-
     /**
      * 月のコンボボックス用データを生成
      */
@@ -553,7 +552,7 @@ public class ListPanel extends JPanel {
         // ボタン群パネル（ActionListenerもListenerManager経由）
         JPanel buttonPanel = new JPanel(new FlowLayout(FlowLayout.LEFT));
 
-        JButton addButton = new JButton("新規追加");
+        this.addButton = new JButton("新規追加");
         String addListenerId = listenerManager.addActionListener(
                 addButton, _e -> addNewEngineer(), "新規追加ボタン");
         registeredListenerIds.add(addListenerId);
@@ -871,6 +870,15 @@ public class ListPanel extends JPanel {
         dayBox.setEnabled(enabled);
         careerBox.setEnabled(enabled);
         searchButton.setEnabled(enabled);
+        addButton.setEnabled(enabled);
+        importButton.setEnabled(enabled);
+        templateButton.setEnabled(enabled);
+        if (enabled) {
+            updateButtonState();
+        } else {
+            exportButton.setEnabled(false);
+            deleteButton.setEnabled(false);
+        }
     }
 
     /**
