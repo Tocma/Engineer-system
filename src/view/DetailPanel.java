@@ -733,14 +733,17 @@ public class DetailPanel extends AbstractEngineerPanel {
      */
     public void setProcessing(boolean processing) {
         this.processing = processing;
+        boolean enabled = !processing;
 
+        // 全てのフォームコンポーネントを有効化/無効化
+        setAllComponentsEnabled(enabled);
+
+        // ボタンを有効化/無効化
+        backButton.setEnabled(enabled);
+        updateButton.setEnabled(enabled && formModified);
+
+        // 処理中ラベルの表示/非表示
         progressLabel.setVisible(processing);
-
-        if (processing) {
-            updateButton.setEnabled(false);
-        } else {
-            updateButton.setEnabled(formModified);
-        }
     }
 
     /**

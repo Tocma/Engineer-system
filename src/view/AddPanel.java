@@ -488,13 +488,17 @@ public class AddPanel extends AbstractEngineerPanel {
      */
     public void setProcessing(boolean processing) {
         this.processing = processing;
+        boolean enabled = !processing;
+
+        // 全てのフォームコンポーネントを有効化/無効化
+        setAllComponentsEnabled(enabled);
 
         // UIコンポーネントの有効/無効を切り替え
         progressLabel.setVisible(processing);
 
-        // 登録ボタンの状態を制御
         // 処理中(processing=true)なら無効、そうでなければ常に有効（AddPanelはformModifiedがないため）
         addButton.setEnabled(!processing);
+        backButton.setEnabled(enabled);
     }
 
     /**
