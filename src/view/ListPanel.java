@@ -1416,7 +1416,7 @@ public class ListPanel extends JPanel {
         if (processing) {
             // インポート処理中はボタンを無効化
             setButtonsEnabled(false);
-            setFileProcessing(processing, "CSV処理中...");
+            setFileProcessing(true, "CSV処理中...");
 
             LogHandler.getInstance().log(Level.INFO, LogType.UI,
                     "インポート処理開始：UIコンポーネントを無効化");

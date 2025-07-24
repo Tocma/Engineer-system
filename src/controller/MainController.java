@@ -1421,6 +1421,9 @@ public class MainController {
 
         // 現在のパネルを取得（状態管理用）
         final JPanel currentPanel = screenController.getCurrentPanel();
+        if (currentPanel instanceof ListPanel) {
+            ((ListPanel) currentPanel).setImportProcessing(true);
+        }
 
         // ファイル選択ダイアログの表示
         JFileChooser fileChooser = new JFileChooser(System.getProperty("user.dir"));
@@ -1429,13 +1432,19 @@ public class MainController {
 
         int result = fileChooser.showOpenDialog(mainFrame.getJFrame());
         if (result != JFileChooser.APPROVE_OPTION) {
-            // キャンセル時は何もせず終了
+
+            if (currentPanel instanceof ListPanel) {
+                ((ListPanel) currentPanel).setImportProcessing(false);
+            }
             return;
         }
 
         final File selectedFile = fileChooser.getSelectedFile();
         if (selectedFile == null || !selectedFile.exists()) {
             DialogManager.getInstance().showErrorDialog("エラー", "ファイルが見つかりません。");
+            if (currentPanel instanceof ListPanel) {
+                ((ListPanel) currentPanel).setImportProcessing(false);
+            }
             return;
         }
 
