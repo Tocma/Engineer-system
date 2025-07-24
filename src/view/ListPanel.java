@@ -71,6 +71,9 @@ public class ListPanel extends JPanel {
     /** テーブルコンポーネント */
     private final JTable table;
 
+    /** スクロールパネル */
+    private final JScrollPane scrollPane;
+
     /** テーブルモデル */
     private final DefaultTableModel tableModel;
 
@@ -106,6 +109,9 @@ public class ListPanel extends JPanel {
 
     /** 検索モードフラグ */
     private boolean isSearchMode = false;
+
+    /** 検索中フラグ */
+    private boolean isSearching = false;
 
     /** 検索用フィールド */
     private PlaceholderTextField idField;
@@ -200,6 +206,7 @@ public class ListPanel extends JPanel {
         // テーブルモデルとテーブルの作成
         this.tableModel = createTableModel();
         this.table = createTable();
+        this.scrollPane = new JScrollPane(table);
 
         new JTextField(20);
 
@@ -225,7 +232,6 @@ public class ListPanel extends JPanel {
             this.add(createTopPanel(), BorderLayout.NORTH);
 
             // 中央部（テーブル）
-            JScrollPane scrollPane = new JScrollPane(table);
             scrollPane.getViewport().setBackground(Color.WHITE);
             this.add(scrollPane, BorderLayout.CENTER);
 
@@ -289,6 +295,8 @@ public class ListPanel extends JPanel {
                 new MouseAdapter() {
                     @Override
                     public void mouseClicked(MouseEvent _e) {
+                        if (isSearching)
+                            return; // 検索中は処理をスキップ
                         // ソート処理の実行：クリック位置から列を特定
                         int columnIndex = table.columnAtPoint(_e.getPoint());
                         sortByColumn(columnIndex);
@@ -321,6 +329,8 @@ public class ListPanel extends JPanel {
                      */
                     @Override
                     public void mousePressed(MouseEvent _e) {
+                        if (isSearching)
+                            return; // 検索中は処理をスキップ
                         // 修飾キーの状態を記録（複数選択制御用）
                         isCtrlPressed = (_e.getModifiersEx() & InputEvent.CTRL_DOWN_MASK) != 0;
                         isShiftPressed = (_e.getModifiersEx() & InputEvent.SHIFT_DOWN_MASK) != 0;
@@ -336,6 +346,8 @@ public class ListPanel extends JPanel {
                      */
                     @Override
                     public void mouseReleased(MouseEvent _e) {
+                        if (isSearching)
+                            return; // 検索中は処理をスキップ
                         try {
                             // 選択されたエンジニアIDを更新
                             updateSelectedEngineerIds(isCtrlPressed, isShiftPressed);
@@ -359,6 +371,8 @@ public class ListPanel extends JPanel {
                      */
                     @Override
                     public void mouseClicked(MouseEvent _e) {
+                        if (isSearching)
+                            return; // 検索中は処理をスキップ
                         if (_e.getClickCount() == 2) { // ダブルクリックの検出
                             try {
                                 int row = table.rowAtPoint(_e.getPoint());
@@ -500,8 +514,6 @@ public class ListPanel extends JPanel {
 
         return newTable;
     }
-
-    // ===== 検索関連メソッド群 =====
 
     /**
      * 月のコンボボックス用データを生成
@@ -683,7 +695,7 @@ public class ListPanel extends JPanel {
      * 検索フィールド専用の文字数制限適用メソッド
      * PlaceholderTextFieldに対応したDocumentFilter適用処理
      * * @param textField 対象のPlaceholderTextField
-     * 
+     *
      * @param maxLength 最大文字数
      * @param fieldName フィールド名（ログ用）
      */
@@ -758,8 +770,6 @@ public class ListPanel extends JPanel {
         }
     }
 
-    // ===== 機能メソッド群 =====
-
     /**
      * 検索ボタンのクリック処理
      */
@@ -778,8 +788,16 @@ public class ListPanel extends JPanel {
                 dayBox.getSelectedItem().toString(),
                 careerBox.getSelectedItem().toString());
 
-        statusLabel.setText("検索中・・・");
+        // UIの無効化処理を追加
+        isSearching = true;
+        statusLabel.setText("検索中...");
         setUIComponentsEnabled(false);
+        prevButton.setEnabled(false);
+        nextButton.setEnabled(false);
+        table.setEnabled(false);
+        table.getTableHeader().setEnabled(false);
+        scrollPane.setVerticalScrollBarPolicy(JScrollPane.VERTICAL_SCROLLBAR_NEVER);
+        scrollPane.setHorizontalScrollBarPolicy(JScrollPane.HORIZONTAL_SCROLLBAR_NEVER);
 
         SwingWorker<MainController.SearchResult, Void> worker = new SwingWorker<>() {
             @Override
@@ -792,12 +810,10 @@ public class ListPanel extends JPanel {
                 try {
                     MainController.SearchResult result = get();
                     if (result.hasErrors()) {
-                        // 【変更点】バリデーションエラーを統一形式に変更
                         DialogManager.getInstance().showInfoDialog("検索結果", "該当するエンジニアは見つかりませんでした。");
                     } else {
                         List<EngineerDTO> searchResults = result.getResults();
                         if (searchResults.isEmpty()) {
-                            // 検索結果なしの場合（既存と同じ）
                             DialogManager.getInstance().showInfoDialog("検索結果", "該当するエンジニアは見つかりませんでした。");
                         }
                         updateSearchResults(searchResults);
@@ -806,8 +822,15 @@ public class ListPanel extends JPanel {
                     LogHandler.getInstance().logError(LogType.UI, "検索処理中にエラーが発生", _e);
                     DialogManager.getInstance().showErrorDialog("検索エラー", "検索処理中にエラーが発生しました。");
                 } finally {
-                    setUIComponentsEnabled(true);
+                    // UIの有効化処理を追加
+                    isSearching = false;
                     statusLabel.setText("");
+                    setUIComponentsEnabled(true);
+                    updatePaginationButtons(currentDisplayData.size());
+                    table.setEnabled(true);
+                    table.getTableHeader().setEnabled(true);
+                    scrollPane.setVerticalScrollBarPolicy(JScrollPane.VERTICAL_SCROLLBAR_AS_NEEDED);
+                    scrollPane.setHorizontalScrollBarPolicy(JScrollPane.HORIZONTAL_SCROLLBAR_AS_NEEDED);
                     endSearchButton.setVisible(true);
                 }
             }
@@ -1459,8 +1482,6 @@ public class ListPanel extends JPanel {
                 } else {
                     LogHandler.getInstance().log(Level.INFO, LogType.SYSTEM,
                             "CSV出力確認がキャンセルされました");
-                    // setButtonsEnabled(true); // こちらは clearExportStatus でカバーされるため不要
-                    // mainController.getScreenController().setRegisterButtonEnabled(true);
                 }
             }
         }
@@ -1478,7 +1499,6 @@ public class ListPanel extends JPanel {
      * ユーザーが確認すれば削除処理を開始する
      */
     private void deleteSelectedRow() {
-        // 修正：selectedEngineerIdsを使用して全ページの選択状態をチェック
         if (!selectedEngineerIds.isEmpty()) {
             List<EngineerDTO> selectedEngineers = getSelectedEngineers();
 
