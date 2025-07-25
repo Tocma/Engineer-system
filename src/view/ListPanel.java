@@ -157,6 +157,9 @@ public class ListPanel extends JPanel {
     /** リスナー管理の状態フラグ */
     private boolean listenersInitialized = false;
 
+    /** リスナー初期化済みフラグ */
+    private boolean initialized = false;
+
     /**
      * プレースホルダー機能付きテキストフィールド
      * ユーザーに入力ヒントを提供するテキストフィールド
@@ -230,6 +233,9 @@ public class ListPanel extends JPanel {
      * UIコンポーネントの配置と初期設定
      */
     public void initialize() {
+        if (initialized) {
+            return;
+        }
         try {
             // 上部パネル（タイトルと操作ボタン）
             this.add(createTopPanel(), BorderLayout.NORTH);
@@ -261,6 +267,7 @@ public class ListPanel extends JPanel {
                     "リストパネル初期化中にエラーが発生", _e);
             throw new RuntimeException("リストパネル初期化失敗", _e);
         }
+        initialized = true;
     }
 
     /**
