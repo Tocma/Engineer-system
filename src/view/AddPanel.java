@@ -487,6 +487,17 @@ public class AddPanel extends AbstractEngineerPanel {
      * @param processing 処理中の場合true
      */
     public void setProcessing(boolean processing) {
+        // 戻るボタンも無効化する設定で呼び出す
+        setProcessing(processing, true);
+    }
+
+    /**
+     * 処理中状態の設定（戻るボタンの制御付き）
+     *
+     * @param processing        処理中の場合true
+     * @param disableBackButton 戻るボタンを無効化する場合true
+     */
+    public void setProcessing(boolean processing, boolean disableBackButton) {
         this.processing = processing;
         boolean enabled = !processing;
 
@@ -496,9 +507,15 @@ public class AddPanel extends AbstractEngineerPanel {
         // UIコンポーネントの有効/無効を切り替え
         progressLabel.setVisible(processing);
 
-        // 処理中(processing=true)なら無効、そうでなければ常に有効（AddPanelはformModifiedがないため）
-        addButton.setEnabled(!processing);
-        backButton.setEnabled(enabled);
+        // 登録ボタンを有効化/無効化
+        addButton.setEnabled(enabled);
+
+        // 戻るボタンを制御
+        if (disableBackButton) {
+            backButton.setEnabled(enabled);
+        } else {
+            backButton.setEnabled(true);
+        }
     }
 
     /**

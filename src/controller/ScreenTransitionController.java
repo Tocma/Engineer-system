@@ -458,14 +458,14 @@ public class ScreenTransitionController {
         LogHandler.getInstance().log(Level.INFO, LogType.SYSTEM,
                 "全パネルの処理中状態を設定: " + processing);
 
-        // DetailPanelの状態を設定
+        // DetailPanelの状態を設定 (戻るボタンは有効のまま)
         if (detailPanel != null) {
-            detailPanel.setProcessing(processing);
+            detailPanel.setProcessing(processing, false);
         }
 
-        // AddPanelの状態を設定
+        // AddPanelの状態を設定 (戻るボタンは有効のまま)
         if (addPanel != null) {
-            addPanel.setProcessing(processing);
+            addPanel.setProcessing(processing, false);
         }
     }
 }

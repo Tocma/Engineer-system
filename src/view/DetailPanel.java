@@ -732,6 +732,17 @@ public class DetailPanel extends AbstractEngineerPanel {
      * @param processing 処理中の場合true
      */
     public void setProcessing(boolean processing) {
+        // 戻るボタンも無効化する設定で呼び出す
+        setProcessing(processing, true);
+    }
+
+    /**
+     * 処理中状態の設定（戻るボタンの制御付き）
+     *
+     * @param processing        処理中の場合true
+     * @param disableBackButton 戻るボタンを無効化する場合true
+     */
+    public void setProcessing(boolean processing, boolean disableBackButton) {
         this.processing = processing;
         boolean enabled = !processing;
 
@@ -739,11 +750,17 @@ public class DetailPanel extends AbstractEngineerPanel {
         setAllComponentsEnabled(enabled);
 
         // ボタンを有効化/無効化
-        backButton.setEnabled(enabled);
         updateButton.setEnabled(enabled && formModified);
 
         // 処理中ラベルの表示/非表示
         progressLabel.setVisible(processing);
+
+        // 戻るボタンを制御
+        if (disableBackButton) {
+            backButton.setEnabled(enabled);
+        } else {
+            backButton.setEnabled(true);
+        }
     }
 
     /**
