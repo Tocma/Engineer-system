@@ -139,6 +139,9 @@ public class ListPanel extends JPanel {
     private boolean isCtrlPressed = false;
     private boolean isShiftPressed = false;
 
+    /** システム定数：Mac OSの識別用 */
+    public static final String OS_NAME_MAC = "mac";
+
     /** 検索機能のUI */
     private JButton searchButton;
     private JButton endSearchButton;
@@ -340,9 +343,12 @@ public class ListPanel extends JPanel {
                     @Override
                     public void mousePressed(MouseEvent _e) {
                         if (isSearching || deleting || isFileProcessing)
-                            return; // 検索中は処理をスキップ
-                        // 修飾キーの状態を記録（複数選択制御用）
-                        isCtrlPressed = (_e.getModifiersEx() & InputEvent.CTRL_DOWN_MASK) != 0;
+                            return;
+                        if (isMac()) {
+                            isCtrlPressed = (_e.getModifiersEx() & InputEvent.META_DOWN_MASK) != 0; // Commandキー
+                        } else {
+                            isCtrlPressed = (_e.getModifiersEx() & InputEvent.CTRL_DOWN_MASK) != 0; // Ctrlキー
+                        }
                         isShiftPressed = (_e.getModifiersEx() & InputEvent.SHIFT_DOWN_MASK) != 0;
 
                         LogHandler.getInstance().log(Level.INFO, LogType.UI,
@@ -406,6 +412,20 @@ public class ListPanel extends JPanel {
                 "テーブル：マウス操作（選択・ダブルクリック）");
         registeredListenerIds.add(tableMouseListenerId);
     }
+    
+    /**
+     * 実行環境がMac OSかどうかを判定するユーティリティメソッド。
+     * <p>
+     * Macの場合はCommandキー（META）が個別複数選択の修飾キーとなるため、
+     * OSごとに選択挙動を切り替える際に利用する。
+     * </p>
+     * @return Mac OSの場合はtrue、それ以外はfalse
+     */
+    private boolean isMac() {
+        String os = System.getProperty("os.name").toLowerCase();
+        return os.contains(OS_NAME_MAC);
+    }
+
 
     /**
      * すべてのリスナーを削除（クリーンアップ用）
