@@ -65,7 +65,7 @@ public class TextValidator extends AbstractValidator {
         }
 
         // 全ての半角・全角スペースを除去
-        String noSpaces = StringUtil.removeSpaces(value).replace(",", "");
+        String noSpaces = StringUtil.removeSpaces(value);
         if (noSpaces.isEmpty()) {
             return "";
         }

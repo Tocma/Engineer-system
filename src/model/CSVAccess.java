@@ -436,7 +436,7 @@ public class CSVAccess extends AccessThread {
                 while ((line = reader.readLine()) != null) {
                     lineNumber++;
 
-                    String[] values = line.split(",", -1);
+                    String[] values = parseCSVLine(line);
 
                     if (lineNumber == 1) {
                         continue; // ヘッダー行をスキップ
@@ -500,6 +500,35 @@ public class CSVAccess extends AccessThread {
         }
 
         return new CSVAccessResult(successData, errorData, duplicateIds, false, null);
+    }
+
+    /**
+     * CSV行をパースしてカンマ区切りの値を抽出
+     * 引用符で囲まれた値も正しく処理します
+     * 
+     * @param line CSV行データ
+     * @return パースされた値の配列
+     */
+    private String[] parseCSVLine(String line) {
+        List<String> result = new ArrayList<>();
+        if (line == null || line.isEmpty()) {
+            return new String[0];
+        }
+        boolean inQuotes = false;
+        StringBuilder field = new StringBuilder();
+        for (int charIndex = 0; charIndex < line.length(); charIndex++) {
+            char currentChar = line.charAt(charIndex);
+            if (currentChar == '"') {
+                inQuotes = !inQuotes;
+            } else if (currentChar == ',' && !inQuotes) {
+                result.add(field.toString());
+                field.setLength(0);
+            } else {
+                field.append(currentChar);
+            }
+        }
+        result.add(field.toString());
+        return result.toArray(new String[0]);
     }
 
     /**
